@@ -86,7 +86,7 @@ unsmoked. Local Ollama runs are the only verified path today.
 |---|---|
 | `serve_live.py` | Wraps [NousResearch/pokemon-agent](https://github.com/NousResearch/pokemon-agent)'s server: real-time ticker, correct enemy species in wild battles, `a_until_dialog_end` that reads the text box from RAM and returns what it skipped, `/frame`, `/action/traced`, `/milestones`, and the `/stream` page |
 | `qwen_red.py` | The turn loop and the system prompt. `PROMPT_VERSION` changes whenever the prompt does; every run records it |
-| `milestones.py` | The 8-rung ladder, detected from RAM. No human judging |
+| `milestones.py` | The 10-rung ladder, detected from RAM. No human judging |
 | `stream.html` | The dashboard the recorder captures |
 | `site/` | The leaderboard, static, data-driven from `runs.json` |
 | `BENCHMARK-SPEC.md` | The rules. Read this before arguing about a score |

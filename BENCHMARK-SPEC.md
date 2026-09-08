@@ -42,10 +42,12 @@ Ordered checkpoints; each detected from game state we already read. Furthest rea
 | 2 | Got starter | party count ≥ 1 |
 | 3 | Reached Route 1 | map_id == Route 1 (Oak intercepts on Pallet's last row, so this lands after the starter) |
 | 4 | Reached Viridian City | map_id == Viridian City |
-| 5 | Entered Viridian Forest | map_id == Viridian Forest |
-| 6 | Cleared Viridian Forest / reached Pewter | map_id == Pewter City |
-| 7 | Entered Brock's gym | map_id == Pewter Gym |
-| 8 | **Beat Brock** | badges bit 0 (Boulder) set |
+| 5 | Got Oak's Parcel | flags.has_oaks_parcel |
+| 6 | Got the Pokédex | flags.has_pokedex |
+| 7 | Entered Viridian Forest | map_id == Viridian Forest |
+| 8 | Cleared Viridian Forest / reached Pewter | map_id == Pewter City |
+| 9 | Entered Brock's gym | map_id == Pewter Gym |
+| 10 | **Beat Brock** | badges bit 0 (Boulder) set |
 
 Milestone map_ids come from pokemon-agent's Red memory reader; verify each against a live run
 before trusting it (RAM-address confidence: currently *inferred*, must be *measured* per

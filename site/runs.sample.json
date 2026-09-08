@@ -42,6 +42,16 @@
         "turn": 272
       },
       {
+        "key": "got_parcel",
+        "label": "Got Oak's Parcel",
+        "turn": 303
+      },
+      {
+        "key": "got_pokedex",
+        "label": "Got the Pokédex",
+        "turn": 326
+      },
+      {
         "key": "viridian_forest",
         "label": "Entered Viridian Forest",
         "turn": 340
@@ -64,7 +74,7 @@
     ],
     "furthest_key": "beat_brock",
     "furthest_label": "Beat Brock (Boulder Badge)",
-    "furthest_index": 7,
+    "furthest_index": 9,
     "beat_brock": true,
     "in_game_name": "AAAAA",
     "rival_name": "BLUE"
@@ -112,6 +122,16 @@
         "turn": 329
       },
       {
+        "key": "got_parcel",
+        "label": "Got Oak's Parcel",
+        "turn": 366
+      },
+      {
+        "key": "got_pokedex",
+        "label": "Got the Pokédex",
+        "turn": 395
+      },
+      {
         "key": "viridian_forest",
         "label": "Entered Viridian Forest",
         "turn": 411
@@ -134,7 +154,7 @@
     ],
     "furthest_key": "beat_brock",
     "furthest_label": "Beat Brock (Boulder Badge)",
-    "furthest_index": 7,
+    "furthest_index": 9,
     "beat_brock": true,
     "in_game_name": "HELPER",
     "rival_name": "GARY"
@@ -182,6 +202,16 @@
         "turn": 571
       },
       {
+        "key": "got_parcel",
+        "label": "Got Oak's Parcel",
+        "turn": 635
+      },
+      {
+        "key": "got_pokedex",
+        "label": "Got the Pokédex",
+        "turn": 685
+      },
+      {
         "key": "viridian_forest",
         "label": "Entered Viridian Forest",
         "turn": 714
@@ -194,7 +224,7 @@
     ],
     "furthest_key": "pewter_city",
     "furthest_label": "Reached Pewter City",
-    "furthest_index": 5,
+    "furthest_index": 7,
     "beat_brock": false,
     "in_game_name": "CLAUDE",
     "rival_name": "RIVAL"
@@ -242,6 +272,16 @@
         "turn": 667
       },
       {
+        "key": "got_parcel",
+        "label": "Got Oak's Parcel",
+        "turn": 682
+      },
+      {
+        "key": "got_pokedex",
+        "label": "Got the Pokédex",
+        "turn": 693
+      },
+      {
         "key": "viridian_forest",
         "label": "Entered Viridian Forest",
         "turn": 700
@@ -249,7 +289,7 @@
     ],
     "furthest_key": "viridian_forest",
     "furthest_label": "Entered Viridian Forest",
-    "furthest_index": 4,
+    "furthest_index": 6,
     "beat_brock": false,
     "in_game_name": "GPT",
     "rival_name": "ASH"

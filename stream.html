@@ -65,10 +65,10 @@
   .journey-left .eyebrow{color:var(--ink)}
   #badgeCount{font:800 10px var(--mono);background:var(--ink);color:var(--paper);padding:3px 7px;border-radius:99px;letter-spacing:.04em;flex:none}
   #badges{display:flex;gap:6px;flex:none}
-  #ladder{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;flex:1;min-width:0}
-  #ladder .rung{border:2px dashed #b9b4a4;border-radius:6px;padding:3px 2px;text-align:center;font:800 9px/1.15 var(--mono);color:#9a958a;min-width:0;overflow:hidden}
+  #ladder{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;flex:1;min-width:0}
+  #ladder .rung{border:2px dashed #b9b4a4;border-radius:6px;padding:3px 0;text-align:center;font:800 8px/1.2 var(--mono);letter-spacing:0;color:#9a958a;min-width:0;overflow:hidden}
   #ladder .rung b{display:block;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #ladder .rung small{display:block;font-size:8px;opacity:.85}
+  #ladder .rung small{display:block;font-size:8px;opacity:.85;white-space:nowrap}
   #ladder .rung.hit{border:2px solid var(--ink);background:var(--gold);color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
   #ladder .rung.next{border:2px solid var(--ink);color:var(--ink);background:var(--paper)}
   .badge{width:34px;height:34px;border-radius:7px;display:grid;place-items:center;flex:none;position:relative}
@@ -248,7 +248,7 @@ function applyFamily(modelId){
   ['primary','light','shirt','dark'].forEach(k=>{ if(f[k]) el.style.setProperty('--sp-'+k,f[k]); else el.style.removeProperty('--sp-'+k); });
   $('spriteName').textContent=f.name; $('thinkHead').textContent=f.name+' IS THINKING';
 }
-const RUNG_SHORT={left_house:'House',route_1:'Route 1',got_starter:'Starter',viridian_city:'Viridian',viridian_forest:'Forest',pewter_city:'Pewter',pewter_gym:'Gym',beat_brock:'Brock'};
+const RUNG_SHORT={left_house:'House',route_1:'Route 1',got_starter:'Starter',viridian_city:'Viridian',got_parcel:'Parcel',got_pokedex:'Pokédex',viridian_forest:'Forest',pewter_city:'Pewter',pewter_gym:'Gym',beat_brock:'Brock'};
 let ladder=[], hit={}, lastModel='';
 function renderLadder(){
   if(!ladder.length) return;

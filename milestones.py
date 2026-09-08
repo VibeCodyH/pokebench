@@ -30,6 +30,8 @@ MILESTONES = [
     ("got_starter",      "Got a starter",         lambda s: _party_count(s) >= 1),
     ("route_1",          "Reached Route 1",       lambda s: _map_id(s) == 12),  # Oak stops you on Pallet's last row; Route 1 comes AFTER the starter
     ("viridian_city",    "Reached Viridian City", lambda s: _map_id(s) == 1),
+    ("got_parcel",       "Got Oak's Parcel",      lambda s: (s.get("flags") or {}).get("has_oaks_parcel")),  # the flag goes false again once she hands it to Oak, the tracker keeps the first turn it was ever true.
+    ("got_pokedex",      "Got the Pokédex",       lambda s: (s.get("flags") or {}).get("has_pokedex")),
     ("viridian_forest",  "Entered Viridian Forest", lambda s: _map_id(s) == 50),
     ("pewter_city",      "Reached Pewter City",   lambda s: _map_id(s) == 2),
     ("pewter_gym",       "Entered Brock's Gym",   lambda s: _map_id(s) == 53),

@@ -37,7 +37,7 @@
   const number = value => finite(value) ? value.toLocaleString('en-US') : '—';
   const textValue = value => value == null || value === '' ? '—' : typeof value === 'object' ? JSON.stringify(value) : String(value);
   const local = run => String(run.provider || '').toLowerCase().includes('ollama');
-  const won = run => run.furthest_index === 7;
+  const won = run => run.furthest_index === 9;
   const costNumber = run => local(run) ? 0 : finite(run.cost_usd) ? run.cost_usd : Infinity;
   const price = run => local(run) ? 'FREE' : finite(run.cost_usd) ? '$' + run.cost_usd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: run.cost_usd > 0 && run.cost_usd < .01 ? 6 : 2}) : '—';
   const tokens = run => finite(run.tokens_in) && finite(run.tokens_out) ? run.tokens_in + run.tokens_out : null;
@@ -51,17 +51,19 @@
     {key: 'got_starter', label: 'Got a starter', short: 'Got starter', station: 'route-one'},
     {key: 'route_1', label: 'Reached Route 1', short: 'Route 1', station: 'route-one'},
     {key: 'viridian_city', label: 'Reached Viridian City', short: 'Viridian City', station: 'viridian'},
+    {key: 'got_parcel', label: "Got Oak's Parcel", short: 'Parcel', station: 'viridian'},
+    {key: 'got_pokedex', label: 'Got the Pokédex', short: 'Pokédex', station: 'viridian'},
     {key: 'viridian_forest', label: 'Entered Viridian Forest', short: 'Viridian Forest', station: 'forest'},
     {key: 'pewter_city', label: 'Reached Pewter City', short: 'Pewter City', station: 'pewter'},
     {key: 'pewter_gym', label: "Entered Brock's Gym", short: 'Entered gym', station: 'pewter'},
     {key: 'beat_brock', label: 'Beat Brock (Boulder Badge)', short: 'Beat Brock', station: 'brock'}
   ];
   const stations = [
-    {id: 'pewter', art: 'pewter', name: 'Pewter City', title: 'So close. Still no badge.', kicker: '6–7 / 8 · THE GYM IS RIGHT THERE', lede: 'Pewter City. The last stop before the rock guy.', indices: [6,5], next: 'forest', nextName: 'Viridian Forest'},
-    {id: 'forest', art: 'forest', name: 'Viridian Forest', title: 'Lost in the leaves.', kicker: '5 / 8 · VIRIDIAN FOREST', lede: 'Plenty of context. Very little sense of direction.', indices: [4], next: 'viridian', nextName: 'Viridian City'},
-    {id: 'viridian', art: 'viridian', name: 'Viridian City', title: 'A quick breather.', kicker: '4 / 8 · VIRIDIAN CITY', lede: 'Heal up. Buy supplies. Remember the objective.', indices: [3], next: 'route-one', nextName: 'Route 1'},
-    {id: 'route-one', art: 'route', name: 'Route 1 / Got starter', title: 'The grass has questions.', kicker: '2–3 / 8 · THE FIRST STEPS', lede: 'From picking a starter in Pallet to heading north on Route 1.', indices: [2,1], next: 'pallet', nextName: 'Pallet Town'},
-    {id: 'pallet', art: 'pallet', name: "Pallet Town / Red's House", title: 'Home, sweet spawn.', kicker: '1 / 8 · LEFT THE HOUSE', lede: 'A whole world outside. The doorstep counts as progress.', indices: [0,-1], next: 'brock', nextName: 'The only way is up'}
+    {id: 'pewter', art: 'pewter', name: 'Pewter City', title: 'So close. Still no badge.', kicker: '8–9 / 10 · THE GYM IS RIGHT THERE', lede: 'Pewter City. The last stop before the rock guy.', indices: [8,7], next: 'forest', nextName: 'Viridian Forest'},
+    {id: 'forest', art: 'forest', name: 'Viridian Forest', title: 'Lost in the leaves.', kicker: '7 / 10 · VIRIDIAN FOREST', lede: 'Plenty of context. Very little sense of direction.', indices: [6], next: 'viridian', nextName: 'Viridian City'},
+    {id: 'viridian', art: 'viridian', name: 'Viridian City', title: 'A quick breather.', kicker: '4–6 / 10 · VIRIDIAN CITY', lede: 'Heal up. Fetch the parcel. Earn the Pokédex.', indices: [5,4,3], next: 'route-one', nextName: 'Route 1'},
+    {id: 'route-one', art: 'route', name: 'Route 1 / Got starter', title: 'The grass has questions.', kicker: '2–3 / 10 · THE FIRST STEPS', lede: 'From picking a starter in Pallet to heading north on Route 1.', indices: [2,1], next: 'pallet', nextName: 'Pallet Town'},
+    {id: 'pallet', art: 'pallet', name: "Pallet Town / Red's House", title: 'Home, sweet spawn.', kicker: '1 / 10 · LEFT THE HOUSE', lede: 'A whole world outside. The doorstep counts as progress.', indices: [0,-1], next: 'brock', nextName: 'The only way is up'}
   ];
   const stationName = id => id === 'brock' ? 'Brock’s Gym' : stations.find(s => s.id === id)?.name || 'Pallet Town';
   const milestoneLabel = run => milestoneList[run.furthest_index]?.label || 'No milestone reached';
@@ -106,13 +108,13 @@
     return `<dl class="provenance">${entries.map(([label,value]) => `<dt>${escape(label)}</dt><dd>${escape(textValue(value))}</dd>`).join('')}</dl>`;
   }
   function runMap(run) {
-    const points = [[30,141],[92,141],[154,141],[220,141],[275,99],[210,66],[140,66],[78,30]];
+    const points = [[24,141],[72,141],[120,141],[168,141],[216,141],[262,141],[290,99],[210,66],[140,66],[78,30]];
     const pathData = points.map(([x,y],i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' ');
     const recorded = new Set(run.milestones.filter(m => finite(m.turn)).map(m => m.key));
     const nodes = points.map(([x,y],i) => `<circle cx="${x}" cy="${y}" r="9" fill="${recorded.has(milestoneList[i].key) ? '#2dd4bf' : '#e5e8cb'}" stroke="#2e513d" stroke-width="2"/><text x="${x}" y="${y+3}" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#173627">${i+1}</text>`).join('');
     const [x,y] = points[run.furthest_index] || [12,166];
     const marker = won(run) ? `<g transform="translate(${x-9} ${y-30}) scale(.6)"><use href="#art-trophy"/></g>` : `<path class="furthest-x" data-index="${run.furthest_index}" d="M${x-6} ${y-28}l12 12m0-12l-12 12" stroke="#a52f24" stroke-width="4"/><path d="M${x} ${y-13}v3" stroke="#a52f24" stroke-width="2"/>`;
-    return `<svg class="run-map" viewBox="0 0 320 190" role="img" aria-label="${escape(modelName(run))}: ${escape(milestoneLabel(run))}. Teal dots are recorded milestones; ${won(run) ? 'trophy at Brock' : 'red X at furthest milestone'}."><rect width="320" height="190" fill="#cedfb0"/><path d="M292 0h28v190h-12v-50h-16V85h-10V25h10z" fill="#81c9b1"/>${tile('house',8,77,49,40)}${tile('roundtree',258,9,35,45)}${tile('pine',5,10,30,39)}<path d="${pathData}" fill="none" stroke="#849e6c" stroke-width="14"/><path d="${pathData}" fill="none" stroke="#f2dfac" stroke-width="10"/>${nodes}${marker}<g font-family="monospace" font-size="8" font-weight="bold" fill="#35513c"><text x="13" y="181">PALLET</text><text x="99" y="180">FIRST STEPS</text><text x="213" y="163">VIRIDIAN</text><text x="247" y="127">FOREST</text><text x="162" y="48">PEWTER</text><text x="97" y="20">BROCK</text></g></svg><p class="map-caption">1–8: benchmark ladder · teal = recorded · ${won(run) ? 'trophy = beat Brock' : 'red × = furthest'}</p>`;
+    return `<svg class="run-map" viewBox="0 0 320 190" role="img" aria-label="${escape(modelName(run))}: ${escape(milestoneLabel(run))}. Teal dots are recorded milestones; ${won(run) ? 'trophy at Brock' : 'red X at furthest milestone'}."><rect width="320" height="190" fill="#cedfb0"/><path d="M292 0h28v190h-12v-50h-16V85h-10V25h10z" fill="#81c9b1"/>${tile('house',8,77,49,40)}${tile('roundtree',258,9,35,45)}${tile('pine',5,10,30,39)}<path d="${pathData}" fill="none" stroke="#849e6c" stroke-width="14"/><path d="${pathData}" fill="none" stroke="#f2dfac" stroke-width="10"/>${nodes}${marker}<g font-family="monospace" font-size="8" font-weight="bold" fill="#35513c"><text x="13" y="181">PALLET</text><text x="99" y="180">FIRST STEPS</text><text x="213" y="163">VIRIDIAN</text><text x="247" y="127">FOREST</text><text x="162" y="48">PEWTER</text><text x="97" y="20">BROCK</text></g></svg><p class="map-caption">1–10: benchmark ladder · teal = recorded · ${won(run) ? 'trophy = beat Brock' : 'red × = furthest'}</p>`;
   }
   function runDetails(run) {
     return `<details class="run-details"><summary>Run settings &amp; milestone receipts</summary>${facts([
@@ -131,7 +133,7 @@
       <div class="card-body"><h3 class="model-name">${escape(modelName(run))}</h3><p class="provider">${escape(textValue(run.provider))}${run.run_name ? ' / '+escape(run.run_name) : ''}</p>
       ${run.in_game_name ? `<p class="ingame-name">plays as <b>${escape(run.in_game_name)}</b>${run.rival_name ? ` &middot; rival <b>${escape(run.rival_name)}</b>` : ''}</p>` : ''}
       <div class="card-tags"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="tag">${escape(textValue(run.family))}</span><span class="tag">GEN 1 · RED</span></div>
-      <p class="furthest"><b>${run.furthest_index+1}/8</b> ${escape(milestoneLabel(run))}</p>${stats(run)}
+      <p class="furthest"><b>${run.furthest_index+1}/10</b> ${escape(milestoneLabel(run))}</p>${stats(run)}
       ${full ? facts([['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]]) + runDetails(run) : ''}
       <div class="card-actions"><button class="compare-select" data-select="${run.uid}" aria-pressed="${selected}" ${!selected && state.selected.size >= 4 ? 'disabled' : ''} aria-label="${selected ? 'Remove' : 'Select'} ${escape(modelName(run))} for comparison">${selected ? '✓ Selected' : '+ Compare'}</button>${inspect(run)}</div>${videoURL(run) ? '' : '<p class="vod-note">No VOD attached</p>'}</div></article>`;
   }
@@ -147,7 +149,7 @@
       const groups = station.indices.map(index => {
         const group = runs.filter(r => r.furthest_index === index).sort(rankSort);
         const label = milestoneList[index]?.label || 'Still at Red’s House';
-        return `<div id="checkpoint-${index}" class="${group.length ? 'pin-group' : 'empty-checkpoint'}" data-checkpoint="${index}">${group.length ? `<p class="pin-label">${index+1}/8 · ${escape(label)}</p>${group.map(r => card(r)).join('')}` : ''}</div>`;
+        return `<div id="checkpoint-${index}" class="${group.length ? 'pin-group' : 'empty-checkpoint'}" data-checkpoint="${index}">${group.length ? `<p class="pin-label">${index+1}/10 · ${escape(label)}</p>${group.map(r => card(r)).join('')}` : ''}</div>`;
       }).join('');
       return `<section id="${station.id}" class="station ${station.art}" data-station="${station.id}" aria-labelledby="${station.id}-title"><div class="station-heading"><p class="station-kicker">${station.kicker}</p><h2 id="${station.id}-title">${station.title}</h2><p class="station-lede">${station.lede}</p><p class="station-count">${runs.length} ${runs.length === 1 ? 'RUN ENDED' : 'RUNS ENDED'} HERE</p></div><div class="map-zone">${scene(station)}<div class="map-pins">${groups}</div>${!runs.length ? '<div class="station-empty"><strong>No runs stopped here.</strong><p>An empty patch of the map. For now.</p></div>' : ''}</div><div class="scene-label"><span>${escape(station.name.toUpperCase())}</span><a href="#${station.next}">${station.next === 'brock' ? '↑' : '↓'} ${station.nextName}</a></div></section>`;
     }).join('');
@@ -238,7 +240,7 @@
         if (!entry.isIntersecting) return;
         const station = entry.target;
         const definition = stations.find(s => s.id === station.id);
-        const index = station.classList.contains('pin-group') ? Number(station.dataset.checkpoint) : station.id === 'brock' ? 7 : definition.indices.find(i => state.runs.some(r => r.furthest_index === i)) ?? definition.indices[0];
+        const index = station.classList.contains('pin-group') ? Number(station.dataset.checkpoint) : station.id === 'brock' ? 9 : definition.indices.find(i => state.runs.some(r => r.furthest_index === i)) ?? definition.indices[0];
         activeRail(index);
       });
     },{rootMargin: `-${Math.floor(probe)}px 0px -${Math.max(0,Math.floor(window.innerHeight-probe-2))}px 0px`, threshold: 0});
@@ -293,7 +295,7 @@
       const rows = await response.json();
       if (!Array.isArray(rows)) throw new Error('Expected a JSON array');
       if (id !== requestId) return;
-      const valid = rows.filter(run => run && typeof run === 'object' && Number.isInteger(run.furthest_index) && run.furthest_index >= -1 && run.furthest_index <= 7 && finite(run.turns_used));
+      const valid = rows.filter(run => run && typeof run === 'object' && Number.isInteger(run.furthest_index) && run.furthest_index >= -1 && run.furthest_index <= 9 && finite(run.turns_used));
       state.runs = valid.map((run,index) => ({...run, uid: `run-${index}`, milestones: Array.isArray(run.milestones) ? run.milestones.filter(m => m && typeof m === 'object') : []}));
       state.sample = sample;
       finishLoad();
@@ -330,7 +332,7 @@
     $('family-filter').innerHTML = '<option value="all">All families</option>' + [...new Set(state.runs.map(r => String(r.family || 'Unknown')))].sort().map(family => `<option value="${escape(family)}">${escape(family)}</option>`).join('');
     renderJourney(); renderTable(); renderTimeline(); syncSelection();
   }
-  $('rail-list').innerHTML = [...milestoneList].reverse().map((m,i) => `<li><a class="rail-link" href="#${m.station}" data-index="${7-i}" data-station="${m.station}" aria-label="Milestone ${8-i}: ${escape(m.label)}"><span class="rail-number">${8-i}</span><span class="rail-text">${m.short}</span></a></li>`).join('');
+  $('rail-list').innerHTML = [...milestoneList].reverse().map((m,i) => `<li><a class="rail-link" href="#${m.station}" data-index="${9-i}" data-station="${m.station}" aria-label="Milestone ${10-i}: ${escape(m.label)}"><span class="rail-number">${10-i}</span><span class="rail-text">${m.short}</span></a></li>`).join('');
   $('method-milestones').innerHTML = milestoneList.map(m => `<li>${escape(m.label)}</li>`).join('');
   $('journey-button').addEventListener('click',() => setView('journey'));
   $('table-button').addEventListener('click',() => setView('table'));
@@ -388,7 +390,7 @@
       if (heading) { heading.tabIndex = -1; heading.focus({preventScroll:true}); }
     }
   });
-  syncMotion(); activeRail(7);
+  syncMotion(); activeRail(9);
   loadRuns().then(() => {
     const target = $(location.hash.slice(1));
     if (target) target.scrollIntoView({behavior:'instant',block:'start'});
