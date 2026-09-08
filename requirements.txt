@@ -1,0 +1,7 @@
+# Pinned to what the reference runs used (Python 3.12). pokemon-agent is git-pinned: the harness
+# monkey-patches its server, so a newer upstream can break serve_live.py.
+pokemon-agent[autopilot,dashboard,pyboy] @ git+https://github.com/NousResearch/pokemon-agent@f8a03e4a8bc58f1d9dda6d677a7436cc832a57a9
+pyboy==2.7.0
+requests==2.34.2
+pillow==12.3.0
+pyyaml==6.0.3
