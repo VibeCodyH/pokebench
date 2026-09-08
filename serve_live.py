@@ -195,6 +195,28 @@ async def _settle_text() -> None:
         last = line
 
 
+_WARP_CAP_TICKS = 30  # 30 x 6 frames = 3 s for a door/stairs fade to finish
+
+
+async def _settle_warp(stale: dict) -> dict:
+    """Door and stairs warps flip the map id first; the player's coordinates only update when the
+    fade ends, then leaving a building auto-walks one step off the door. Measured 2026-09-08
+    (Oak's Lab): the pose read right after the walk said "Pallet Town (5,11)" (lab door tile) and
+    /frame agreed until ~2 s later when it became (12,12); entering read "Oak's Lab (12,11)".
+    Every warp in test run 3 logged such a line into her history. wd730 bit 5 (joypad ignored) is
+    set for the fade + auto-step, but only ~0.1-0.2 s after the walk returns, so wait for BOTH the
+    coordinates to leave the stale value and the bit to be clear; cap 3 s."""
+    pose = stale
+    for _ in range(_WARP_CAP_TICKS):
+        await S._run_sync(S._emulator.tick, 6)
+        pose = await S._run_sync(_pose)
+        busy = await S._run_sync(lambda: S._emulator.read_u8(_red.ADDR_JOY_IGNORE) & 0x20)
+        if pose.get("pos") != stale.get("pos") and not busy:
+            await S._run_sync(S._emulator.tick, 6)
+            return await S._run_sync(_pose)
+    return pose
+
+
 async def _execute_unlocked(action_str: str):
     a = action_str.strip().lower()
     if a == "a_until_dialog_end":
@@ -318,6 +340,8 @@ async def traced_action(req: S.ActionRequest):
                     steps.append({"action": a, "error": str(e)})
                     break
                 after = await S._run_sync(_pose)
+                if after.get("map_id") != before.get("map_id"):
+                    after = await _settle_warp(after)
             steps.append({"action": a, "before": before, "after": after, "dialog": detail})
             executed += 1
         state_after = await S._run_sync(S._get_state_dict)
