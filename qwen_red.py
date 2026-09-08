@@ -115,7 +115,7 @@ def event(server, typ, **kw):
 
 
 def write_summary(artifact_dir, run_id, model, run_name, think, tracker, turns_used, budget,
-                  tokens, wall_s, notes, in_game_name="", rival_name="", frames_saved=True):
+                  tokens, wall_s, notes, in_game_name="", rival_name="", frames_saved=True, acts=None):
     """Emit the per-run scoring + provenance JSON the leaderboard reads (BENCHMARK-SPEC.md §2/§2b)."""
     # harness provenance
     try:
@@ -147,6 +147,11 @@ def write_summary(artifact_dir, run_id, model, run_name, think, tracker, turns_u
         # --- scoring ---
         "budget_turns": budget, "turns_used": turns_used, "wall_time_s": round(wall_s, 1),
         "tokens_in": tokens["prompt"], "tokens_out": tokens["completion"],
+        # how boldly the model uses its 6-action cap (REPORT, not score): actions it chose per acted turn,
+        # plus how many A presses a_until_dialog_end spent on its behalf
+        "acted_turns": (acts or {}).get("turns", 0), "actions_total": (acts or {}).get("actions", 0),
+        "avg_actions_per_turn": round((acts or {}).get("actions", 0) / (acts or {}).get("turns", 1), 2) if (acts or {}).get("turns") else None,
+        "a_until_presses_total": (acts or {}).get("a_presses", 0),
         "cost_usd": 0.0,  # local; provider adapters set real cost in phase 2
         "youtube_url": None, "timestamp": time.strftime("%Y%m%d_%H%M%S"),
         **tracker.summary(),
@@ -208,6 +213,7 @@ def main():
     tracker = MilestoneTracker()
     run_start = time.time()
     tok = {"prompt": 0, "completion": 0}
+    acts = {"turns": 0, "actions": 0, "a_presses": 0}
     turn = 0
     run_id = f"{args.model.replace(':', '-').replace('.', '-')}-{time.strftime('%Y%m%d_%H%M%S')}"
     artifact_dir = os.path.join(RUNS_DIR, run_id)
@@ -370,6 +376,8 @@ def main():
             except Exception:
                 pass
         history.append(history_line)
+        acts["turns"] += 1; acts["actions"] += len(actions)
+        acts["a_presses"] += sum((st.get("dialog") or {}).get("presses", 0) for st in steps if isinstance(st.get("dialog"), dict))
         with open(log_path, "a") as f:
             f.write(json.dumps({"turn": turn, "prompt_version": PROMPT_VERSION, "user_message": user, "screenshot_sha256": screenshot_sha256, "frame_file": frame_file, "state": state, "screen_text": screen_text, "thinking": thinking, "plan": plan, "plan_actions_raw": plan_actions_raw, "actions": actions, "fallback_reason": fallback_reason, "steps": steps, "result": result_tail, "model_s": dt, "tokens": tokens}) + "\n")
         if turn % args.save_every == 0:
@@ -381,7 +389,7 @@ def main():
     final_notes = open(notes_path).read() if os.path.exists(notes_path) else ""
     write_summary(artifact_dir, run_id, args.model, args.run_name or "run", args.think, tracker,
                   turn, args.turns, tok, time.time() - run_start, final_notes,
-                  in_game_name=in_game_name, rival_name=rival_name, frames_saved=not args.no_frames)
+                  in_game_name=in_game_name, rival_name=rival_name, frames_saved=not args.no_frames, acts=acts)
 
 
 if __name__ == "__main__":
