@@ -114,7 +114,7 @@
 <body>
 <svg class="sprite-defs" width="0" height="0" aria-hidden="true"><defs>
     <symbol id="art-badge" viewBox="0 0 32 32"><path d="M9 2h14v4h5v7h3v10h-6v6H8v-5H2V12h4V6h3z" fill="#759b96"/><path d="M10 4h11v4h5v13h-5v6H9v-6H5v-8h5z" fill="#d6e7ce"/><path d="M12 9h8v3h4v9h-7v5H9V15h3z" fill="#a8c9b7"/><path d="M11 5h10v3H11zM6 13h4v7H6z" fill="#fff5ce"/></symbol>
-    <symbol id="art-trainer" viewBox="0 0 32 48"><path d="M5 41h25v5H5z" fill="#122b3c55"/><path d="M8 4h16v4h5v9H4V9h4z" fill="#e9765d"/><path d="M9 5h11v4H9z" fill="#ffd2a0"/><path d="M9 17h17v12H9z" fill="#edc18e"/><path d="M7 18h6v9H7z" fill="#334b47"/><path d="M7 29h18v11H7z" fill="#d7d9b4"/><path d="M5 30h6v9H5zM23 30h5v9h-5z" fill="#de795b"/><path d="M9 40h6v6H9zM20 40h6v6h-6z" fill="#243e50"/></symbol>
+    <symbol id="art-trainer" viewBox="0 0 32 48"><path d="M5 41h25v5H5z" fill="#122b3c55"/><path d="M8 4h16v4h5v9H4V9h4z" fill="var(--sp-primary,#e9765d)"/><path d="M9 5h11v4H9z" fill="var(--sp-light,#ffd2a0)"/><path d="M9 17h17v12H9z" fill="#edc18e"/><path d="M7 18h6v9H7z" fill="#334b47"/><path d="M7 29h18v11H7z" fill="var(--sp-shirt,#d7d9b4)"/><path d="M5 30h6v9H5zM23 30h5v9h-5z" fill="var(--sp-primary,#de795b)"/><path d="M9 40h6v6H9zM20 40h6v6h-6z" fill="var(--sp-dark,#243e50)"/></symbol>
     <symbol id="art-grass" viewBox="0 0 50 30"><path d="M4 14h5v7h7V9h6v12h7v-7h5v13H4zM33 4h5v7h7V0h5v18H33z" fill="currentColor"/></symbol>
     <symbol id="art-house" viewBox="0 0 180 150"><path d="M31 129h145v17H31z" fill="#233f4038"/><path d="M18 59h107v72H18z" fill="#ebdca9"/><path d="M125 59h39v61l-39 11z" fill="#bda67b"/><path d="M4 48h10V36h12V24h13V12h99v12h12v12h14v12h11v20H4z" fill="#a4584b"/><path d="M4 49h11V37h12V25h13V13h70v12H99v12H88v13H76v12H4z" fill="#dc8b64"/><path d="M21 44h62v5H21zM34 30h62v5H34zM6 58h70v6H6z" fill="#f1b181"/><path d="M35 79h23v25H35zM83 79h24v25H83z" fill="#335b59"/><path d="M39 83h7v9h-7zM87 83h7v9h-7z" fill="#9dbdaa"/><path d="M63 90h20v41H63z" fill="#574f42"/><path d="M76 110h3v4h-3z" fill="#f7dda2"/><path d="M17 122h44v9H17zM86 122h39v9H86z" fill="#c4b78d"/></symbol>
     <symbol id="art-pine" viewBox="0 0 100 130"><path d="M20 113h66v9H20z" fill="#143c3b" opacity=".3"/><path d="M44 79h16v41H44z" fill="#645c3b"/><path d="M51 79h9v41h-9z" fill="#2e4738"/><path d="M38 3h24v13h12v14h10v16H73v7h17v18h10v27H0V77h10V60h14V46H13V30h13V17h12z" fill="#245348"/><path d="M38 3h14v17h12v14H52v13h19v13H49v15h26v13H9V77h10V60h14V43H23V30h13V17h2z" fill="#3c7960"/><path d="M38 17h12v8H38zM22 62h13v8H22zM11 80h16v8H11z" fill="#78a677"/></symbol>
@@ -151,10 +151,10 @@
       <div class="thought-card">
         <div class="trainer-side">
           <svg viewBox="0 0 32 48" aria-hidden="true"><use href="#art-trainer"/></svg>
-          <span class="eyb">QWEN</span>
+          <span class="eyb" id="spriteName">QWEN</span>
         </div>
         <div class="thought-main">
-          <div class="eyebrow">QWEN IS THINKING</div>
+          <div class="eyebrow" id="thinkHead">QWEN IS THINKING</div>
           <div id="thought">…</div>
           <div id="inputs"></div>
         </div>
@@ -229,8 +229,27 @@ function renderObjectives(objs){
   $('objectives').innerHTML=(objs||[]).map(o=>`<div class="obj ${map[o.tier]||'t3'} ${o.done?'done':''}">
     <span class="t">${o.done?'✓':(tag[o.tier]||'·')}</span><span>${esc(o.text)}</span></div>`).join('');
 }
+// Company colors per model family until each model has its own sprite (issue #11). Matched on the model id.
+const FAMILIES=[
+  {m:/claude|anthropic/i, name:'CLAUDE', primary:'#d97757', light:'#f3d7c3', shirt:'#f8f1e8', dark:'#3a2a22'},
+  {m:/gpt|openai|^o[0-9]/i, name:'GPT', primary:'#10a37f', light:'#c6efe2', shirt:'#f1f5f3', dark:'#1a1a1a'},
+  {m:/gemini|gemma/i, name:'GEMINI', primary:'#4285f4', light:'#cfe0fc', shirt:'#fbbc05', dark:'#174ea6'},
+  {m:/grok|xai/i, name:'GROK', primary:'#1a1a1a', light:'#9a9a9a', shirt:'#e8e8e8', dark:'#000'},
+  {m:/llama|muse|meta/i, name:'META', primary:'#0866ff', light:'#c9dcff', shirt:'#eef3ff', dark:'#0a3d91'},
+  {m:/mistral|pixtral|ministral/i, name:'MISTRAL', primary:'#ff7000', light:'#ffd9b8', shirt:'#ffe5a3', dark:'#7a2e00'},
+  {m:/deepseek/i, name:'DEEPSEEK', primary:'#4d6bfe', light:'#d3dbff', shirt:'#eef0ff', dark:'#1f2f8a'},
+  {m:/glm|zhipu|z\.ai/i, name:'GLM', primary:'#3b5bdb', light:'#d0d8f7', shirt:'#eef1fb', dark:'#1c2d7a'},
+  {m:/kimi|moonshot/i, name:'KIMI', primary:'#111', light:'#8fd3ff', shirt:'#eaf6ff', dark:'#000'},
+  {m:/qwen|qwq|alibaba/i, name:'QWEN', primary:'#6f42c1', light:'#e0d3f7', shirt:'#f1ecfb', dark:'#3b1f75'},
+];
+function applyFamily(modelId){
+  const f=FAMILIES.find(x=>x.m.test(modelId||''))||{name:(modelId||'MODEL').split(/[:\/]/)[0].toUpperCase().slice(0,10)};
+  const el=document.querySelector('.trainer-side');
+  ['primary','light','shirt','dark'].forEach(k=>{ if(f[k]) el.style.setProperty('--sp-'+k,f[k]); else el.style.removeProperty('--sp-'+k); });
+  $('spriteName').textContent=f.name; $('thinkHead').textContent=f.name+' IS THINKING';
+}
 const RUNG_SHORT={left_house:'House',route_1:'Route 1',got_starter:'Starter',viridian_city:'Viridian',viridian_forest:'Forest',pewter_city:'Pewter',pewter_gym:'Gym',beat_brock:'Brock'};
-let ladder=[], hit={};
+let ladder=[], hit={}, lastModel='';
 function renderLadder(){
   if(!ladder.length) return;
   let nextSeen=false;
@@ -261,13 +280,15 @@ function renderParty(party){
 
 async function pollMeta(){
   try{
-    const [s,g,o,gl,ms]=await Promise.all([
+    const [s,g,o,gl,ms,rm]=await Promise.all([
       fetch('/state').then(r=>r.json()),
       fetch('/games/current').then(r=>r.json()).catch(()=>({})),
       fetch('/objectives').then(r=>r.json()).catch(()=>({})),
       fetch('/games').then(r=>r.json()).catch(()=>({games:[]})),
-      fetch('/milestones').then(r=>r.json()).catch(()=>null)
+      fetch('/milestones').then(r=>r.json()).catch(()=>null),
+      fetch('/run_meta').then(r=>r.json()).catch(()=>null)
     ]);
+    if(rm&&rm.model){ $('model').textContent=`${rm.model} · ${rm.route||'local'} · ${Math.round((rm.ctx||0)/1024)||64}K ctx`; if(rm.model!==lastModel){ lastModel=rm.model; applyFamily(rm.model); } }
     const p=s.player||{}, map=s.map||{}, pos=p.position||{}, fl=s.flags||{};
     $('rLoc').textContent=map.map_name||'—';
     $('rCell').textContent=(s.collision&&s.collision.player_cell)||'E5';

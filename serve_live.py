@@ -199,7 +199,7 @@ async def _busy_guard(request, call_next):
     if mutating:
         _busy += 1
         if request.url.path == "/games/new":
-            _milestones.clear()
+            _milestones.clear(); _run_meta.clear()
         async with _lock:  # wait for any in-flight tick, then hold nothing (handler runs unlocked)
             pass
     try:
@@ -333,6 +333,21 @@ async def post_milestone(body: dict):
         _milestones[key] = turn
         await S.broadcast({"type": "milestone", "key": key, "label": body.get("label"), "turn": turn})
     return {"success": True, "hit": _milestones}
+
+
+_run_meta: dict = {}  # {model, think, ctx, route, prompt_version} from the harness; cleared on /games/new
+
+
+@S.app.post("/run_meta")
+async def post_run_meta(body: dict):
+    _run_meta.clear(); _run_meta.update({k: v for k, v in body.items() if isinstance(v, (str, int, float))})
+    await S.broadcast({"type": "run_meta", **_run_meta})
+    return {"success": True}
+
+
+@S.app.get("/run_meta")
+async def get_run_meta():
+    return _run_meta
 
 
 @S.app.get("/milestones")
