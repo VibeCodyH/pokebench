@@ -56,6 +56,8 @@ _busy = 0
 _orig_execute = S._execute_action
 
 
+_A_UNTIL_CAP = 40          # presses; 15 capped out on Oak's speeches (measured 2026-09-08)
+_REOPEN_GRACE_TICKS = 6    # x30 frames = ~3 s of "is the next box coming?" after a close
 _TILEMAP_ROW12 = 0xC3A0 + 12 * 20   # wTileMap row 12 = top edge of the standard text box
 _BOX_CORNER = 0x79                  # top-left border tile; measured 0x79 open / overworld tile closed
 
@@ -95,13 +97,22 @@ async def _a_until_dialog_end() -> dict:
         return {"presses": 0, "stop_reason": "menu"}
     presses = 0
     stop_reason = "capped"
-    for _ in range(15):
+    for _ in range(_A_UNTIL_CAP):
         await S._run_sync(S._emulator.press, "a", 8)  # 8-frame hold = reliable register
         await S._run_sync(S._emulator.tick, 30)
         presses += 1
         if not _dialog_open():
-            stop_reason = "closed"
-            break
+            # Scripted scenes (intro, Oak's Lab) close the box, move sprites, then open the next
+            # box on their own. Measured 2026-09-08: the helper returned "closed" after 1-2 presses
+            # four turns in a row in the lab. Wait a moment without pressing; only a box that stays
+            # closed is really the end.
+            for _ in range(_REOPEN_GRACE_TICKS):
+                await S._run_sync(S._emulator.tick, 30)
+                if _dialog_open():
+                    break
+            else:
+                stop_reason = "closed"
+                break
         elif _menu_open():
             stop_reason = "menu"
             break
