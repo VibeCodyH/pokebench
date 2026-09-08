@@ -29,7 +29,7 @@ SYSTEM = """You are Qwen, a local AI playing Pokémon Red live on stream. You ge
 
 How the game works: overworld movement is one tile per walk_X. Talk to people/signs with press_a while facing them. DOORS, STAIRS, and building entrances/exits are WARP tiles: you trigger them just by WALKING ONTO them, never with A. A warp tile often shows as `#` (blocked) on the ASCII map even though you can step onto it, so trust the screenshot for doors. IMPORTANT: if you keep re-entering the same building, it is because you are walking back onto its door tile — after leaving a building, step AWAY from the door (usually DOWN and to the side) before heading to your goal, or you will loop straight back inside. In menus and dialog, press_a advances/confirms, press_b cancels. Use a_until_dialog_end to skip through long text. ★The STATE does NOT report whether a dialog is open, so TRUST THE SCREENSHOT: if you see a text box, any sentence of text, or a ▼/▶ arrow at the bottom, a dialog IS open — clear it with a_until_dialog_end before anything else, and do not try to walk until it is gone. The title/intro screens need press_start then press_a. Name entry: choose a preset name when offered (press_a on it) instead of typing.
 
-Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. `.` walkable, `#` blocked (but door/warp tiles read as `#` and are still steppable). A `~` tile is walkable but no route to it exists inside this 10x9 window; you may reach it later from off-screen, so do not plan toward it this turn. ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.`. If the tile directly ABOVE `@` is `#`, you CANNOT go north this turn regardless of what tiles further up look like — walk left or right along the wall to find the one `.` opening, then go up through it. up = row-1, down = row+1, left = col-1, right = col+1. Never plan a route through `#` unless the screenshot shows a door, stairs or mat on that exact tile. Doors and warps are usually on the edge of buildings; the map does not show them, use the screenshot. Your memory of the Gen 1 maps is unreliable: treat any recalled layout ('the stairs are bottom-left', 'the Pokémon Center is north') as a guess until the map or screenshot confirms it.
+Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. `.` walkable, `#` blocked (but door/warp tiles read as `#` and are still steppable). ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.`. If the tile directly ABOVE `@` is `#`, you CANNOT go north this turn regardless of what tiles further up look like — walk left or right along the wall to find the one `.` opening, then go up through it. up = row-1, down = row+1, left = col-1, right = col+1. Never plan a route through `#` unless the screenshot shows a door, stairs or mat on that exact tile. Doors and warps are usually on the edge of buildings; the map does not show them, use the screenshot. Your memory of the Gen 1 maps is unreliable: treat any recalled layout ('the stairs are bottom-left', 'the Pokémon Center is north') as a guess until the map or screenshot confirms it.
 
 Overall goal: beat the game. THE VERY FIRST STEP (you have no Pokémon yet): leave your house by walking onto the door at the bottom, then walk to the NORTH edge of Pallet Town toward the TALL GRASS on Route 1. Professor Oak runs out, stops you there, and walks you to his lab to pick a starter. You CANNOT enter Oak's lab or get a starter until this happens. So while you have no Pokémon, head NORTH to the grass at the top of town — do NOT keep entering buildings; your own house and the labs are dead ends until Oak intercepts you. After the starter: deliver Oak's parcel from Viridian City Mart back to Oak -> Pokédex -> Viridian Forest -> Pewter City gym (Brock). Heal at Pokémon Centers (talk to the nurse). Buy items at Marts.
 
@@ -60,7 +60,7 @@ ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk
            "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 
 # Provenance (BENCHMARK-SPEC.md §2b — same prompt, same rules, public receipts).
-PROMPT_VERSION = "v3"          # bump whenever SYSTEM changes; old runs keep their version
+PROMPT_VERSION = "v4"          # bump whenever SYSTEM changes; old runs keep their version
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
@@ -161,8 +161,8 @@ def write_summary(artifact_dir, run_id, model, run_name, think, tracker, turns_u
 
 
 def build_map(state):
-    """Render the walkability grid with unreachable-but-walkable tiles flagged `~`
-    (flood-fill from the player), so the model never trusts a `.` it cannot reach."""
+    """Render the walkability grid; walkable tiles with no route from the player (flood-fill)
+    render as `#`, so the model never trusts a `.` it cannot reach."""
     c = state.get("collision") or {}
     grid = c.get("walkable")
     cell = c.get("player_cell") or "E5"
@@ -186,9 +186,9 @@ def build_map(state):
             if (r, cc) == (pr, pc): line.append("@")
             elif not grid[r][cc]: line.append("#")
             elif reach[r][cc]: line.append(".")
-            else: line.append("~")
+            else: line.append("#")  # RAM says walkable but no route from @ (fenced/ledged off): show it as blocked, she treated `~` as a target (v4)
         out.append(f"{r+1:2d} " + " ".join(line))
-    out.append("@ you  . reachable  ~ walkable but no route inside this window  # blocked")
+    out.append("@ you  . reachable  # blocked")
     out.append("up=row-1 down=row+1 left=col-1 right=col+1")
     return "\n".join(out)
 
