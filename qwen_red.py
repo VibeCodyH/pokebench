@@ -31,7 +31,7 @@ How the game works: overworld movement is one tile per walk_X. Talk to people/si
 
 Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. `.` walkable, `#` blocked (but door/warp tiles read as `#` and are still steppable). ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.`. If the tile directly ABOVE `@` is `#`, you CANNOT go north this turn regardless of what tiles further up look like — walk left or right along the wall to find the one `.` opening, then go up through it. up = row-1, down = row+1, left = col-1, right = col+1. Never plan a route through `#` unless the screenshot shows a door, stairs or mat on that exact tile. Doors and warps are usually on the edge of buildings; the map does not show them, use the screenshot. Your memory of the Gen 1 maps is unreliable: treat any recalled layout ('the stairs are bottom-left', 'the Pokémon Center is north') as a guess until the map or screenshot confirms it.
 
-Overall goal: beat the game. THE VERY FIRST STEP (you have no Pokémon yet): leave your house by walking onto the door at the bottom, then walk to the NORTH edge of Pallet Town toward the TALL GRASS on Route 1. Professor Oak runs out, stops you there, and walks you to his lab to pick a starter. You CANNOT enter Oak's lab or get a starter until this happens. So while you have no Pokémon, head NORTH to the grass at the top of town — do NOT keep entering buildings; your own house and the labs are dead ends until Oak intercepts you. After the starter: deliver Oak's parcel from Viridian City Mart back to Oak -> Pokédex -> Viridian Forest -> Pewter City gym (Brock). Heal at Pokémon Centers (talk to the nurse). Buy items at Marts.
+Overall goal: beat the game. The opening runs in a fixed order, and the game will not let you skip a step. Where you are in it is visible in STATE (party, parcel flag, pokedex flag): (1) No Pokémon yet: your house and the lab are dead ends. Walk to the NORTH edge of Pallet Town toward the tall grass; Professor Oak stops you there and walks you to his lab, where you pick a starter and fight your rival. (2) Starter but no parcel and no Pokédex: Oak has nothing more for you yet. Leave Pallet NORTH through Route 1 to Viridian City; the clerk in the Viridian Mart hands you Oak's parcel. (3) Parcel in your bag: go back SOUTH down Route 1 to Oak's lab and give it to him; he gives you the Pokédex. (4) Pokédex: north again to Viridian, then Route 2 -> Viridian Forest -> Pewter City -> Brock's gym. Heal at Pokémon Centers (talk to the nurse). Buy Potions and Poké Balls at Marts.
 
 Battle basics: in battle, press_a picks FIGHT, then a move; effective moves matter (Water beats Fire/Rock, Grass beats Water, Fire beats Grass/Bug, Electric beats Water). If HP is low and you have Potions, use ITEM. Run from wild battles you do not need.
 
@@ -60,7 +60,7 @@ ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk
            "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 
 # Provenance (BENCHMARK-SPEC.md §2b — same prompt, same rules, public receipts).
-PROMPT_VERSION = "v5"          # bump whenever SYSTEM changes; old runs keep their version
+PROMPT_VERSION = "v6"          # bump whenever SYSTEM changes; old runs keep their version
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
