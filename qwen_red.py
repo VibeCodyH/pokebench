@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Qwen (local, on the Unraid Ollama box) plays Pokemon Red through pokemon-agent's REST API.
 
-Loop: GET /state + /map/ascii + /screenshot -> model returns thought + 1-6 button actions
-      -> POST /event (narration to the dashboard) -> POST /action -> repeat.
-Emulation only advances while actions run, so the game is effectively paused while Qwen thinks.
+Loop: GET /frame -> model returns thought + 1-6 button actions
+      -> POST /event (narration to the dashboard) -> POST /action/traced -> repeat.
+The wrapper keeps the game running in real time between turns (NPCs move, animations finish), so the screenshot is a moment in time and the game is not paused while Qwen thinks.
 
   qwen_red.py [--turns N] [--model qwen3.8:27b] [--think low|medium|high] [--server http://localhost:8765]
 """
@@ -13,6 +13,7 @@ import hashlib
 import io
 import json
 import os
+import subprocess
 import time
 
 import requests
@@ -22,14 +23,13 @@ from milestones import MilestoneTracker, MILESTONES
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OLLAMA = os.environ.get("OLLAMA_HOST", "http://<server-host>:11434")
-NOTES = os.path.join(HERE, "notes.md")
 RUNS_DIR = os.path.join(HERE, "runs")
 
-SYSTEM = """You are Qwen, a local AI playing Pokémon Red live on stream. You get the game state read from RAM, an ASCII walkability map, and a screenshot. Between turns the game does not advance, so take your time; but each turn only 1-6 button presses happen, so make them count.
+SYSTEM = """You are Qwen, a local AI playing Pokémon Red live on stream. You get the game state read from RAM, an ASCII walkability map, and a screenshot. The game keeps running in real time between turns (NPCs move, animations finish), so the screenshot is a moment in time; each turn only 1-6 button presses happen, so make them count.
 
 How the game works: overworld movement is one tile per walk_X. Talk to people/signs with press_a while facing them. DOORS, STAIRS, and building entrances/exits are WARP tiles: you trigger them just by WALKING ONTO them, never with A. A warp tile often shows as `#` (blocked) on the ASCII map even though you can step onto it, so trust the screenshot for doors. IMPORTANT: if you keep re-entering the same building, it is because you are walking back onto its door tile — after leaving a building, step AWAY from the door (usually DOWN and to the side) before heading to your goal, or you will loop straight back inside. In menus and dialog, press_a advances/confirms, press_b cancels. Use a_until_dialog_end to skip through long text. ★The STATE does NOT report whether a dialog is open, so TRUST THE SCREENSHOT: if you see a text box, any sentence of text, or a ▼/▶ arrow at the bottom, a dialog IS open — clear it with a_until_dialog_end before anything else, and do not try to walk until it is gone. The title/intro screens need press_start then press_a. Name entry: choose a preset name when offered (press_a on it) instead of typing.
 
-Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. `.` walkable, `#` blocked (but door/warp tiles read as `#` and are still steppable). A `~` tile looks walkable but is WALLED OFF from you — you cannot path there, so ignore it entirely (do not plan routes toward `~`). ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.`. If the tile directly ABOVE `@` is `#`, you CANNOT go north this turn regardless of what tiles further up look like — walk left or right along the wall to find the one `.` opening, then go up through it. up = row-1, down = row+1, left = col-1, right = col+1. Never plan a route through `#`. Doors and warps are usually on the edge of buildings; the map does not show them, use the screenshot.
+Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. `.` walkable, `#` blocked (but door/warp tiles read as `#` and are still steppable). A `~` tile is walkable but no route to it exists inside this 10x9 window; you may reach it later from off-screen, so do not plan toward it this turn. ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.`. If the tile directly ABOVE `@` is `#`, you CANNOT go north this turn regardless of what tiles further up look like — walk left or right along the wall to find the one `.` opening, then go up through it. up = row-1, down = row+1, left = col-1, right = col+1. Never plan a route through `#` unless the screenshot shows a door, stairs or mat on that exact tile. Doors and warps are usually on the edge of buildings; the map does not show them, use the screenshot. Your memory of the Gen 1 maps is unreliable: treat any recalled layout ('the stairs are bottom-left', 'the Pokémon Center is north') as a guess until the map or screenshot confirms it.
 
 Overall goal: beat the game. THE VERY FIRST STEP (you have no Pokémon yet): leave your house by walking onto the door at the bottom, then walk to the NORTH edge of Pallet Town toward the TALL GRASS on Route 1. Professor Oak runs out, stops you there, and walks you to his lab to pick a starter. You CANNOT enter Oak's lab or get a starter until this happens. So while you have no Pokémon, head NORTH to the grass at the top of town — do NOT keep entering buildings; your own house and the labs are dead ends until Oak intercepts you. After the starter: deliver Oak's parcel from Viridian City Mart back to Oak -> Pokédex -> Viridian Forest -> Pewter City gym (Brock). Heal at Pokémon Centers (talk to the nurse). Buy items at Marts.
 
@@ -60,8 +60,8 @@ ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk
            "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 
 # Provenance (BENCHMARK-SPEC.md §2b — same prompt, same rules, public receipts).
-PROMPT_VERSION = "v2"          # bump whenever SYSTEM changes; old runs keep their version
-HARNESS_VERSION = 1
+PROMPT_VERSION = "v3"          # bump whenever SYSTEM changes; old runs keep their version
+HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
 PROMPT_SHA = hashlib.sha256(SYSTEM.encode()).hexdigest()[:16]
@@ -87,9 +87,8 @@ def compact(state):
     return "\n".join(lines)
 
 
-def screenshot_b64(server):
-    png = requests.get(f"{server}/screenshot", timeout=15).content
-    im = Image.open(io.BytesIO(png)).convert("RGB").resize((480, 432), Image.NEAREST)
+def shrink_png(png_bytes: bytes) -> str:
+    im = Image.open(io.BytesIO(png_bytes)).convert("RGB").resize((480, 432), Image.NEAREST)
     buf = io.BytesIO(); im.save(buf, "PNG")
     return base64.b64encode(buf.getvalue()).decode()
 
@@ -105,7 +104,7 @@ def ask(model, think, system, user, image_b64):
     body = r.json()
     msg = body["message"]
     tokens = {"prompt": body.get("prompt_eval_count", 0), "completion": body.get("eval_count", 0)}
-    return json.loads(msg["content"]), msg.get("thinking", ""), tokens
+    return msg["content"], msg.get("thinking", ""), tokens
 
 
 def event(server, typ, **kw):
@@ -116,8 +115,20 @@ def event(server, typ, **kw):
 
 
 def write_summary(artifact_dir, run_id, model, run_name, think, tracker, turns_used, budget,
-                  tokens, wall_s, notes, in_game_name="", rival_name=""):
+                  tokens, wall_s, notes, in_game_name="", rival_name="", frames_saved=True):
     """Emit the per-run scoring + provenance JSON the leaderboard reads (BENCHMARK-SPEC.md §2/§2b)."""
+    # harness provenance
+    try:
+        harness_git_sha = subprocess.check_output(["git", "-C", HERE, "rev-parse", "--short", "HEAD"], text=True, timeout=5).strip()
+    except Exception:  # container has no .git: deploy drops the sha in env or a GIT_SHA file next to us
+        harness_git_sha = os.environ.get("POKEBENCH_GIT_SHA")
+        if not harness_git_sha and os.path.exists(os.path.join(HERE, "GIT_SHA")):
+            harness_git_sha = open(os.path.join(HERE, "GIT_SHA")).read().strip() or None
+    try:
+        h_bytes = open(os.path.join(HERE, "qwen_red.py"), "rb").read() + open(os.path.join(HERE, "serve_live.py"), "rb").read()
+        harness_files_sha = hashlib.sha256(h_bytes).hexdigest()[:16]
+    except Exception:
+        harness_files_sha = None
     summary = {
         "run_id": run_id, "model": model, "provider": "ollama-local", "family": "qwen",
         "run_name": run_name,
@@ -126,6 +137,7 @@ def write_summary(artifact_dir, run_id, model, run_name, think, tracker, turns_u
         # --- provenance / receipts ---
         "prompt_version": PROMPT_VERSION, "prompt_sha": PROMPT_SHA,
         "harness_version": HARNESS_VERSION, "execution_route": "ollama-local",
+        "harness_git_sha": harness_git_sha, "harness_files_sha": harness_files_sha, "frames_saved": frames_saved,
         "think_level": think, "num_ctx": NUM_CTX, "temperature": TEMPERATURE,
         "allowed_actions": sorted(ALLOWED),
         "run_date": time.strftime("%Y-%m-%d"), "model_release_date": None,  # filled via models.yaml (phase 2)
@@ -176,7 +188,7 @@ def build_map(state):
             elif reach[r][cc]: line.append(".")
             else: line.append("~")
         out.append(f"{r+1:2d} " + " ".join(line))
-    out.append("@ you  . reachable  ~ walkable but WALLED OFF from you (cannot path there)  # blocked")
+    out.append("@ you  . reachable  ~ walkable but no route inside this window  # blocked")
     out.append("up=row-1 down=row+1 left=col-1 right=col+1")
     return "\n".join(out)
 
@@ -189,6 +201,7 @@ def main():
     ap.add_argument("--server", default="http://localhost:8765")
     ap.add_argument("--save-every", type=int, default=25)
     ap.add_argument("--run-name", default="")
+    ap.add_argument("--no-frames", action="store_true", help="don't save frame PNGs")
     args = ap.parse_args()
     S = args.server
 
@@ -199,7 +212,10 @@ def main():
     run_id = f"{args.model.replace(':', '-').replace('.', '-')}-{time.strftime('%Y%m%d_%H%M%S')}"
     artifact_dir = os.path.join(RUNS_DIR, run_id)
     os.makedirs(artifact_dir, exist_ok=True)
+    if not args.no_frames:
+        os.makedirs(os.path.join(artifact_dir, "frames"), exist_ok=True)
     log_path = os.path.join(artifact_dir, "log.jsonl")
+    notes_path = os.path.join(artifact_dir, "notes.md")
     print(f"run artifacts -> {artifact_dir}  (prompt {PROMPT_VERSION}/{PROMPT_SHA}, ctx {NUM_CTX})", flush=True)
 
     # Register a fresh tracked game session: boots the emulator clean AND makes the
@@ -217,7 +233,7 @@ def main():
     except Exception:
         pass
 
-    notes = open(NOTES).read() if os.path.exists(NOTES) else "(no notes yet)"
+    notes = "(no notes yet)"
     history = []
     last_pos = None; same_pos = 0
     in_game_name = ""; rival_name = ""  # captured once she names herself / the rival
@@ -232,10 +248,22 @@ def main():
             print("control = stopped, exiting"); break
 
         try:
-            state = requests.get(f"{S}/state", timeout=15).json()
-            amap_raw = requests.get(f"{S}/map/ascii", timeout=15).text
-            img = screenshot_b64(S)
-            amap = build_map(state) or amap_raw
+            frame = requests.get(f"{S}/frame", timeout=20).json()
+            state = frame["state"]
+            amap = build_map(state) or frame.get("ascii") or "(no map: in battle or menu)"
+            png_bytes = base64.b64decode(frame["screenshot_b64"])
+            screenshot_sha256 = hashlib.sha256(png_bytes).hexdigest()
+            if args.no_frames:
+                frame_file = None
+            else:
+                fname = f"turn_{turn:04d}.png"
+                fpath = os.path.join(artifact_dir, "frames", fname)
+                try:
+                    open(fpath, "wb").write(png_bytes)
+                    frame_file = os.path.join("frames", fname)
+                except Exception:
+                    frame_file = None
+            img = shrink_png(png_bytes)
         except Exception as e:
             print(f"[turn {turn}] server not reachable ({e}); retrying"); time.sleep(5); continue
         pos = ((state.get("map") or {}).get("map_id"), json.dumps((state.get("player") or {}).get("position")))
@@ -254,17 +282,39 @@ def main():
             print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
             break
         stuck = f"\nWARNING: position unchanged for {same_pos} turns. Do something different." if same_pos >= 3 else ""
-        user = (f"NOTES:\n{notes}\n\nRECENT TURNS:\n" + "\n".join(history[-12:]) +
+        user = (f"YOUR PRIOR NOTES (you wrote these on earlier turns; they are plans and guesses, NOT verified observations — the STATE, map and screenshot below are the truth):\n{notes}\n\nRECENT TURNS:\n" + "\n".join(history[-12:]) +
                 f"\n\nSTATE:\n{compact(state)}\n\nWALKABILITY MAP (you are @ at E5):\n{amap}{stuck}\n\nThe screenshot is attached. Take your turn.")
         t0 = time.time()
         try:
-            plan, thinking, tokens = ask(args.model, args.think, SYSTEM, user, img)
+            content_str, thinking, tokens = ask(args.model, args.think, SYSTEM, user, img)
         except Exception as e:
+            with open(log_path, "a") as f:
+                f.write(json.dumps({"turn": turn, "prompt_version": PROMPT_VERSION, "model_error": str(e), "user_message": user, "screenshot_sha256": screenshot_sha256}) + "\n")
             print(f"[turn {turn}] model error: {e}"); time.sleep(5); continue
         dt = time.time() - t0
+        # parse JSON in caller
+        try:
+            plan = json.loads(content_str)
+            if not isinstance(plan, dict):
+                raise ValueError(f"reply is {type(plan).__name__}, not an object")
+        except Exception as e:
+            tok["prompt"] += tokens["prompt"]; tok["completion"] += tokens["completion"]
+            with open(log_path, "a") as f:
+                f.write(json.dumps({"turn": turn, "prompt_version": PROMPT_VERSION, "parse_error": str(e), "raw_response": content_str, "thinking": thinking, "tokens": tokens, "user_message": user, "screenshot_sha256": screenshot_sha256, "model_s": dt}) + "\n")
+            print(f"[turn {turn}] parse error: {e}")
+            mp = (state.get("map") or {}).get("map_name") or "Unknown"
+            pp = (state.get("player") or {}).get("position") or {}
+            history.append(f"turn {turn}: {mp} ({pp.get('x')},{pp.get('y')}) -> (model reply was not valid JSON, no actions)")
+            continue
         tok["prompt"] += tokens["prompt"]; tok["completion"] += tokens["completion"]
         thought = (plan.get("thought") or "").strip()
-        actions = [a for a in plan.get("actions", []) if a in ALLOWED][:6] or ["wait_60"]
+        plan_actions_raw = plan.get("actions") or []
+        actions = [a for a in plan_actions_raw if a in ALLOWED][:6] if isinstance(plan_actions_raw, list) else []
+        fallback_reason = None
+        if not actions:
+            actions = ["wait_60"]
+            fallback_reason = "empty_or_invalid_plan"
+            print(f"⚠ fallback wait_60 (plan had no valid actions)", flush=True)
         print(f"\n=== turn {turn} | {compact(state).splitlines()[0]} | model {dt:.0f}s ===", flush=True)
         print(f"💭 {thought}", flush=True)
         print(f"  ▶ {' '.join(actions)}", flush=True)
@@ -272,30 +322,58 @@ def main():
         event(S, "decision", text=" ".join(actions))
         if plan.get("key_moment"):
             event(S, "key_moment", description=plan["key_moment"][:200], category="milestone")
+        # traced action: history line = start pose -> actions -> end pose (+ what the batch actually did)
+        def pose_of(st):
+            sm = st.get("map") or {}; sp = (st.get("player") or {}).get("position") or {}
+            return {"map_id": sm.get("map_id"), "map_name": sm.get("map_name"), "pos": [sp.get("x"), sp.get("y")]}
+        def fmt(p): return f"{p.get('map_name') or 'Unknown'} ({(p.get('pos') or [None, None])[0]},{(p.get('pos') or [None, None])[1]})"
+        steps = []; start = end = pose_of(state); tail_parts = []
         try:
-            res = requests.post(f"{S}/action", json={"actions": actions}, timeout=120).json()
-            result = f"executed {res.get('actions_executed')}"
+            r = requests.post(f"{S}/action/traced", json={"actions": actions}, timeout=120)
+            r.raise_for_status()
+            steps = r.json().get("steps", [])
+            if steps:
+                start = steps[0].get("before") or start
+                end = next((st["after"] for st in reversed(steps) if st.get("after")), start)  # error steps have no pose
+            if start.get("map_id") == end.get("map_id") and start.get("pos") == end.get("pos"):
+                tail_parts.append(" (no movement)")
+            elif start.get("map_id") != end.get("map_id"):
+                tail_parts.append(f" MAP CHANGED {start.get('map_name')} -> {end.get('map_name')}")
+            blocked = {}
+            for st in steps:
+                b, af = st.get("before"), st.get("after")
+                if st.get("action", "").startswith("walk_") and b and af and b.get("map_id") == af.get("map_id") and b.get("pos") == af.get("pos"):
+                    blocked[st["action"]] = blocked.get(st["action"], 0) + 1
+            if blocked:
+                tail_parts.append(" blocked walks: " + ", ".join(f"{k} x{v}" for k, v in blocked.items()))
+            for st in steps:
+                if isinstance(st.get("dialog"), dict):
+                    tail_parts.append(f" dialog: {st['dialog'].get('stop_reason')} after {st['dialog'].get('presses')} A")
+                if "error" in st:
+                    tail_parts.append(f" action error: {st['error']}")
         except Exception as e:
-            result = f"action error: {e}"
+            tail_parts.append(f" action error: {e}")
+        result_tail = "".join(tail_parts)
+        history_line = f"turn {turn}: {fmt(start)} -> [{' '.join(actions)}] -> {fmt(end)}{result_tail}"
         if plan.get("notes"):
-            notes = plan["notes"][:600]; open(NOTES, "w").write(notes)
-        mp = (state.get("map") or {}).get("map_name")
-        pp = (state.get("player") or {}).get("position")
-        history.append(f"turn {turn}: at {mp} {pp} did [{' '.join(actions)}] -> {result}")
+            notes = plan["notes"][:600]
+            try:
+                open(notes_path, "w").write(notes)
+            except Exception:
+                pass
+        history.append(history_line)
         with open(log_path, "a") as f:
-            f.write(json.dumps({"turn": turn, "state": compact(state), "thinking": thinking,
-                                "plan": plan, "result": result, "model_s": dt,
-                                "tokens": tokens}) + "\n")
+            f.write(json.dumps({"turn": turn, "prompt_version": PROMPT_VERSION, "user_message": user, "screenshot_sha256": screenshot_sha256, "frame_file": frame_file, "state": state, "thinking": thinking, "plan": plan, "plan_actions_raw": plan_actions_raw, "actions": actions, "fallback_reason": fallback_reason, "steps": steps, "result": result_tail, "model_s": dt, "tokens": tokens}) + "\n")
         if turn % args.save_every == 0:
             try:
                 requests.post(f"{S}/save", json={"name": run_id}, timeout=30)
             except Exception:
                 pass
 
-    final_notes = open(NOTES).read() if os.path.exists(NOTES) else ""
+    final_notes = open(notes_path).read() if os.path.exists(notes_path) else ""
     write_summary(artifact_dir, run_id, args.model, args.run_name or "run", args.think, tracker,
                   turn, args.turns, tok, time.time() - run_start, final_notes,
-                  in_game_name=in_game_name, rival_name=rival_name)
+                  in_game_name=in_game_name, rival_name=rival_name, frames_saved=not args.no_frames)
 
 
 if __name__ == "__main__":

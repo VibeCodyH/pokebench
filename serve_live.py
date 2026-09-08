@@ -15,6 +15,7 @@ import os
 import time
 
 import uvicorn
+from fastapi import HTTPException
 from pokemon_agent import server as S
 from pokemon_agent.memory import red as _red
 
@@ -72,29 +73,61 @@ def _dialog_open() -> bool:
     return True
 
 
-async def _a_until_dialog_end() -> None:
-    """Press A until the text box is gone (max 15). Upstream checked a nonexistent
-    'dialog_active' key. Our v2 screenshot-signature loop stopped on the first
-    REVISITED layout, which next to a sign/NPC meant: close (new layout, keep
-    going) -> A re-opens page 1 (seen, stop) = always one press late with the box
-    open again; the model saw the box, called it again, and looped (7-turn loop
-    observed in Viridian, 2026-09-08). Reading the box corner from wTileMap stops
-    exactly on the close."""
+def _menu_open() -> bool:
+    # Gen 1 overworld tileset tile IDs are < 0x60; 0x79 in the upper screen is the top-left corner of a menu
+    # box (Yes/No prompt, shop list, Start menu at col 10 row 0, naming preset box at row 4), so the helper stops
+    # instead of confirming the highlighted choice. Verified on a live boot 2026-09-08: the intro name-select
+    # list stopped the helper with 0 presses (stop_reason menu). Yes/No boxes use the same border tile (inferred).
+    if S._emulator.read_u8(_red.ADDR_BATTLE_TYPE) != 0:
+        return False
+    raw = S._emulator.read_range(0xC3A0, 12 * 20)  # wTileMap rows 0-11
+    return _BOX_CORNER in raw
+
+
+async def _a_until_dialog_end() -> dict:
+    """Press A until the text box is gone (max 15) — returns {presses, stop_reason}.
+    History: upstream checked nonexistent 'dialog_active'; v2 screenshot-signature loop stopped on first
+    REVISITED layout -> always one press late next to sign/NPC (7-turn loop in Viridian 2026-09-08). v3 reads
+    wTileMap corner 0x79 from RAM, pre-checks no_box/menu and stops on menu to avoid confirming a choice."""
+    if not _dialog_open():
+        return {"presses": 0, "stop_reason": "no_box"}
+    if _menu_open():
+        return {"presses": 0, "stop_reason": "menu"}
+    presses = 0
+    stop_reason = "capped"
     for _ in range(15):
         await S._run_sync(S._emulator.press, "a", 8)  # 8-frame hold = reliable register
         await S._run_sync(S._emulator.tick, 30)
+        presses += 1
         if not _dialog_open():
+            stop_reason = "closed"
             break
+        elif _menu_open():
+            stop_reason = "menu"
+            break
+    return {"presses": presses, "stop_reason": stop_reason}
 
 
-async def _locked_execute(action_str: str) -> None:
+async def _execute_unlocked(action_str: str):
+    if action_str.strip().lower() == "a_until_dialog_end":
+        return await _a_until_dialog_end()
+    return await _orig_execute(action_str)
+
+
+async def _locked_execute(action_str: str):
     async with _lock:
-        if action_str.strip().lower() == "a_until_dialog_end":
-            return await _a_until_dialog_end()
-        return await _orig_execute(action_str)
+        return await _execute_unlocked(action_str)
 
 
 S._execute_action = _locked_execute
+
+
+def _pose() -> dict:
+    """Sync helper for /action/traced — run via S._run_sync."""
+    mi = S._reader.read_map_info()  # {"map_id","map_name"}
+    pl = S._reader.read_player()  # {"position":{"y","x"}, "facing", ...}
+    pos = pl.get("position") or {}
+    return {"map_id": mi.get("map_id"), "map_name": mi.get("map_name"), "pos": [pos.get("x"), pos.get("y")], "facing": pl.get("facing")}
 
 
 @S.app.middleware("http")
@@ -174,6 +207,68 @@ async def stream_page():
 async def recent_events(n: int = 20):
     """Polling fallback for the stream page: last n narration/milestone events."""
     return {"events": list(S._event_history)[-n:]}
+
+
+@S.app.post("/action/traced")
+async def traced_action(req: S.ActionRequest):
+    """Like upstream /action but records per-action before/after and a_until result."""
+    S._ensure_emulator()
+    steps = []
+    executed = 0
+    try:
+        for a in req.actions:
+            async with _lock:  # one lock span per action: the idle ticker cannot move the game between the pose reads
+                before = await S._run_sync(_pose)
+                try:
+                    detail = await _execute_unlocked(a)
+                except ValueError as e:
+                    steps.append({"action": a, "error": str(e)})
+                    break
+                after = await S._run_sync(_pose)
+            steps.append({"action": a, "before": before, "after": after, "dialog": detail})
+            executed += 1
+        state_after = await S._run_sync(S._get_state_dict)
+        if S._active_session is not None and S._session_mgr is not None:
+            s = S._active_session.stats
+            s["actions"] = s.get("actions", 0) + executed
+            s["turns"] = s.get("turns", 0) + 1
+            S._session_mgr.save(S._active_session)
+        try:
+            png_bytes = await S._run_sync(S._get_screenshot_bytes)
+            screenshot_b64 = base64.b64encode(png_bytes).decode("ascii")
+        except Exception:
+            screenshot_b64 = None
+        await S.broadcast({
+            "type": "action",
+            "actions": req.actions,
+            "actions_executed": executed,
+            "state_after": state_after,
+        })
+        if screenshot_b64:
+            await S.broadcast({
+                "type": "screenshot",
+                "data": {"image": screenshot_b64, "format": "png"},
+            })
+        return {"success": True, "actions_executed": executed, "steps": steps, "state_after": state_after}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Action error: {e}")
+
+
+@S.app.get("/frame")
+async def get_frame():
+    """One consistent frame for the harness: state + screenshot + ascii."""
+    S._ensure_emulator()
+    async with _lock:
+        def _build():
+            state = S._get_state_dict()
+            png = S._get_screenshot_bytes()
+            b64 = base64.b64encode(png).decode("ascii")
+            ascii_text = (state.get("collision") or {}).get("ascii")
+            return {"state": state, "screenshot_b64": b64, "ascii": ascii_text}
+        data = await S._run_sync(_build)
+    return data
 
 
 @S.app.on_event("startup")
