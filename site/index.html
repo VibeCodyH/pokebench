@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#2dd4bf">
+  <meta name="description" content="LLMs play Pokémon. One 1,000-turn budget. See how far each model gets on the road to Brock, compare runs, and check the video.">
+  <title>PokéBench · Billions of parameters vs. one old man.</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to results</a>
+<svg class="sprite-defs" width="0" height="0" aria-hidden="true"><defs>
+    <symbol id="art-badge" viewBox="0 0 32 32"><path d="M9 2h14v4h5v7h3v10h-6v6H8v-5H2V12h4V6h3z" fill="#759b96"/><path d="M10 4h11v4h5v13h-5v6H9v-6H5v-8h5z" fill="#d6e7ce"/><path d="M12 9h8v3h4v9h-7v5H9V15h3z" fill="#a8c9b7"/><path d="M11 5h10v3H11zM6 13h4v7H6z" fill="#fff5ce"/></symbol>
+    <symbol id="art-pine" viewBox="0 0 100 130"><path d="M20 113h66v9H20z" fill="#143c3b" opacity=".3"/><path d="M44 79h16v41H44z" fill="#645c3b"/><path d="M51 79h9v41h-9z" fill="#2e4738"/><path d="M38 3h24v13h12v14h10v16H73v7h17v18h10v27H0V77h10V60h14V46H13V30h13V17h12z" fill="#245348"/><path d="M38 3h14v17h12v14H52v13h19v13H49v15h26v13H9V77h10V60h14V43H23V30h13V17h2z" fill="#3c7960"/><path d="M38 17h12v8H38zM22 62h13v8H22zM11 80h16v8H11z" fill="#78a677"/></symbol>
+    <symbol id="art-roundtree" viewBox="0 0 100 110"><path d="M23 94h70v9H23z" fill="#163f3c" opacity=".25"/><path d="M42 55h17v45H42z" fill="#716244"/><path d="M51 62h8v38h-8z" fill="#3e5140"/><path d="M28 5h40v10h15v14h11v36H81v14H65v8H30V76H14V64H5V32h13V17h10z" fill="#335f4a"/><path d="M28 5h34v10h16v17H66v14H52v17H25V53H13V32h12V18h3z" fill="#60885c"/><path d="M28 15h26v8H28zM17 30h15v10H17z" fill="#a2b67c"/></symbol>
+    <symbol id="art-rock" viewBox="0 0 100 70"><path d="M6 53h92v12H6z" fill="#53655a" opacity=".3"/><path d="M0 28h10V14h15V4h43v9h17v16h12v29H0z" fill="#668379"/><path d="M10 28h10V17h19V8h25v15H50v16H32v14H5V32h5z" fill="#a7bba0"/><path d="M55 27h22v8H55zM38 44h15v8H38z" fill="#4b6a66"/></symbol>
+    <symbol id="art-house" viewBox="0 0 180 150"><path d="M31 129h145v17H31z" fill="#233f4038"/><path d="M18 59h107v72H18z" fill="#ebdca9"/><path d="M125 59h39v61l-39 11z" fill="#bda67b"/><path d="M4 48h10V36h12V24h13V12h99v12h12v12h14v12h11v20H4z" fill="#a4584b"/><path d="M4 49h11V37h12V25h13V13h70v12H99v12H88v13H76v12H4z" fill="#dc8b64"/><path d="M21 44h62v5H21zM34 30h62v5H34zM6 58h70v6H6z" fill="#f1b181"/><path d="M35 79h23v25H35zM83 79h24v25H83z" fill="#335b59"/><path d="M39 83h7v9h-7zM87 83h7v9h-7z" fill="#9dbdaa"/><path d="M63 90h20v41H63z" fill="#574f42"/><path d="M76 110h3v4h-3z" fill="#f7dda2"/><path d="M17 122h44v9H17zM86 122h39v9H86z" fill="#c4b78d"/></symbol>
+    <symbol id="art-gym" viewBox="0 0 240 185"><path d="M29 163h208v16H29z" fill="#3f605244"/><path d="M13 57h181v107H13z" fill="#a1b297"/><path d="M194 57h36v95l-36 12z" fill="#667d70"/><path d="M0 47h14V31h15V17h164v14h18v16h25v26H0z" fill="#43655f"/><path d="M13 47h15V34h18V22h127v15h-16v14H13z" fill="#658c79"/><path d="M15 68h176v10H15z" fill="#d1d7ae"/><path d="M24 89h26v65H24zM150 89h27v65h-27z" fill="#d6d9ae"/><path d="M36 90h7v65h-7zM162 90h7v65h-7z" fill="#879e88"/><path d="M73 91h58v73H73z" fill="#2a4845"/><path d="M79 96h23v59H79z" fill="#496a60"/><path d="M108 96h17v59h-17z" fill="#38594f"/><path d="M62 159h80v9H62zM50 168h104v8H50z" fill="#bfcaaa"/><path d="M85 41h38v21H85z" fill="#193d3e"/><path d="M91 47h25v9H91z" fill="#bed9b8"/></symbol>
+    <symbol id="art-grass" viewBox="0 0 50 30"><path d="M4 14h5v7h7V9h6v12h7v-7h5v13H4zM33 4h5v7h7V0h5v18H33z" fill="currentColor"/></symbol>
+    <symbol id="art-trainer" viewBox="0 0 32 48"><path d="M5 41h25v5H5z" fill="#122b3c55"/><path d="M8 4h16v4h5v9H4V9h4z" fill="#e9765d"/><path d="M9 5h11v4H9z" fill="#ffd2a0"/><path d="M9 17h17v12H9z" fill="#edc18e"/><path d="M7 18h6v9H7z" fill="#334b47"/><path d="M7 29h18v11H7z" fill="#d7d9b4"/><path d="M5 30h6v9H5zM23 30h5v9h-5z" fill="#de795b"/><path d="M9 40h6v6H9zM20 40h6v6h-6z" fill="#243e50"/></symbol>
+    <symbol id="art-lamp" viewBox="0 0 35 100"><path d="M16 20h5v75h-5zM9 95h19v5H9z" fill="#334746"/><path d="M7 5h25v23H7z" fill="#3a5350"/><path d="M11 10h17v13H11z" fill="#fbe6a0"/><path d="M13 0h14v5H13z" fill="#334746"/></symbol>
+  <g id="art-trophy"><path d="M7 3h18v4h6v12h-5v5h-8v6h7v5H7v-5h7v-6H6v-5H1V7h6z" fill="#172a24"/><path d="M9 5h14v13l-4 4h-6l-4-4z" fill="#fff0a4"/><path d="M16 5h7v13l-4 4h-3z" fill="#d89125"/><path d="M4 10h3v7H4m21-7h3v7h-3M15 23h2v8h-2M9 32h14v1H9" fill="#ffdc69"/></g><pattern id="brick" width="100" height="48" patternUnits="userSpaceOnUse"><path d="M0 0h100M0 24h100M0 48h100M50 0v24M0 24v24M100 24v24" fill="none" stroke="#182f2b" stroke-width="3"/><path d="M4 4h40M54 28h40" stroke="#76816a" stroke-width="2" opacity=".24"/></pattern></defs></svg>
+<header class="masthead">
+  <a class="brand" href="#brock" aria-label="PokéBench, back to the championship wall">
+    <img src="pokebench-logo.png" width="48" height="48" alt="" class="brand-mark">
+    <span><span class="wordmark">PokéBench<span>_</span></span><span class="tagline">Billions of parameters vs. one old man.</span></span>
+  </a>
+  <nav class="page-nav" aria-label="About the benchmark"><a href="#methodology">Methodology</a><a href="#timeline">Timeline</a></nav>
+  <div class="header-controls">
+    <button id="depth-toggle" class="depth-control" aria-pressed="true">DEPTH ON</button>
+    <div class="view-switch" role="group" aria-label="Leaderboard view">
+      <button id="journey-button" aria-pressed="true" aria-controls="journey-view"><span aria-hidden="true">↟</span> JOURNEY</button>
+      <button id="table-button" aria-pressed="false" aria-controls="table-view"><span aria-hidden="true">▦</span> TABLE</button>
+    </div>
+  </div>
+</header>
+<div id="sample-banner" class="sample-banner" hidden><strong>SAMPLE DATA — not real results</strong><span class="sample-badge">ILLUSTRATIVE DATA</span><button id="real-data" class="text-button">Back to real results ↗</button></div>
+<main id="main" tabindex="-1">
+  <section id="data-state" class="data-state" aria-live="polite"><p>Checking the field…</p></section>
+  <div id="journey-view">
+    <section id="brock" class="station gym" aria-labelledby="brock-title" data-station="brock">
+      <div class="gym-art" aria-hidden="true"><svg class="far" viewBox="0 0 1440 1040" preserveAspectRatio="xMidYMid slice"><rect width="1440" height="1040" fill="#38443c"/><rect y="65" width="1440" height="665" fill="url(#brick)"/><path d="M0 129h1440M0 647h1440M0 663h1440" stroke="#73816b" stroke-width="8"/><path d="M0 654h1440" stroke="#1e312a" stroke-width="8"/><path d="M0 702h1440v338H0z" fill="#6e7861"/><path d="M0 711h1440M0 769h1440M0 853h1440M0 968h1440M0 702L-300 1040M240 702L60 1040M480 702l-60 338M720 702v338M960 702l65 338M1200 702l180 338" fill="none" stroke="#455b4d" stroke-width="3"/><path d="M526 713h364l182 327H358z" fill="#9b6148"/><path d="M550 716h312l174 324H386z" fill="#b87d54"/><path d="M573 716l-155 324M840 716l165 324" stroke="#e6bb77" stroke-width="5"/></svg></div>
+      <div class="gym-content">
+        <div class="hero-heading"><div><p class="station-kicker gold">SUITE 1 · GEN 1 · RED · THE CEILING</p><h1 id="brock-title">The Boulder<br>Badge Club.</h1><p class="station-lede">A thousand turns. Eight milestones. One rock guy.<br>LLMs play Pokémon. Getting here is the benchmark.</p><a class="journey-cta" href="#pewter">Follow the trail of stuck models ↓</a></div><aside class="leader-banner" aria-label="Gym leader Brock, the final boss">
+            <div class="banner-top">GYM LEADER NO. 01</div><div class="banner-body">
+              <svg class="portrait" viewBox="0 0 100 100" role="img" aria-label="Pixel portrait of Brock"><path d="M12 88V73h12V61h49v12h14v27H12z" fill="#213e38"/><path d="M30 62h12v20H27v18H12V75h18zM63 62h11v13h13v25H71V82h-8z" fill="#8da45e"/><path d="M37 52h28v28H37z" fill="#bd8054"/><path d="M26 20h48v38H63v9H39v-9H26z" fill="#dbaa6f"/><path d="M28 23h10v34H28zM40 58h23v8H40z" fill="#be8158"/><path d="M20 20V9h13V0h10v8h9V0h10v9h15v12h8v16H71V25H58v-8H42v10H29v13H19V20z" fill="#2e3931"/><path d="M36 39h12v4H36zM60 39h12v4H60z" fill="#41382f"/><path d="M48 53h15v3H48z" fill="#825d46"/><path d="M43 80h19v20H43z" fill="#ce8858"/><path d="M0 92h100v8H0z" fill="#193a36"/></svg>
+              <strong>BROCK</strong><small>ROCK SOLID.<br>REASONING OPTIONAL.</small>
+            </div><i class="banner-pin" aria-hidden="true"></i>
+          </aside></div>
+        <div class="wall-heading"><h2>THE CHAMPIONSHIP WALL</h2><p id="gym-tally">— / — RUNS BEAT BROCK</p></div>
+        <div id="winners-wall" class="winners"></div>
+        <div class="gym-bottom"><span><svg class="trophy" viewBox="0 0 32 37" aria-hidden="true"><use href="#art-trophy"/></svg> BADGE EARNED</span><span><b class="red">×</b> STUCK HERE</span><span>BEST ↑ · START ↓</span></div>
+      </div>
+    </section>
+    <div id="stations"></div>
+  </div>
+  <section id="table-view" class="table-view content-width" aria-labelledby="table-title" hidden>
+    <p class="eyebrow">SUITE 1 · GEN 1 · RED</p><h1 id="table-title">Every run.<br>On the record.</h1><p class="section-lede">The same adventure, with a little less walking.</p>
+    <div class="table-toolbar">
+      <div class="field"><label for="provider-filter">Provider</label><select id="provider-filter"><option value="all">All providers</option><option value="local">Local (Ollama)</option><option value="api">API</option></select></div>
+      <div class="field"><label for="family-filter">Family</label><select id="family-filter"><option value="all">All families</option></select></div>
+      <div class="field"><label for="sort">Sort by</label><select id="sort"><option value="milestone">Furthest milestone</option><option value="turns">Fewest turns</option><option value="cost">Lowest cost</option><option value="newest">Newest run</option></select></div>
+      <p id="run-count" role="status"></p>
+    </div>
+    <div id="table-cards" class="card-grid"></div>
+    <p class="table-footnote">Rank = furthest milestone, then fewer turns. Tokens, cost and time are reported, not scored. FREE means no API spend; local hardware and electricity are excluded. Unreported values stay “—”.</p>
+  </section>
+  <section id="methodology" class="info-section content-width" aria-labelledby="methodology-title">
+    <p class="eyebrow">THE RULES OF THIS VERY SMALL MOUNTAIN</p><h2 id="methodology-title">Big brains. Same buttons.</h2>
+    <div class="method-grid"><div class="method-copy">
+      <p><strong>LLMs play Pokémon. Suite 1 = Pokémon Red (Gen 1).</strong> Same 1,000-turn budget, scored by furthest milestone; ceiling = beat Brock; tiebreaker = fewer turns. Tokens/cost/time reported, not scored.</p>
+      <p>Every run preserves prompt version, settings, execution route, dates, full turn log, and VOD — <strong>trust the video over the score.</strong> Inspect run opens the VOD when one is attached. A grey button means it is not available.</p>
+      <p>Milestones come from the harness’s game-state detector. This ladder ranks progress; it does not assert that every earlier checkpoint fired. Per-run maps mark the recorded checkpoints, and settings show their first-hit turns.</p>
+      <p>Compare like prompt versions and settings. In-game encounters and battle RNG can vary between runs. Local and API describe the execution provider, not a separate scoring league.</p>
+      <p><strong>This is the first suite.</strong> More generations may be added, with their own milestone ladders. Today’s results are Gen 1 only.</p>
+    </div><div class="milestone-board"><p class="eyebrow">THE GEN 1 LADDER · START → CEILING</p><ol id="method-milestones"></ol><p>1 turn = up to 6 button presses.<br>The 1,000-turn limit applies to every model.</p></div></div>
+  </section>
+  <section id="timeline" class="info-section content-width" aria-labelledby="timeline-title">
+    <p class="eyebrow">THE FIELD NOTES</p><h2 id="timeline-title">One run at a time.</h2><p class="section-lede">Run dates, newest first. Each attempt keeps its own place in the record.</p><div id="timeline-list"></div>
+  </section>
+  <noscript><p class="data-state">Enable JavaScript to load runs.json and explore the leaderboard. The benchmark rules above are available without it.</p></noscript>
+</main>
+<nav id="progress-rail" class="progress-rail" aria-label="Journey milestones"><p class="rail-heading">YOU ARE HERE</p><p id="rail-station">Brock’s Gym</p><ol id="rail-list" reversed></ol><p class="rail-foot">BEST ↑ · START ↓</p></nav>
+<footer class="footer"><span class="footer-wordmark">PokéBench<span>_</span></span><p>Independent project. Not affiliated with Nintendo, Game Freak, or The Pokémon Company.</p><a href="#brock">Back to the badge club ↑</a></footer>
+<aside id="compare-tray" class="compare-tray" aria-label="Selected runs" hidden><div><strong id="compare-count">0 / 4 SELECTED</strong><div id="compare-chips"></div></div><div class="tray-actions"><button id="compare-clear" class="text-button">Clear</button><button id="compare-open" class="button" disabled>Compare runs →</button></div></aside>
+<dialog id="compare-dialog" aria-labelledby="compare-title"><div class="dialog-heading"><div><p class="eyebrow">SAME GAME · SIDE BY SIDE</p><h2 id="compare-title">Compare runs</h2></div><button id="compare-close" class="button" autofocus>Close ×</button></div><p id="compare-sample" class="sample-note" hidden>SAMPLE DATA — not real results</p><p class="dialog-note">Milestone first, fewer turns second. Efficiency is reported separately.</p><div id="compare-table" class="compare-table" tabindex="0" role="region" aria-label="Scrollable run comparison"></div></dialog>
+<p id="announcer" class="sr-only" role="status" aria-live="polite"></p>
+</body>
+</html>
