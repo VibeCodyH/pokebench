@@ -64,6 +64,7 @@ PROMPT_VERSION = "v6"          # bump whenever SYSTEM changes; old runs keep the
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
+NUM_PREDICT = 8192          # ceiling on thinking+answer tokens per turn; a runaway ends in ~1 min, not the 600s timeout
 PROMPT_SHA = hashlib.sha256(SYSTEM.encode()).hexdigest()[:16]
 
 
@@ -98,7 +99,7 @@ def ask(model, think, system, user, image_b64):
         "model": model, "stream": False, "format": SCHEMA, "think": think, "keep_alive": "30m",
         "messages": [{"role": "system", "content": system},
                      {"role": "user", "content": user, "images": [image_b64]}],
-        "options": {"num_ctx": NUM_CTX, "temperature": TEMPERATURE},
+        "options": {"num_ctx": NUM_CTX, "temperature": TEMPERATURE, "num_predict": NUM_PREDICT},
     }, timeout=600)
     r.raise_for_status()
     body = r.json()
@@ -138,7 +139,7 @@ def write_summary(artifact_dir, run_id, model, run_name, think, tracker, turns_u
         "prompt_version": PROMPT_VERSION, "prompt_sha": PROMPT_SHA,
         "harness_version": HARNESS_VERSION, "execution_route": "ollama-local",
         "harness_git_sha": harness_git_sha, "harness_files_sha": harness_files_sha, "frames_saved": frames_saved,
-        "think_level": think, "num_ctx": NUM_CTX, "temperature": TEMPERATURE,
+        "think_level": think, "num_ctx": NUM_CTX, "temperature": TEMPERATURE, "num_predict": NUM_PREDICT,
         "allowed_actions": sorted(ALLOWED),
         "run_date": time.strftime("%Y-%m-%d"), "model_release_date": None,  # filled via models.yaml (phase 2)
         "model_params": "27B", "quant": "Q4_K_M",

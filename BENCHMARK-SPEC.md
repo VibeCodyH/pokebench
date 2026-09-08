@@ -20,6 +20,11 @@ Inspiration: BuseyBench (leaderboard of model runs) — but our scoring is **obj
 - Why not the others: **time** just benchmarks the 3090 (a fast dumb model would "win").
   **tokens** are unfair across providers (hidden reasoning tokens, big-context re-reads) —
   good as a cost column, bad as the gate.
+- **What the harness may fix:** anything that *misled the model about the game* (a map that
+  showed unreachable tiles as walkable, dialog text she could not read, a skip-text action that
+  quit early). Never what she should be tracking herself (quest step, where she has been, what
+  she already triggered). Game info yes, benchmark-step info no. Per-turn output is capped at
+  `num_predict` 8192 for every model; a reasoning runaway ends there, not at the 600s timeout.
 
 ## 0. Eligibility
 
@@ -75,7 +80,7 @@ A score is worthless without the evidence behind it. Every run preserves, and th
 - **Prompt version + hash** — the exact system prompt (versioned; runs are only apples-to-apples
   at the same `prompt_version`). Bump the version when the prompt changes; old runs keep theirs.
 - **Tool policy** — the allowed action set (press/walk/etc.) + harness_version.
-- **Settings** — think level, num_ctx, temperature, turn budget.
+- **Settings** — think level, num_ctx, temperature, num_predict (per-turn output ceiling, 8192), turn budget.
 - **Execution route** — how the model was called: `ollama-local`, `anthropic-api`, `openai-api`,
   `google-api`, or `manual`. Labeled because surfaces behave differently (Busey's point).
 - **Dates** — run_date AND model_release_date (leaderboard "newest/oldest" sorts by *release*
