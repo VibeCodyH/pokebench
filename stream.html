@@ -78,9 +78,10 @@
   #party{flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:6px;min-width:0}
   .mini-mon{border:1.5px solid var(--ink);border-radius:6px;background:var(--paper);padding:4px 6px 4px;min-height:34px;display:flex;flex-direction:column;gap:3px;justify-content:center;min-width:0;overflow:hidden}
   .mini-mon.empty{border-style:dashed;opacity:.35;display:grid;place-items:center;font:800 12px var(--mono);color:var(--ink);min-height:34px}
-  .mini-mon .mn{font:800 9px var(--mono);display:flex;justify-content:space-between;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mini-mon .mn span:first-child{overflow:hidden;text-overflow:ellipsis}
-  .mini-mon .mn .lv{color:#008577;flex:none}
+  .mini-mon .mn{font:800 9px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini-mon .hp{display:flex;align-items:center;gap:5px}
+  .mini-mon .hp .lv{font:800 9px var(--mono);color:#008577;flex:none}
+  .mini-mon .hp .hpbar{flex:1;min-width:0}
   .hpbar{height:5px;border-radius:99px;background:#e9e6d6;overflow:hidden;border:1px solid #b8b5a8}
   .hpbar i{display:block;height:100%;border-radius:99px}
   /* field log 318px */
@@ -252,8 +253,8 @@ function renderParty(party){
     if(!m){ slots.push('<div class="mini-mon empty">—</div>'); continue; }
     const pct=m.max_hp?Math.max(0,Math.min(100,100*m.hp/m.max_hp)):0;
     let col='#34a853'; if(pct<25) col='#e05a33'; else if(pct<55) col='#e8b84b';
-    slots.push(`<div class="mini-mon"><div class="mn"><span>${esc(m.nickname||m.species)}</span><span class="lv">Lv.${esc(m.level)}</span></div>
-      <div class="hpbar"><i style="width:${pct}%;background:${col}"></i></div></div>`);
+    slots.push(`<div class="mini-mon"><div class="mn">${esc(m.nickname||m.species)}</div>
+      <div class="hp"><span class="lv">L${esc(m.level)}</span><div class="hpbar"><i style="width:${pct}%;background:${col}"></i></div></div></div>`);
   }
   $('party').innerHTML=slots.join('');
 }
