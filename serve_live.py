@@ -170,10 +170,39 @@ async def _a_until_dialog_end() -> dict:
     return {"presses": presses, "stop_reason": stop_reason, "text": _squash(said)[:30]}
 
 
+_SETTLE_OPEN_TICKS = 10  # 10 x 6 frames = 1 s for a box to appear after a press before we give up
+_SETTLE_CAP_TICKS = 40   # 40 x 6 frames = 4 s max for the text to finish printing
+
+
+async def _settle_text() -> None:
+    """After a button press, let the game finish drawing before anyone reads the screen.
+    Measured 2026-09-08 from a save state next to Oak's aide: press_a -> the frame captured right
+    after shows NO box; the line prints over the next 1-3 s of real time. The harness read the
+    empty frame, the model pressed A again and dismissed a line it never saw (12-turn loop in the
+    lab). Upstream's dialog.active stays False with a full box on screen, so we watch the tiles:
+    done when the box text has not changed for 30 frames, or no box showed up within 1 s."""
+    stable, last = 0, None
+    for i in range(_SETTLE_CAP_TICKS):
+        await S._run_sync(S._emulator.tick, 6)
+        if not _dialog_open():
+            if i >= _SETTLE_OPEN_TICKS:
+                return
+            continue
+        line = _box_lines()
+        stable = stable + 1 if (line and line == last) else 0
+        if stable >= 5:
+            return
+        last = line
+
+
 async def _execute_unlocked(action_str: str):
-    if action_str.strip().lower() == "a_until_dialog_end":
+    a = action_str.strip().lower()
+    if a == "a_until_dialog_end":
         return await _a_until_dialog_end()
-    return await _orig_execute(action_str)
+    res = await _orig_execute(action_str)
+    if a.startswith(("press_", "hold_")):
+        await _settle_text()
+    return res
 
 
 async def _locked_execute(action_str: str):
