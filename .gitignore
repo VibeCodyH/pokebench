@@ -19,3 +19,4 @@ screen.png
 screen-big.png
 model-view.png
 site/runs.json
+.playwright-cli/
