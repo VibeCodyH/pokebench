@@ -21,6 +21,12 @@ Inspiration: BuseyBench (leaderboard of model runs) — but our scoring is **obj
   **tokens** are unfair across providers (hidden reasoning tokens, big-context re-reads) —
   good as a cost column, bad as the gate.
 
+## 0. Eligibility
+
+**Vision-capable models only.** The harness sends a screenshot every turn and the game's text and sprites are
+read from it. A text-only model would be playing a different game (ASCII map + SCREEN TEXT alone), so it does not
+go on the same board. Candidate list: `docs/model-corpus.md`.
+
 ## 1. Milestone ladder (auto-detected from RAM — no human judging)
 
 Ordered checkpoints; each detected from game state we already read. Furthest reached = score.
