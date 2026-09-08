@@ -86,6 +86,52 @@ def _menu_open() -> bool:
     return _BOX_CORNER in raw
 
 
+_TILEMAP = 0xC3A0
+_TEXT_ROWS = (14, 16)  # the two text lines of the standard box
+_red.GEN1_ENCODING.setdefault(0xBA, "é")  # POKéMON; upstream table lacks it
+
+
+def _squash(lines):
+    """Text prints letter by letter and scrolls up a line at a time, so samples every 30 frames
+    are prefixes of each other. Keep the longest version of each line."""
+    out = []
+    for t in lines:
+        if not t:
+            continue
+        if out and t.startswith(out[-1]):
+            out[-1] = t
+        elif out and out[-1].startswith(t):
+            continue
+        else:
+            out.append(t)
+    return out
+
+
+def _screen_text() -> str:
+    """Every word on screen right now, decoded from wTileMap with the game's own charmap
+    (letters are >= 0x80; overworld tiles are < 0x60 so they decode to nothing). This is
+    what the model would read from the screenshot, as text: dialog, menus, battle HUD."""
+    raw = S._emulator.read_range(_TILEMAP, 18 * 20)
+    rows = []
+    for r in range(18):
+        line = "".join(_red.GEN1_ENCODING.get(b, "") for b in raw[r * 20:(r + 1) * 20])
+        line = " ".join(line.split())
+        if line:
+            rows.append(line)
+    return " / ".join(rows)
+
+
+def _box_lines() -> str:
+    raw = S._emulator.read_range(_TILEMAP, 18 * 20)
+    out = []
+    for r in _TEXT_ROWS:
+        line = "".join(_red.GEN1_ENCODING.get(b, "") for b in raw[r * 20 + 1:r * 20 + 19])
+        line = " ".join(line.split())
+        if line:
+            out.append(line)
+    return " ".join(out)
+
+
 async def _a_until_dialog_end() -> dict:
     """Press A until the text box is gone (max 15) — returns {presses, stop_reason}.
     History: upstream checked nonexistent 'dialog_active'; v2 screenshot-signature loop stopped on first
@@ -97,10 +143,15 @@ async def _a_until_dialog_end() -> dict:
         return {"presses": 0, "stop_reason": "menu"}
     presses = 0
     stop_reason = "capped"
+    said = [_box_lines()]  # transcript of what she skipped, so the words reach her turn history
     for _ in range(_A_UNTIL_CAP):
         await S._run_sync(S._emulator.press, "a", 8)  # 8-frame hold = reliable register
         await S._run_sync(S._emulator.tick, 30)
         presses += 1
+        if _dialog_open():
+            line = _box_lines()
+            if line and line != said[-1]:
+                said.append(line)
         if not _dialog_open():
             # Scripted scenes (intro, Oak's Lab) close the box, move sprites, then open the next
             # box on their own. Measured 2026-09-08: the helper returned "closed" after 1-2 presses
@@ -116,7 +167,7 @@ async def _a_until_dialog_end() -> dict:
         elif _menu_open():
             stop_reason = "menu"
             break
-    return {"presses": presses, "stop_reason": stop_reason}
+    return {"presses": presses, "stop_reason": stop_reason, "text": _squash(said)[:30]}
 
 
 async def _execute_unlocked(action_str: str):
@@ -277,7 +328,7 @@ async def get_frame():
             png = S._get_screenshot_bytes()
             b64 = base64.b64encode(png).decode("ascii")
             ascii_text = (state.get("collision") or {}).get("ascii")
-            return {"state": state, "screenshot_b64": b64, "ascii": ascii_text}
+            return {"state": state, "screenshot_b64": b64, "ascii": ascii_text, "screen_text": _screen_text()}
         data = await S._run_sync(_build)
     return data
 

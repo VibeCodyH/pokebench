@@ -27,7 +27,7 @@ RUNS_DIR = os.path.join(HERE, "runs")
 
 SYSTEM = """You are Qwen, a local AI playing Pokémon Red live on stream. You get the game state read from RAM, an ASCII walkability map, and a screenshot. The game keeps running in real time between turns (NPCs move, animations finish), so the screenshot is a moment in time; each turn only 1-6 button presses happen, so make them count.
 
-How the game works: overworld movement is one tile per walk_X. Talk to people/signs with press_a while facing them. DOORS, STAIRS, and building entrances/exits are WARP tiles: you trigger them just by WALKING ONTO them, never with A. A warp tile often shows as `#` (blocked) on the ASCII map even though you can step onto it, so trust the screenshot for doors. IMPORTANT: if you keep re-entering the same building, it is because you are walking back onto its door tile — after leaving a building, step AWAY from the door (usually DOWN and to the side) before heading to your goal, or you will loop straight back inside. In menus and dialog, press_a advances/confirms, press_b cancels. Use a_until_dialog_end to skip through long text. ★The STATE does NOT report whether a dialog is open, so TRUST THE SCREENSHOT: if you see a text box, any sentence of text, or a ▼/▶ arrow at the bottom, a dialog IS open — clear it with a_until_dialog_end before anything else, and do not try to walk until it is gone. The title/intro screens need press_start then press_a. Name entry: choose a preset name when offered (press_a on it) instead of typing.
+How the game works: overworld movement is one tile per walk_X. Talk to people/signs with press_a while facing them. DOORS, STAIRS, and building entrances/exits are WARP tiles: you trigger them just by WALKING ONTO them, never with A. A warp tile often shows as `#` (blocked) on the ASCII map even though you can step onto it, so trust the screenshot for doors. IMPORTANT: if you keep re-entering the same building, it is because you are walking back onto its door tile — after leaving a building, step AWAY from the door (usually DOWN and to the side) before heading to your goal, or you will loop straight back inside. In menus and dialog, press_a advances/confirms, press_b cancels. Use a_until_dialog_end to skip through long text. ★SCREEN TEXT below is exactly what is written on screen right now, read from the game's memory. If a text box is open, READ IT FIRST: people tell you what to do next (if someone says "don't leave yet", stay and talk to them; if the text names a place or a person, that is your lead). Then clear the box with a_until_dialog_end; whatever it skipped past is quoted back to you in RECENT TURNS. You cannot walk while a text box is open. The title/intro screens need press_start then press_a. Name entry: choose a preset name when offered (press_a on it) instead of typing.
 
 Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. `.` walkable, `#` blocked (but door/warp tiles read as `#` and are still steppable). ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.`. If the tile directly ABOVE `@` is `#`, you CANNOT go north this turn regardless of what tiles further up look like — walk left or right along the wall to find the one `.` opening, then go up through it. up = row-1, down = row+1, left = col-1, right = col+1. Never plan a route through `#` unless the screenshot shows a door, stairs or mat on that exact tile. Doors and warps are usually on the edge of buildings; the map does not show them, use the screenshot. Your memory of the Gen 1 maps is unreliable: treat any recalled layout ('the stairs are bottom-left', 'the Pokémon Center is north') as a guess until the map or screenshot confirms it.
 
@@ -60,7 +60,7 @@ ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk
            "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 
 # Provenance (BENCHMARK-SPEC.md §2b — same prompt, same rules, public receipts).
-PROMPT_VERSION = "v4"          # bump whenever SYSTEM changes; old runs keep their version
+PROMPT_VERSION = "v5"          # bump whenever SYSTEM changes; old runs keep their version
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
@@ -251,6 +251,7 @@ def main():
             frame = requests.get(f"{S}/frame", timeout=20).json()
             state = frame["state"]
             amap = build_map(state) or frame.get("ascii") or "(no map: in battle or menu)"
+            screen_text = frame.get("screen_text") or "(nothing written on screen)"
             png_bytes = base64.b64decode(frame["screenshot_b64"])
             screenshot_sha256 = hashlib.sha256(png_bytes).hexdigest()
             if args.no_frames:
@@ -283,7 +284,7 @@ def main():
             break
         stuck = f"\nWARNING: position unchanged for {same_pos} turns. Do something different." if same_pos >= 3 else ""
         user = (f"YOUR PRIOR NOTES (you wrote these on earlier turns; they are plans and guesses, NOT verified observations — the STATE, map and screenshot below are the truth):\n{notes}\n\nRECENT TURNS:\n" + "\n".join(history[-12:]) +
-                f"\n\nSTATE:\n{compact(state)}\n\nWALKABILITY MAP (you are @ at E5):\n{amap}{stuck}\n\nThe screenshot is attached. Take your turn.")
+                f"\n\nSTATE:\n{compact(state)}\n\nSCREEN TEXT (words on screen right now):\n{screen_text}\n\nWALKABILITY MAP (you are @ at E5):\n{amap}{stuck}\n\nThe screenshot is attached. Take your turn.")
         t0 = time.time()
         try:
             content_str, thinking, tokens = ask(args.model, args.think, SYSTEM, user, img)
@@ -349,6 +350,9 @@ def main():
             for st in steps:
                 if isinstance(st.get("dialog"), dict):
                     tail_parts.append(f" dialog: {st['dialog'].get('stop_reason')} after {st['dialog'].get('presses')} A")
+                    said = " | ".join(st["dialog"].get("text") or [])
+                    if said:
+                        tail_parts.append(f' said: "{said[:400]}"')
                 if "error" in st:
                     tail_parts.append(f" action error: {st['error']}")
         except Exception as e:
@@ -363,7 +367,7 @@ def main():
                 pass
         history.append(history_line)
         with open(log_path, "a") as f:
-            f.write(json.dumps({"turn": turn, "prompt_version": PROMPT_VERSION, "user_message": user, "screenshot_sha256": screenshot_sha256, "frame_file": frame_file, "state": state, "thinking": thinking, "plan": plan, "plan_actions_raw": plan_actions_raw, "actions": actions, "fallback_reason": fallback_reason, "steps": steps, "result": result_tail, "model_s": dt, "tokens": tokens}) + "\n")
+            f.write(json.dumps({"turn": turn, "prompt_version": PROMPT_VERSION, "user_message": user, "screenshot_sha256": screenshot_sha256, "frame_file": frame_file, "state": state, "screen_text": screen_text, "thinking": thinking, "plan": plan, "plan_actions_raw": plan_actions_raw, "actions": actions, "fallback_reason": fallback_reason, "steps": steps, "result": result_tail, "model_s": dt, "tokens": tokens}) + "\n")
         if turn % args.save_every == 0:
             try:
                 requests.post(f"{S}/save", json={"name": run_id}, timeout=30)
