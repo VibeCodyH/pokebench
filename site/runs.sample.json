@@ -27,13 +27,13 @@
         "turn": 68
       },
       {
-        "key": "route_1",
-        "label": "Reached Route 1",
+        "key": "got_starter",
+        "label": "Got a starter",
         "turn": 136
       },
       {
-        "key": "got_starter",
-        "label": "Got a starter",
+        "key": "route_1",
+        "label": "Reached Route 1",
         "turn": 204
       },
       {
@@ -97,13 +97,13 @@
         "turn": 82
       },
       {
-        "key": "route_1",
-        "label": "Reached Route 1",
+        "key": "got_starter",
+        "label": "Got a starter",
         "turn": 164
       },
       {
-        "key": "got_starter",
-        "label": "Got a starter",
+        "key": "route_1",
+        "label": "Reached Route 1",
         "turn": 247
       },
       {
@@ -167,13 +167,13 @@
         "turn": 143
       },
       {
-        "key": "route_1",
-        "label": "Reached Route 1",
+        "key": "got_starter",
+        "label": "Got a starter",
         "turn": 286
       },
       {
-        "key": "got_starter",
-        "label": "Got a starter",
+        "key": "route_1",
+        "label": "Reached Route 1",
         "turn": 429
       },
       {
@@ -227,13 +227,13 @@
         "turn": 167
       },
       {
-        "key": "route_1",
-        "label": "Reached Route 1",
+        "key": "got_starter",
+        "label": "Got a starter",
         "turn": 333
       },
       {
-        "key": "got_starter",
-        "label": "Got a starter",
+        "key": "route_1",
+        "label": "Reached Route 1",
         "turn": 500
       },
       {
@@ -282,18 +282,18 @@
         "turn": 250
       },
       {
-        "key": "route_1",
-        "label": "Reached Route 1",
+        "key": "got_starter",
+        "label": "Got a starter",
         "turn": 500
       },
       {
-        "key": "got_starter",
-        "label": "Got a starter",
+        "key": "route_1",
+        "label": "Reached Route 1",
         "turn": 700
       }
     ],
-    "furthest_key": "got_starter",
-    "furthest_label": "Got a starter",
+    "furthest_key": "route_1",
+    "furthest_label": "Reached Route 1",
     "furthest_index": 2,
     "beat_brock": false,
     "in_game_name": "AI",

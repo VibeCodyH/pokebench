@@ -48,8 +48,8 @@
   };
   const milestoneList = [
     {key: 'left_house', label: 'Left the house', short: 'Left house', station: 'pallet'},
-    {key: 'route_1', label: 'Reached Route 1', short: 'Route 1', station: 'route-one'},
     {key: 'got_starter', label: 'Got a starter', short: 'Got starter', station: 'route-one'},
+    {key: 'route_1', label: 'Reached Route 1', short: 'Route 1', station: 'route-one'},
     {key: 'viridian_city', label: 'Reached Viridian City', short: 'Viridian City', station: 'viridian'},
     {key: 'viridian_forest', label: 'Entered Viridian Forest', short: 'Viridian Forest', station: 'forest'},
     {key: 'pewter_city', label: 'Reached Pewter City', short: 'Pewter City', station: 'pewter'},

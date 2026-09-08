@@ -27,8 +27,8 @@ def _boulder_badge(state) -> bool:
 # Ordered ladder: (key, label, predicate). Index = progression rank.
 MILESTONES = [
     ("left_house",       "Left the house",        lambda s: _map_id(s) not in RED_HOUSE_MAPS and _map_id(s) != -1),
-    ("route_1",          "Reached Route 1",       lambda s: _map_id(s) == 12),
     ("got_starter",      "Got a starter",         lambda s: _party_count(s) >= 1),
+    ("route_1",          "Reached Route 1",       lambda s: _map_id(s) == 12),  # Oak stops you on Pallet's last row; Route 1 comes AFTER the starter
     ("viridian_city",    "Reached Viridian City", lambda s: _map_id(s) == 1),
     ("viridian_forest",  "Entered Viridian Forest", lambda s: _map_id(s) == 50),
     ("pewter_city",      "Reached Pewter City",   lambda s: _map_id(s) == 2),

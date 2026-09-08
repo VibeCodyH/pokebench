@@ -28,8 +28,8 @@ Ordered checkpoints; each detected from game state we already read. Furthest rea
 | # | milestone | detection signal |
 |---|-----------|------------------|
 | 1 | Left house | map_id leaves Red's House |
-| 2 | Reached Route 1 | map_id == Route 1 |
-| 3 | Got starter | party count ≥ 1 |
+| 2 | Got starter | party count ≥ 1 |
+| 3 | Reached Route 1 | map_id == Route 1 (Oak intercepts on Pallet's last row, so this lands after the starter) |
 | 4 | Reached Viridian City | map_id == Viridian City |
 | 5 | Entered Viridian Forest | map_id == Viridian Forest |
 | 6 | Cleared Viridian Forest / reached Pewter | map_id == Pewter City |
