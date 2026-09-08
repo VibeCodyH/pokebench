@@ -1,0 +1,1288 @@
+run artifacts -> /app/runs/qwen3-8-27b-20260908_032822  (prompt v2/dc2a157bb6b5b7f6, ctx 65536)
+registered game session 'Unraid E2E' (fresh boot)
+
+=== turn 1 | map: Pallet Town  pos {'y': 0, 'x': 0}  facing down  money 0  badges [] | model 5s ===
+💭 The PyBoy boot screen is showing, so the game isn't at a controllable state yet. I'll wait for the title screen to appear before pressing start.
+  ▶ wait_60
+
+=== turn 2 | map: Pallet Town  pos {'y': 0, 'x': 0}  facing down  money 0  badges [] | model 4s ===
+💭 The screen is still the PyBoy boot/loading screen (black and white bands), not the title screen yet. The map is fully blocked, confirming the game hasn't started. I'll wait for the title screen to load before pressing start.
+  ▶ wait_60
+
+=== turn 3 | map: Pallet Town  pos {'y': 0, 'x': 0}  facing down  money 0  badges [] | model 3s ===
+💭 The screenshot shows a boot/intro screen, so I need to advance to the title/name screen before playing. Pressing Start then A should move the game forward.
+  ▶ press_start press_a
+
+=== turn 4 | map: Pallet Town  pos {'y': 0, 'x': 0}  facing down  money 0  badges [] | model 4s ===
+💭 Screen is blank, likely still on boot/title. Press Start and A to advance to the intro/name selection.
+  ▶ press_start press_a
+
+=== turn 5 | map: Pallet Town  pos {'y': 0, 'x': 0}  facing down  money 0  badges [] | model 4s ===
+💭 Still on the title screen. Press START to enter the intro sequence, then A to confirm.
+  ▶ press_start press_a
+
+=== turn 6 | map: Red's House 2F  pos {'y': 6, 'x': 3}  facing down  money 3000  badges [] | model 18s ===
+💭 I'm on Red's House 2F and need to find the stairs down before leaving the house. The walkability map is unhelpful, so I'll probe left/down where stairs are usually located.
+  ▶ walk_left walk_down walk_left walk_down
+
+=== turn 7 | map: Red's House 2F  pos {'y': 6, 'x': 3}  facing down  money 3000  badges [] | model 5s ===
+💭 A dialog box is open (text with ▼ arrow), so I must clear it first with a_until_dialog_end before moving.
+  ▶ a_until_dialog_end
+
+=== turn 8 | map: Red's House 2F  pos {'y': 6, 'x': 3}  facing down  money 3000  badges [] | model 5s ===
+💭 Dialog is still open from the intro narration. I need to clear it before I can move. After that I'll head to the stairs to go back down to 1F and exit the house.
+  ▶ a_until_dialog_end
+
+=== turn 9 | map: Red's House 2F  pos {'y': 6, 'x': 3}  facing down  money 3000  badges [] | model 3s ===
+💭 A dialog is still open on 2F, so I need to clear it before moving. I'm on the second floor and must find the stairs down to leave the house and head north toward Route 1 for Oak.
+  ▶ a_until_dialog_end
+
+=== turn 10 | map: Red's House 2F  pos {'y': 6, 'x': 3}  facing down  money 3000  badges [] | model 9s ===
+💭 Screen is blank (transition/fade). I'm on 2F at (6,3). I need the stairs down to exit the house. Stairs on 2F are usually top-left. Let me move up and left to reach them.
+  ▶ walk_up walk_up walk_left walk_left
+
+=== turn 11 | map: Red's House 2F  pos {'y': 6, 'x': 3}  facing down  money 3000  badges [] | model 7s ===
+💭 A dialog box is open ('Right! So your name is...'). I must clear it before moving. Then I'll head to the stairs (top-left area, D3/D4) to go down to 1F.
+  ▶ a_until_dialog_end walk_up walk_up walk_left walk_left
+
+=== turn 12 | map: Red's House 2F  pos {'y': 6, 'x': 3}  facing down  money 3000  badges [] | model 28s ===
+💭 The screenshot shows the rival name text-entry screen, not a preset list. Since typing is not ideal, I'll try B to cancel/accept a default name and move past the intro.
+  ▶ press_b
+
+=== turn 13 | map: Red's House 2F  pos {'y': 6, 'x': 3}  facing down  money 3000  badges [] | model 27s ===
+💭 The screenshot shows the RIVAL'S NAME entry screen (free-text, not a preset list). I've been stuck here; the prior press_b did nothing. The only sensible confirm key is A, so I'll press A to accept the default/blank rival name and then clear any following dialog to advance the intro.
+  ▶ press_a a_until_dialog_end
+
+=== turn 14 | map: Red's House 2F  pos {'y': 6, 'x': 3}  facing down  money 3000  badges [] | model 9s ===
+💭 Stuck on the 2F intro/name screen for many turns; the white screen suggests a dialog or transition is still active. I'll confirm with A, cancel any lingering menu with B, then try to move down toward the stairs to exit the house.
+  ▶ press_a press_b walk_down
+
+=== turn 15 | map: Red's House 2F  pos {'y': 6, 'x': 3}  facing down  money 3000  badges [] | model 18s ===
+💭 A dialog box is open ('Your very own POKéMON'), which is why my movement didn't register. I'll clear it, then move up and left toward the stairs to exit the house and head north to trigger Oak.
+  ▶ a_until_dialog_end walk_up walk_left walk_up
+
+=== turn 16 | map: Red's House 2F  pos {'y': 5, 'x': 2}  facing up  money 3000  badges [] | model 13s ===
+💭 No dialog box visible. I'm in Red's House 2F and need to find the stairs down to exit. The stairs are in the lower-left area. I'll move down and left toward them.
+  ▶ walk_down walk_left walk_down walk_left
+
+=== turn 17 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 25s ===
+💭 I'm on Red's House 2F. The stairs down are a warp tile (shown as # on the map) below me. Walking onto them should take me to the 1F so I can exit and head north to trigger Oak.
+  ▶ walk_down
+
+=== turn 18 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing down  money 3000  badges [] | model 15s ===
+💭 I'm at the bottom-left of 2F next to a door/staircase visible in the screenshot. The stairs down are a warp tile. I'll step onto them to head to 1F.
+  ▶ walk_left walk_down
+
+=== turn 19 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing down  money 3000  badges [] | model 9s ===
+💭 I'm on 2F next to the staircase (white object on left). I need to walk onto it to go down to 1F, then exit the house and head north to Route 1 to trigger Oak.
+  ▶ walk_left
+
+=== turn 20 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 11s ===
+💭 I'm on Red's House 2F facing left, with the staircase (white object) directly to my west. Walking left onto it should warp me down to 1F. Then I'll exit and head north to trigger Oak.
+  ▶ walk_left
+
+=== turn 21 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 11s ===
+💭 I'm on Red's House 2F facing the white staircase object to my west. Stepping onto it should warp me down to 1F. The map marks it as # but it's a warp tile, so I trust the screenshot and walk left onto it.
+  ▶ walk_left
+
+=== turn 22 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 17s ===
+💭 I'm stuck on the 2F facing the left door; walking left repeatedly does nothing, so the staircase warp tile is likely one tile up-left. I'll step up to align with the door then walk left onto it to drop to 1F.
+  ▶ walk_up walk_left walk_left
+
+=== turn 23 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 12s ===
+💭 I'm at the left wall of Red's House 2F (col A). The staircase should be just below me; I'll walk down to reach it and drop to 1F.
+  ▶ walk_down
+
+=== turn 24 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing down  money 3000  badges [] | model 23s ===
+💭 I'm on Red's House 2F. The white door/rectangle to my left is the stairs-down warp (shown as # on map but steppable). I'll walk left onto it to descend to 1F, then exit the house to head north toward Route 1 to trigger Oak.
+  ▶ walk_left wait_60 walk_left
+
+=== turn 25 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 13s ===
+💭 The stairs-down door is directly to my left (west) in the screenshot. I've been stuck; let me clear any hidden dialog with A, then step left onto the warp to reach 1F.
+  ▶ a_until_dialog_end walk_left walk_left
+
+=== turn 26 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 15s ===
+💭 I'm at Red's House 2F facing the white stairs-down door on my left. I've been stuck; the door tile reads # on the map but is a warp I can step onto. I'll step left onto it to drop to 1F.
+  ▶ walk_left
+
+=== turn 27 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 29s ===
+💭 I'm stuck at the same spot on 2F; the stairs-down door is the white door on my left in the screenshot. The map shows left as blocked, so I'll reposition by going up first, then approach the door from a different angle to step onto the warp tile.
+  ▶ walk_up walk_left walk_left walk_down
+
+=== turn 28 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing down  money 3000  badges [] | model 23s ===
+💭 I've been stuck at the same position for many turns. The white stairs-down door is clearly visible to my left in the screenshot. Let me try approaching it from a different angle - walk up first, then left onto the door tile, which should warp me to 1F.
+  ▶ walk_up walk_left walk_down walk_left press_a
+
+=== turn 29 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 15s ===
+💭 I'm in the 2F bedroom facing the white stairs-down door on my left. I've been stuck, so I'll step left onto the door warp tile and wait to let it register.
+  ▶ walk_left wait_60 walk_left
+
+=== turn 30 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 24s ===
+💭 The stairs (white rectangle) are to my left but repeated walk_left fails. Let me shift up one tile to align with the door row, then step left onto it to trigger the warp down to 1F.
+  ▶ walk_up walk_left
+
+=== turn 31 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 19s ===
+💭 I'm in the 2F bedroom; the white stairs/door is immediately to my left in the screenshot. I've been stuck, so I'll try walking left onto the door tile to warp down to 1F.
+  ▶ walk_left
+
+=== turn 32 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 18s ===
+💭 I'm stuck on the 2F; the staircase (white rect) is just left of me but left tile reads blocked. Let me reposition: walk down then left to align with the stairs tile and step onto it.
+  ▶ walk_down walk_left walk_left
+
+=== turn 33 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 8s ===
+💭 I'm on the 2F next to the white stairs/door rectangle on my left. I need to walk onto it to descend to 1F. Facing left, so walk_left should step onto the warp tile.
+  ▶ walk_left
+
+=== turn 34 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 8s ===
+💭 I'm on 2F facing left, right next to the white stairs/door warp rect. I need to step left onto it to descend to 1F, then exit the house and head north to Route 1 grass to trigger Oak.
+  ▶ walk_left wait_60 walk_left
+
+=== turn 35 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 6s ===
+💭 I'm at the left edge of 2F next to the white stairs warp, facing left. Stepping left should trigger the warp to 1F.
+  ▶ walk_left
+
+=== turn 36 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 9s ===
+💭 I'm standing right next to the white stairs on my left (a warp tile to 1F). I need to step left onto it to descend. Facing left already, so walk_left should trigger the warp.
+  ▶ walk_left
+
+=== turn 37 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 21s ===
+💭 Stuck at 2F left wall; the white stairs are just left of me. Repeated walk_left fails, so I'll nudge up to align with the stairs opening then step left onto the warp tile to drop to 1F.
+  ▶ walk_up walk_left walk_left wait_60
+
+=== turn 38 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 6s ===
+💭 Facing left toward the white down-stairs on 2F. Walking left should trigger the warp to 1F.
+  ▶ walk_left
+
+=== turn 39 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 15s ===
+💭 I'm stuck on Red's House 2F and can't find the down-stairs. Left and down-left are blocked. Let me move right and down to locate the stair tile.
+  ▶ walk_right walk_right walk_down walk_left
+
+=== turn 40 | map: Red's House 2F  pos {'y': 7, 'x': 2}  facing left  money 3000  badges [] | model 15s ===
+💭 I'm in Red's House 2F at E5, need to find the down-stairs to leave. The room is small; left (D5) and up (E4) are walkable. I'll explore left and up to locate the stairs warp tile.
+  ▶ walk_left walk_up walk_left wait_60
+
+=== turn 41 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 9s ===
+💭 I can see the white door/exit on the left side of the room in the screenshot. I'm facing left at E5. The tile to my left (D5) reads as # but is likely the warp to 1F. Let me walk onto it.
+  ▶ walk_left
+
+=== turn 42 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 96s ===
+💭 I am stuck at Red's House 2F and cannot enter the door to the left despite multiple attempts. I will try walking down to test if the door is at a lower position (D6), then walk up and left again to test the original position (D5). This should help me locate the correct warp tile.
+  ▶ walk_down walk_left walk_up walk_left
+
+=== turn 43 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 24s ===
+💭 I'm on 2F facing the white door to my left but walking left keeps failing, meaning the door tile is one row below me. I'll step down to align with the door, then walk left onto it to warp to 1F.
+  ▶ walk_down walk_left wait_60
+
+=== turn 44 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 8s ===
+💭 I'm standing right at the white door on my left in the screenshot. Walking left should trigger the warp to 1F. Let me step onto it.
+  ▶ walk_left
+
+=== turn 45 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 15s ===
+💭 I'm at the 2F white door; stepping left should warp me to 1F. I've been stuck, so I'll walk left and wait to let the warp register.
+  ▶ walk_left wait_60
+
+=== turn 46 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 8s ===
+💭 I'm at the 2F white door which is to my left. Walking left should warp me to 1F. Previous attempts stalled, so I'll step left and wait to let the warp register.
+  ▶ walk_left wait_60 walk_left
+
+=== turn 47 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 13s ===
+💭 I'm at the white exit door on the left of Red's house 2F, facing left. Walking left should warp me down to 1F. I've been stuck, so I'll commit to a couple left steps with a wait to let the warp register.
+  ▶ walk_left wait_60 walk_left
+
+=== turn 48 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 43s ===
+💭 Repeated walk_left fails because the tile left is blocked per the map (the white rectangle is a window/wall, not the door). The map shows I can move UP or RIGHT from E5. I'll explore up and right to find the actual stairs/door to 1F.
+  ▶ walk_up walk_up walk_right walk_right wait_60
+
+=== turn 49 | map: Red's House 2F  pos {'y': 5, 'x': 2}  facing right  money 3000  badges [] | model 29s ===
+💭 Still stuck on Red's House 2F. The white rectangle at lower-left in the screenshot may be the stairs down. I'll step down to E6, left to D6, then down to D7 and wait to see if any is a warp tile to 1F.
+  ▶ walk_down walk_left wait_60 walk_down wait_60
+
+=== turn 50 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing down  money 3000  badges [] | model 19s ===
+💭 I've been wandering the 2F for many turns without finding stairs. The stairs are a warp tile (shown as #). Let me systematically explore the upper-left corner of the room where the 2F stairs typically are, since the bottom is all blocked.
+  ▶ walk_up walk_up walk_left walk_left
+
+=== turn 51 | map: Red's House 2F  pos {'y': 5, 'x': 0}  facing left  money 3000  badges [] | model 16s ===
+💭 I keep bouncing in the same corner. The 2F stairs are a warp tile likely along the bottom or right edge. Let me systematically scan the walkable area: go down to row 7 then sweep right to find the staircase warp.
+  ▶ walk_down walk_right walk_right walk_right walk_right
+
+=== turn 52 | map: Red's House 2F  pos {'y': 5, 'x': 2}  facing right  money 3000  badges [] | model 19s ===
+💭 I'm stuck looping on 2F. The stairs down in Red's house 2F are at the top-left corner of the room. Let me walk up to the top row and left to the leftmost walkable column (C1) to find the hidden stairs warp tile.
+  ▶ walk_up walk_up walk_up walk_up walk_left walk_left
+
+=== turn 53 | map: Red's House 2F  pos {'y': 2, 'x': 0}  facing left  money 3000  badges [] | model 15s ===
+💭 I am on the 2F of Red's house. I need to find the stairs down to the 1F to eventually leave the house and head to Route 1. The stairs are usually in the bottom-left corner of the 2F room. I will walk down to reach them.
+  ▶ walk_down walk_down walk_down
+
+=== turn 54 | map: Red's House 2F  pos {'y': 5, 'x': 0}  facing down  money 3000  badges [] | model 11s ===
+💭 On 2F at left wall. Stairs are likely just below me (warp reads as #). Try walking down to trigger them.
+  ▶ walk_down wait_60 walk_down wait_60
+
+=== turn 55 | map: Red's House 2F  pos {'y': 5, 'x': 0}  facing down  money 3000  badges [] | model 7s ===
+💭 I'm on 2F at A5. The stairs/door (white rectangle) is just below me around A6-A7. I'll walk down onto it to descend to 1F.
+  ▶ walk_down walk_down wait_60
+
+=== turn 56 | map: Red's House 2F  pos {'y': 5, 'x': 0}  facing down  money 3000  badges [] | model 8s ===
+💭 I'm stuck on the 2F near the left window. I need to find the stairs to descend. The stairs in Red's house 2F are usually on the right side. Let me move right to explore toward the stairs.
+  ▶ walk_right walk_right walk_right walk_up walk_up
+
+=== turn 57 | map: Red's House 2F  pos {'y': 3, 'x': 2}  facing up  money 3000  badges [] | model 13s ===
+💭 I'm in Red's House 2F. I need to find the stairs, which are typically in the bottom-right corner of the room. The map shows open space to the right and bottom. Let me head right and down toward the bottom-right area to locate the stairs.
+  ▶ walk_right walk_right walk_right walk_down walk_down
+
+=== turn 58 | map: Red's House 2F  pos {'y': 5, 'x': 5}  facing down  money 3000  badges [] | model 11s ===
+💭 I'm in Red's House 2F and need to find the stairs to go down. I'll walk around the room to locate them. Let me try going left and down to explore the area.
+  ▶ walk_left walk_left walk_down
+
+=== turn 59 | map: Red's House 2F  pos {'y': 6, 'x': 4}  facing down  money 3000  badges [] | model 9s ===
+💭 I'm on the 2F of Red's house and need to find the stairs to exit. The stairs are typically on the left side. I see a tall structure on the left edge of the screenshot which may be the stairs. Let me head left toward it.
+  ▶ walk_left walk_left walk_left walk_down wait_60
+
+=== turn 60 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing down  money 3000  badges [] | model 16s ===
+💭 I've been stuck on Red's House 2F for many turns. The screenshot shows a door to my left which should be the stairs. Let me try walking left onto it to descend to 1F.
+  ▶ walk_left
+
+=== turn 61 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 21s ===
+💭 I'm in Red's House 2F next to the staircase/door on the left (white rectangle in screenshot). I need to use it to descend to 1F. I'll walk left onto it to trigger the warp down.
+  ▶ walk_left
+
+=== turn 62 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 7s ===
+💭 On 2F near the staircase door (white rectangle to my left). Walking left onto it should warp me down to 1F so I can exit and head north for the starter.
+  ▶ walk_left wait_60 walk_left
+
+=== turn 63 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 8s ===
+💭 I'm stuck at the same spot facing the door. Let me try moving up to align with the door tile then step left onto it to warp to 1F.
+  ▶ walk_up walk_left wait_60 walk_left
+
+=== turn 64 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 19s ===
+💭 I'm on Red's House 2F near the left edge by the bed. The stairs down to 1F are at the bottom-left. I'll walk down to reach the warp tile.
+  ▶ walk_down walk_down walk_left
+
+=== turn 65 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 11s ===
+💭 I am on the 2F of Red's house and need to find the stairs down to the 1F. They are usually located at the bottom-left corner of the room. I will try walking down to trigger the warp.
+  ▶ walk_down walk_down walk_down
+
+=== turn 66 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing down  money 3000  badges [] | model 17s ===
+💭 I'm stuck wandering Red's House 2F. The stairs to 1F should be near the bed on the west side. Let me explore the walkable area (rows 1-5, cols D-J) to find the stairs warp tile.
+  ▶ walk_up walk_up walk_left walk_left walk_up
+
+=== turn 67 | map: Red's House 2F  pos {'y': 4, 'x': 0}  facing up  money 3000  badges [] | model 24s ===
+💭 I'm on Red's House 2F and need to find the stairs to leave. The screenshot shows a white door/stairs on the left side lower area. I'll move down toward it and then step left onto the warp tile.
+  ▶ walk_down walk_down walk_left
+
+=== turn 68 | map: Red's House 2F  pos {'y': 5, 'x': 0}  facing left  money 3000  badges [] | model 12s ===
+💭 I am in Red's House 2F and need to find the stairs. The white panel below me in the screenshot is likely the stair warp, so I will step down onto it to go to 1F.
+  ▶ walk_down
+
+=== turn 69 | map: Red's House 2F  pos {'y': 5, 'x': 0}  facing down  money 3000  badges [] | model 10s ===
+💭 I'm on 2F and need the stairs. The white panel directly below me may be the stair warp even though map shows it blocked. I'll step down to trigger it.
+  ▶ walk_down
+
+=== turn 70 | map: Red's House 2F  pos {'y': 5, 'x': 0}  facing down  money 3000  badges [] | model 9s ===
+💭 I'm on Red's House 2F and the white panel below me looks like the stair warp. I need to step down onto it to go to 1F, then exit and head north to Route 1 for Oak.
+  ▶ walk_down wait_60 walk_down
+
+=== turn 71 | map: Red's House 2F  pos {'y': 5, 'x': 0}  facing down  money 3000  badges [] | model 5s ===
+💭 I'm on the 2F of Red's house and need to find the stairs to exit. The white panel below me on the left is likely the warp tile. I'll walk down onto it to drop to the 1F.
+  ▶ walk_down wait_60 walk_down
+
+=== turn 72 | map: Red's House 2F  pos {'y': 5, 'x': 0}  facing down  money 3000  badges [] | model 29s ===
+💭 I'm stuck on the 2F near the left wall; the white panel below may be stairs but I can't step onto it from here. I'll move into the open area, then down and left to reach the stair warp.
+  ▶ walk_right walk_right walk_down walk_down walk_left walk_left
+
+=== turn 73 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 10s ===
+💭 I am on the 2F of Red's House, standing right next to the white stairs/door on the left. I need to step onto it to go back down to the 1F so I can exit the house and head north to Route 1 for the starter.
+  ▶ walk_left
+
+=== turn 74 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 8s ===
+💭 I'm on 2F facing left with the white stair panel just to my left. Stepping onto it should warp me down to 1F so I can exit the house.
+  ▶ walk_left wait_60
+
+=== turn 75 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 7s ===
+💭 I'm on the 2F facing the white panel (stairs) directly to my left. Stepping onto it should warp me to 1F so I can exit the house and head north for Oak/starter.
+  ▶ walk_left
+
+=== turn 76 | map: Red's House 2F  pos {'y': 7, 'x': 1}  facing left  money 3000  badges [] | model 14s ===
+💭 I'm stuck trying to reach the white panel (stairs) on my left; direct walk_left has failed repeatedly. The panel appears slightly up-left, so I'll reposition by going up first then left to land on the warp tile.
+  ▶ walk_up walk_left walk_left
+
+=== turn 77 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 7s ===
+💭 I'm on Red's House 2F facing left; the white stairs panel is directly to my left. Stepping left should warp me to 1F.
+  ▶ walk_left
+
+=== turn 78 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 6s ===
+💭 The white panel to my left is the stairs warp tile (reads as # but steppable). I'm facing left. Stepping onto it should warp me to 1F so I can exit the house and head north for the starter.
+  ▶ walk_left wait_60 walk_left
+
+=== turn 79 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 6s ===
+💭 I am on Red's House 2F and need to go down to 1F. The stairs are directly to my left. I will walk left to trigger the warp.
+  ▶ walk_left
+
+=== turn 80 | map: Red's House 2F  pos {'y': 6, 'x': 1}  facing left  money 3000  badges [] | model 64s ===
+💭 I'm stuck on the 2F; the left side (where I thought the stairs were) is walled off from me per the map (cols A-C are #). The down-stairs must be on my reachable right side. I'll scout the top-right area to find the warp tile.
+  ▶ walk_up walk_up walk_right walk_right walk_right walk_right
+
+=== turn 81 | map: Red's House 2F  pos {'y': 4, 'x': 2}  facing right  money 3000  badges [] | model 7s ===
+💭 I'm on 2F at E5. The down-stairs are at the top-right of the room per the screenshot. I'll head right then up to reach them and descend to 1F.
+  ▶ walk_right walk_right walk_up walk_up
+
+=== turn 82 | map: Red's House 2F  pos {'y': 2, 'x': 2}  facing up  money 3000  badges [] | model 8s ===
+💭 On 2F at E5. Need the down-stairs in the top-right corner. Walk right along the open tiles then up toward the stairs.
+  ▶ walk_right walk_right walk_right walk_up walk_right walk_right
+
+=== turn 83 | map: Red's House 1F  pos {'y': 1, 'x': 7}  facing right  money 3000  badges [] | model 5s ===
+💭 Descended to 1F. Need to exit the house via the bottom door, then head north to Route 1 grass for Oak. Move down toward the door.
+  ▶ walk_down walk_down walk_down
+
+=== turn 84 | map: Red's House 1F  pos {'y': 4, 'x': 7}  facing down  money 3000  badges [] | model 17s ===
+💭 I am in Red's House 1F. I need to exit through the door at the bottom left to get outside and head to Route 1 for the starter.
+  ▶ walk_left walk_left walk_left walk_down walk_down walk_down
+
+=== turn 85 | map: Red's House 1F  pos {'y': 7, 'x': 6}  facing down  money 3000  badges [] | model 7s ===
+💭 I'm in Red's House 1F with no party. I need to exit through the door on the west/left wall to get outside and head north to Route 1 for Oak's starter. Walking left toward the door.
+  ▶ walk_left walk_left walk_left walk_left
+
+=== turn 86 | map: Red's House 1F  pos {'y': 7, 'x': 2}  facing left  money 3000  badges [] | model 26s ===
+💭 I need to leave Red's House 1F; the exit is likely the left door, though the map shows it blocked. I'll try stepping left to trigger the warp, then wait to see if it works.
+  ▶ walk_left wait_60 walk_left wait_60
+
+=== turn 87 | map: Red's House 1F  pos {'y': 7, 'x': 0}  facing left  money 3000  badges [] | model 22s ===
+💭 I am at the left edge of Red's House 1F. The door to exit is likely on the opposite side or at a specific corner. I will move to the right and then up to find the exit.
+  ▶ walk_right walk_right walk_up walk_up walk_right walk_right
+
+=== turn 88 | map: Red's House 1F  pos {'y': 5, 'x': 2}  facing right  money 3000  badges [] | model 14s ===
+💭 I'm in Red's House 1F with no party. I need to find the exit door to outside, which is at the bottom of the room. Let me head down toward the bottom to reach the door.
+  ▶ walk_down walk_down walk_down walk_down
+🏁 MILESTONE: Left the house (turn 89)
+
+=== turn 89 | map: Pallet Town  pos {'y': 5, 'x': 5}  facing down  money 3000  badges [] | model 28s ===
+💭 I'm in Pallet Town and need to reach the northern exit to Route 1, but the tile directly north is blocked. I'll go down and west to find a clear path up the left side, then head right along the top to the exit. Starting by moving down and west, then north.
+  ▶ walk_down walk_left walk_left walk_up walk_up walk_up
+
+=== turn 90 | map: Pallet Town  pos {'y': 6, 'x': 3}  facing up  money 3000  badges [] | model 24s ===
+💭 I am in Pallet Town and need to reach the north edge to trigger Professor Oak's appearance. The map shows a clear path north from my current position (E5) to the top row (E1). I will walk up 4 times to reach the edge.
+  ▶ walk_up walk_up walk_up walk_up
+
+=== turn 91 | map: Pallet Town  pos {'y': 6, 'x': 3}  facing up  money 3000  badges [] | model 16s ===
+💭 I need to leave Pallet Town north to the tall grass on Route 1 so Professor Oak intercepts me. The open ground appears to continue upward, so I will walk north repeatedly.
+  ▶ walk_up walk_up walk_up walk_up walk_up walk_up
+
+=== turn 92 | map: Pallet Town  pos {'y': 6, 'x': 3}  facing up  money 3000  badges [] | model 14s ===
+💭 I'm in Pallet Town and need to reach the north edge/Route 1 grass. The tile directly above me is blocked, but the path to the left is open, so I'll step left and then head north.
+  ▶ walk_left walk_up walk_up walk_up walk_up walk_up
+
+=== turn 93 | map: Pallet Town  pos {'y': 2, 'x': 2}  facing up  money 3000  badges [] | model 61s ===
+💭 I'm near the top of Pallet Town and need to step onto Route 1 so Oak intercepts me. I'll try moving north through the tree gap, then clear any dialog if Oak appears.
+  ▶ walk_up walk_up walk_up a_until_dialog_end
+
+=== turn 94 | map: Pallet Town  pos {'y': 2, 'x': 2}  facing up  money 3000  badges [] | model 106s ===
+💭 I see Pallet Town with a tree wall to the north and no visible gap directly above, so I need to break the loop by moving right along the open road and trying to find the north exit from a different angle. If Oak appears when I reach the grass, I'll clear the dialog and choose a starter.
+  ▶ walk_right walk_right walk_up walk_up a_until_dialog_end
+
+=== turn 95 | map: Pallet Town  pos {'y': 2, 'x': 4}  facing up  money 3000  badges [] | model 24s ===
+💭 I'm stuck against the north tree wall with no visible gap. The Route 1 exit in Pallet Town is reached by going around to the east side. I'll head down to the open southern road, then move right to find the north exit gap.
+  ▶ walk_down walk_down walk_down walk_down walk_right walk_right
+
+=== turn 96 | map: Pallet Town  pos {'y': 2, 'x': 6}  facing right  money 3000  badges [] | model 37s ===
+💭 I need to reach the Route 1 exit at the north edge. The map shows a vertical walkable corridor on the right side (columns I-J) running from my row up to row 1, which is likely the exit warp. I'll head right to that corridor, then start going up.
+  ▶ walk_right walk_right walk_right walk_right walk_up walk_up
+
+=== turn 97 | map: Pallet Town  pos {'y': 1, 'x': 10}  facing down  money 3000  badges [] | model 18s ===
+💭 I'm at the northern edge of Pallet Town near the bushes, with tall grass visible above. I need to step into the grass to trigger Professor Oak, so I'll keep moving up through the opening.
+  ▶ walk_up walk_up walk_up wait_60 walk_up walk_up
+
+=== turn 98 | map: Pallet Town  pos {'y': 1, 'x': 10}  facing down  money 3000  badges [] | model 6s ===
+💭 Oak has appeared and is talking, which is the required interception. I need to clear his dialog before continuing to his lab/starter.
+  ▶ a_until_dialog_end
+
+=== turn 99 | map: Pallet Town  pos {'y': 9, 'x': 9}  facing down  money 3000  badges [] | model 32s ===
+💭 I see Oak's lab entrance nearby and no dialog box, so I need to reach the door and step onto it to enter for the starter. I'll move down to the road in front of the lab, then approach the door from the open side.
+  ▶ walk_down walk_down walk_right walk_right walk_up walk_up
+
+=== turn 100 | map: Oak's Lab  pos {'y': 3, 'x': 5}  facing up  money 3000  badges [] | model 6s ===
+💭 A dialog box is open in Oak's Lab, so I must clear it before moving. Then I can talk to Professor Oak or navigate to the PC/starter area.
+  ▶ a_until_dialog_end
+
+=== turn 101 | map: Oak's Lab  pos {'y': 3, 'x': 5}  facing up  money 3000  badges [] | model 4s ===
+💭 Dialog is open in Oak's Lab. Clear it with a_until_dialog_end, then look for the PC/starter.
+  ▶ a_until_dialog_end
+
+=== turn 102 | map: Oak's Lab  pos {'y': 3, 'x': 5}  facing up  money 3000  badges [] | model 5s ===
+💭 A dialog is open in Oak's Lab, likely about choosing a starter. Clear it first with A.
+  ▶ a_until_dialog_end
+
+=== turn 103 | map: Oak's Lab  pos {'y': 3, 'x': 5}  facing up  money 3000  badges [] | model 16s ===
+💭 I am in Oak's Lab with no dialog visible, likely need to talk to Professor Oak to receive the starter. I will press A while facing him and clear any resulting dialog.
+  ▶ press_a a_until_dialog_end
+
+=== turn 104 | map: Oak's Lab  pos {'y': 3, 'x': 5}  facing up  money 3000  badges [] | model 12s ===
+💭 I'm in Oak's Lab with no party. Oak is likely the white-haired figure to my left/upper-left. I need to approach him and talk to trigger the starter scene.
+  ▶ walk_left walk_up press_a a_until_dialog_end
+
+=== turn 105 | map: Oak's Lab  pos {'y': 3, 'x': 5}  facing up  money 3000  badges [] | model 11s ===
+💭 I'm in Oak's Lab with no Pokémon and no dialog. Oak is just to my left in the screenshot, so I need to face him and talk. I'll step left and press A, then skip any resulting text.
+  ▶ walk_left press_a a_until_dialog_end
+
+=== turn 106 | map: Oak's Lab  pos {'y': 3, 'x': 5}  facing left  money 3000  badges [] | model 55s ===
+💭 I am in Oak's Lab, standing next to Professor Oak (who is to my left). The map confirms I am at E5, facing left. Previous attempts to talk may have failed due to movement or dialog skipping. I need to initiate the conversation to receive the starter Pokémon.
+  ▶ press_a a_until_dialog_end
+
+=== turn 107 | map: Oak's Lab  pos {'y': 3, 'x': 5}  facing left  money 3000  badges [] | model 21s ===
+💭 I'm stuck in Oak's Lab with no starter. The starter table is likely to my right; I should approach it from below and press A to start the starter selection/dialog.
+  ▶ walk_down walk_right walk_right walk_right press_a a_until_dialog_end
+
+=== turn 108 | map: Oak's Lab  pos {'y': 4, 'x': 8}  facing right  money 3000  badges [] | model 39s ===
+💭 I'm in Oak's Lab with no Pokémon. The table with starters is to my left, but I'm facing right. I'll face left by attempting to walk left, then press A to open the starter selection and confirm with a_until_dialog_end.
+  ▶ walk_left press_a a_until_dialog_end
+
+=== turn 109 | map: Oak's Lab  pos {'y': 4, 'x': 7}  facing left  money 3000  badges [] | model 6s ===
+💭 I'm in Oak's Lab facing the table with the three starter Pokémon. I need to press A to interact with the table and choose a starter.
+  ▶ press_a
+
+=== turn 110 | map: Oak's Lab  pos {'y': 4, 'x': 7}  facing left  money 3000  badges [] | model 9s ===
+💭 I'm at the starter table in Oak's lab facing left. I need to pick a starter by pressing A. The party is still empty, so I'll press A to select a Pokémon.
+  ▶ press_a a_until_dialog_end
+
+=== turn 111 | map: Oak's Lab  pos {'y': 4, 'x': 7}  facing left  money 3000  badges [] | model 6s ===
+💭 A dialog box is open at the bottom of the screen. I need to clear it with a_until_dialog_end before I can interact with the starter table or move.
+  ▶ a_until_dialog_end
+
+=== turn 112 | map: Oak's Lab  pos {'y': 4, 'x': 7}  facing left  money 3000  badges [] | model 34s ===
+💭 No dialog is open per the screenshot, and repeated A presses while facing left did nothing. The starter table (three balls) is directly ABOVE my sprite, so I need to face UP and press A to trigger the starter selection.
+  ▶ walk_up press_a a_until_dialog_end
+
+=== turn 113 | map: Oak's Lab  pos {'y': 4, 'x': 7}  facing up  money 3000  badges [] | model 6s ===
+💭 I just received SQUIRTLE as my starter. Dialog is open, so I need to clear it with A until it ends, then continue with Oak's instructions (likely Pokédex next).
+  ▶ a_until_dialog_end
+🏁 MILESTONE: Got a starter (turn 114)
+
+=== turn 114 | map: Oak's Lab  pos {'y': 4, 'x': 7}  facing up  money 3000  badges [] | model 17s ===
+💭 No dialog box visible now; I'm in Oak's Lab with Squirtle. I need to leave the lab to continue. The exit is at the bottom of the room, so I'll walk down to reach the door.
+  ▶ walk_down walk_down walk_down
+
+=== turn 115 | map: Oak's Lab  pos {'y': 4, 'x': 7}  facing up  money 3000  badges [] | model 5s ===
+💭 A dialog box is open in Oak's lab. I need to clear it with a_until_dialog_end before I can move to exit the lab.
+  ▶ a_until_dialog_end
+
+=== turn 116 | map: Oak's Lab  pos {'y': 4, 'x': 7}  facing up  money 3000  badges [] | model 5s ===
+💭 A dialog box is open (received a Bulbasaur). Clear it before moving. Then I need to leave the lab via the bottom door.
+  ▶ a_until_dialog_end
+
+=== turn 117 | map: Oak's Lab  pos {'y': 4, 'x': 7}  facing up  money 3000  badges [] | model 8s ===
+💭 A dialog box with a ▼ arrow is open (Oak talking). I must clear it before moving. I'll skip through the text, then head to the bottom door to leave the lab.
+  ▶ a_until_dialog_end a_until_dialog_end a_until_dialog_end
+
+=== turn 118 | map: Oak's Lab  pos {'y': 4, 'x': 7}  facing up  money 3000  badges [] | model 47s ===
+💭 No dialog box is visible in the screenshot, so movement should now work. I'll press B to clear any hidden menu, then move left to column C (a clear vertical path on the map) and head down toward the lab's bottom exit so I can leave and get to Viridian City for Oak's parcel.
+  ▶ press_b walk_left walk_left walk_down walk_down walk_down
+
+=== turn 119 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 12s ===
+💭 I'm in Oak's Lab at E5. The exit door is at the bottom, column D is clear. I'll move left to D5 then walk down to exit the lab.
+  ▶ walk_left walk_down walk_down walk_down walk_down
+
+=== turn 120 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 6s ===
+💭 A dialog box is open in Oak's Lab, so I need to clear it before moving. After that, I should head toward the lab exit to leave for Viridian City.
+  ▶ a_until_dialog_end
+
+=== turn 121 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 12s ===
+💭 A dialog 'Come on, I'll take you on!' is open, indicating a battle has started. I need to clear it and then choose FIGHT and a move.
+  ▶ a_until_dialog_end press_a press_a
+
+=== turn 122 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 8s ===
+💭 A trainer battle is active but the enemy data is corrupted/zero, and there is a dialog box open. I'll advance the dialog to progress or resolve the battle state.
+  ▶ a_until_dialog_end press_a
+
+=== turn 123 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 12s ===
+💭 Trainer battle vs Bulbasaur L5. Dialog from Tackle is open; clear it, then confirm FIGHT and Tackle to deal damage.
+  ▶ a_until_dialog_end press_a press_a
+
+=== turn 124 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 7s ===
+💭 Bulbasaur used Tackle, I'm at 16/20, enemy at 14/20. Clearing the dialog then choosing FIGHT and Tackle to chip it down.
+  ▶ a_until_dialog_end press_a press_a
+
+=== turn 125 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 9s ===
+💭 In trainer battle vs Bulbasaur L5 (HP 12/20). Enemy just used Tackle; text box showing. Squirtle HP 13/20. Press A to advance to my action menu, then FIGHT with Tackle (or Tail Whip to lower attack). I'll advance first.
+  ▶ press_a
+
+=== turn 126 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 7s ===
+💭 In trainer battle with Bulbasaur at 10 HP and me at 13. FIGHT is highlighted, so confirm it and use Tackle to finish the battle.
+  ▶ press_a press_a press_a
+
+=== turn 127 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 10s ===
+💭 We are still in Oak's trainer battle; the screenshot shows battle text, so clear it and choose Tackle to finish his low-HP Bulbasaur.
+  ▶ a_until_dialog_end press_a press_a
+[turn 128] model error: Expecting value: line 1 column 1 (char 0)
+
+=== turn 129 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 6s ===
+💭 Trainer battle: Bulbasaur at 3/20 HP, Squirtle at 7/20. Menu shows FIGHT highlighted. Confirm FIGHT then use Tackle to KO it.
+  ▶ press_a press_a
+
+=== turn 130 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 6s ===
+💭 Battle dialog is open; advance to the FIGHT menu so I can use Tackle on the low-HP Bulbasaur.
+  ▶ a_until_dialog_end
+
+=== turn 131 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 7s ===
+💭 The trainer battle is effectively over: enemy Bulbasaur HP is 0 and Squirtle survived at 7/20. I need to clear the victory/faint dialog to exit the battle and continue to the parcel quest.
+  ▶ a_until_dialog_end press_a press_a
+
+=== turn 132 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3000  badges [] | model 7s ===
+💭 The screen shows a level-up message after the trainer battle, so I need to clear the dialog before moving. I'll advance through all dialog text.
+  ▶ a_until_dialog_end
+
+=== turn 133 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3175  badges [] | model 11s ===
+💭 No dialog is open now, so I should stop pressing A and actually move. I need to exit Oak's Lab toward the bottom door, then head to Viridian City for the parcel. Walking down to reach the exit.
+  ▶ walk_down walk_down walk_down
+
+=== turn 134 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3175  badges [] | model 12s ===
+💭 Oak is talking (dialog open with arrow). Clear the dialog first, then head down toward the lab exit to leave for Viridian City.
+  ▶ a_until_dialog_end walk_down walk_down walk_down
+
+=== turn 135 | map: Oak's Lab  pos {'y': 9, 'x': 5}  facing down  money 3175  badges [] | model 6s ===
+💭 A dialog is open, indicated by the text box and arrow in the screenshot. I need to clear it before I can move. After that, I will head to the bottom door to exit the lab and proceed to Viridian City for the parcel.
+  ▶ a_until_dialog_end walk_down walk_down walk_down walk_down
+
+=== turn 136 | map: Pallet Town  pos {'y': 11, 'x': 12}  facing down  money 3175  badges [] | model 11s ===
+💭 I'm in Pallet Town and need to head west toward Route 22/Viridian City. The tile left is blocked, so I'll step down to the open path and then move left toward the town exit.
+  ▶ walk_down walk_left walk_left walk_left walk_left
+
+=== turn 137 | map: Pallet Town  pos {'y': 12, 'x': 8}  facing left  money 3175  badges [] | model 6s ===
+💭 I am in Pallet Town and need to head west to Viridian City to get the parcel from the Mart. I will walk left to exit the town.
+  ▶ walk_left walk_left walk_left walk_left
+
+=== turn 138 | map: Pallet Town  pos {'y': 12, 'x': 4}  facing left  money 3175  badges [] | model 24s ===
+💭 I'm in Pallet Town with Squirtle, need to head west toward Route 1 / Viridian. The path to my left is open (D5 is walkable), so I'll keep walking left to find the town exit.
+  ▶ walk_left walk_left walk_left
+
+=== turn 139 | map: Pallet Town  pos {'y': 12, 'x': 1}  facing left  money 3175  badges [] | model 18s ===
+💭 I am on the western road in Pallet Town, facing the water. The map shows a wall to my immediate left (West). I need to find the exit to Route 1, which might be further North or South along this road. I will try walking North (Up) to see if the path opens up.
+  ▶ walk_up walk_up walk_up
+
+=== turn 140 | map: Pallet Town  pos {'y': 11, 'x': 1}  facing up  money 3175  badges [] | model 23s ===
+💭 I am in Pallet Town, blocked by water to the west. I need to find the exit to Route 1. Since I can't go left, I will try going up to find a path around or the correct exit.
+  ▶ walk_up walk_up walk_up
+
+=== turn 141 | map: Pallet Town  pos {'y': 8, 'x': 1}  facing up  money 3175  badges [] | model 13s ===
+💭 I'm stuck against the walled water edge at the west side. The tile above me is walled off, so I must step right into open town first, then head north toward Route 1's tall grass where Oak will intercept me.
+  ▶ walk_right walk_right walk_up walk_up walk_up
+
+=== turn 142 | map: Pallet Town  pos {'y': 6, 'x': 3}  facing up  money 3175  badges [] | model 23s ===
+💭 I have Squirtle but no Pokédex/parcel yet. I'm in front of Oak's lab; I need to enter and talk to Oak to get the Pokédex and the parcel quest. The lab door is to my right and up.
+  ▶ walk_right walk_right walk_right walk_up walk_up
+
+=== turn 143 | map: Pallet Town  pos {'y': 6, 'x': 4}  facing up  money 3175  badges [] | model 9s ===
+💭 I'm at the entrance of Oak's lab in Pallet Town. I need to enter and talk to Oak to receive the Pokédex and the parcel quest, since both flags are false.
+  ▶ walk_up
+
+=== turn 144 | map: Pallet Town  pos {'y': 6, 'x': 4}  facing up  money 3175  badges [] | model 22s ===
+💭 I'm outside Oak's lab, just left of the entrance. I need to step onto the door tile to enter, then clear any dialog before talking to Oak for the Pokédex/parcel quest.
+  ▶ walk_right walk_up a_until_dialog_end
+
+=== turn 145 | map: Red's House 1F  pos {'y': 7, 'x': 2}  facing up  money 3175  badges [] | model 15s ===
+💭 I'm in Red's house and need to leave. The map shows I'm blocked from going down directly. I'll move left to find a path to the door.
+  ▶ walk_left
+
+=== turn 146 | map: Red's House 1F  pos {'y': 7, 'x': 1}  facing left  money 3175  badges [] | model 9s ===
+💭 I am inside Red's house. I need to exit to continue the game. The door is likely to the left. I will walk left to find it.
+  ▶ walk_left walk_left walk_left
+
+=== turn 147 | map: Red's House 1F  pos {'y': 7, 'x': 0}  facing left  money 3175  badges [] | model 15s ===
+💭 I'm inside Red's house at the left wall. The door is likely to the right/below near the rug. I'll move right toward the rug then try down to find the exit warp.
+  ▶ walk_right walk_right walk_down
+
+=== turn 148 | map: Pallet Town  pos {'y': 7, 'x': 2}  facing down  money 3175  badges [] | model 19s ===
+💭 I'm inside Red's house (PC and TV visible). The door should be a warp tile below me at row 6. Walking down onto it should exit to Pallet Town.
+  ▶ walk_down
+
+=== turn 149 | map: Pallet Town  pos {'y': 7, 'x': 5}  facing down  money 3175  badges [] | model 16s ===
+💭 I am outside in Pallet Town. I need to talk to Professor Oak in his lab (right side) to get the parcel for the Viridian City quest. I will walk right toward the lab door.
+  ▶ walk_right walk_right walk_right walk_right
+
+=== turn 150 | map: Pallet Town  pos {'y': 7, 'x': 9}  facing right  money 3175  badges [] | model 21s ===
+💭 I'm at the right edge of Pallet Town. Oak's lab is the bottom-left building with the pokeballs and sign. I need to head left and down to reach its door.
+  ▶ walk_left walk_left walk_left walk_left walk_left walk_down
+
+=== turn 151 | map: Pallet Town  pos {'y': 8, 'x': 4}  facing down  money 3175  badges [] | model 14s ===
+💭 I have Squirtle, so next is Oak's parcel: enter Oak's lab (top building with the door) and talk to him. I'll head up toward the lab door.
+  ▶ walk_up walk_up walk_up
+
+=== turn 152 | map: Pallet Town  pos {'y': 6, 'x': 4}  facing up  money 3175  badges [] | model 12s ===
+💭 I'm outside Pallet Town and need to enter Professor Oak's lab to get the parcel. The lab door is directly above me on the map, so I'll step up onto it to trigger the warp.
+  ▶ walk_up
+
+=== turn 153 | map: Pallet Town  pos {'y': 6, 'x': 4}  facing up  money 3175  badges [] | model 17s ===
+💭 I'm outside in front of Oak's lab (top building) in Pallet Town. I need to enter the lab to get the parcel. The door is up and slightly right of me, so I'll step right then up onto the entrance.
+  ▶ walk_right walk_up
+
+=== turn 154 | map: Red's House 1F  pos {'y': 5, 'x': 5}  facing up  money 3175  badges [] | model 10s ===
+💭 I accidentally re-entered Red's House through its door. I need to exit via the door at the bottom and step away to avoid looping back in, then head to Oak's lab for the parcel.
+  ▶ walk_down walk_down walk_down
+
+=== turn 155 | map: Pallet Town  pos {'y': 6, 'x': 5}  facing down  money 3175  badges [] | model 20s ===
+💭 I am outside Oak's lab (the building in the screenshot with the sign). I am at E5 facing down, and the door is directly above me at E4. I need to walk up onto the door tile to enter the lab and get the parcel.
+  ▶ walk_up
+
+=== turn 156 | map: Red's House 1F  pos {'y': 5, 'x': 5}  facing up  money 3175  badges [] | model 5s ===
+💭 I am inside Red's House. I need to exit through the door at the bottom to get back outside and then head to Oak's lab.
+  ▶ walk_down walk_down walk_down
+
+=== turn 157 | map: Pallet Town  pos {'y': 6, 'x': 5}  facing down  money 3175  badges [] | model 47s ===
+💭 I have Squirtle but no Pokédex, so I need Oak's lab. The building directly above keeps entering Red's house, so Oak's lab is likely the other building on the right edge. I'll head right to find its door.
+  ▶ walk_right walk_right walk_right walk_down walk_down
+
+=== turn 158 | map: Pallet Town  pos {'y': 8, 'x': 8}  facing down  money 3175  badges [] | model 24s ===
+💭 I need to enter Oak's Lab, which is the large building on the right. Its door is on the lower edge; from my current spot I should move right toward the entrance and then step up onto the door tile to warp inside.
+  ▶ walk_right walk_up
+
+=== turn 159 | map: Pallet Town  pos {'y': 7, 'x': 9}  facing up  money 3175  badges [] | model 15s ===
+💭 I need to reach Oak's lab door on the bottom edge of the right building to get the Pokédex and parcel. I'll move down and right toward the visible door.
+  ▶ walk_down walk_down walk_right walk_right walk_right walk_down
+
+=== turn 160 | map: Pallet Town  pos {'y': 10, 'x': 9}  facing down  money 3175  badges [] | model 28s ===
+💭 I need to enter Oak's lab on the right to talk to him and get the Pokédex/parcel quest. The lab door appears to be the opening at row6 col7, so I'll route around the building's bottom edge and step up onto it.
+  ▶ walk_down walk_right walk_right walk_up
+
+=== turn 161 | map: Pallet Town  pos {'y': 10, 'x': 9}  facing up  money 3175  badges [] | model 26s ===
+💭 I'm in Pallet Town left of Oak's lab; the lab door is on the building's bottom edge to my right. I'll move right to line up with the door, then step up to enter the lab and talk to Oak for the Pokédex and parcel.
+  ▶ walk_right walk_right walk_up
+
+=== turn 162 | map: Pallet Town  pos {'y': 9, 'x': 9}  facing up  money 3175  badges [] | model 18s ===
+💭 I have Squirtle but no Pokédex or parcel, so I need to enter Oak's Lab (the right building) to get them. The lab door is on its bottom edge. I'll move down toward row 8 and then right to reach the door.
+  ▶ walk_down walk_down walk_down walk_right walk_right walk_right
+
+=== turn 163 | map: Pallet Town  pos {'y': 12, 'x': 12}  facing right  money 3175  badges [] | model 13s ===
+💭 I am outside Oak's lab with Squirtle and need to enter the lab to get the Pokédex and parcel. The door appears directly above me, so I will walk up to trigger the warp into the building.
+  ▶ walk_up
+
+=== turn 164 | map: Oak's Lab  pos {'y': 11, 'x': 12}  facing up  money 3175  badges [] | model 9s ===
+💭 I'm in Oak's Lab. The professor should be right in front of me. Let me talk to him to get the Pokédex and the parcel.
+  ▶ press_a
+
+=== turn 165 | map: Oak's Lab  pos {'y': 11, 'x': 5}  facing up  money 3175  badges [] | model 12s ===
+💭 I'm in Oak's Lab and need to talk to Professor Oak (top-left figure) to get the Pokédex and parcel. I'll walk left toward him.
+  ▶ walk_left walk_left walk_left walk_up press_a
+
+=== turn 166 | map: Oak's Lab  pos {'y': 11, 'x': 2}  facing up  money 3175  badges [] | model 7s ===
+💭 I'm in Oak's lab facing Oak. I need to talk to him to receive the Pokédex and the parcel for Viridian City.
+  ▶ press_a
+
+=== turn 167 | map: Oak's Lab  pos {'y': 11, 'x': 2}  facing up  money 3175  badges [] | model 13s ===
+💭 I am in Oak's Lab facing Oak, who is just above me. I need to talk to him to receive the Pokédex and parcel. I'll move up toward him and press A.
+  ▶ walk_up walk_up press_a
+
+=== turn 168 | map: Oak's Lab  pos {'y': 11, 'x': 2}  facing up  money 3175  badges [] | model 12s ===
+💭 I'm in Oak's lab facing him; I need to talk to him to get the Pokédex and parcel instructions. Press A to start the conversation.
+  ▶ press_a
+
+=== turn 169 | map: Oak's Lab  pos {'y': 11, 'x': 2}  facing up  money 3175  badges [] | model 6s ===
+💭 I am in Oak's Lab. I need to face Oak to talk to him and get the Pokédex/parcel quest. He is to my right in the screenshot.
+  ▶ walk_right press_a
+
+=== turn 170 | map: Oak's Lab  pos {'y': 11, 'x': 3}  facing right  money 3175  badges [] | model 8s ===
+💭 A dialog box is open in Oak's Lab. I'll clear it, then walk right toward Oak (white-haired figure on the right) to talk to him for the Pokédex and parcel.
+  ▶ a_until_dialog_end walk_right walk_right walk_right press_a
+
+=== turn 171 | map: Oak's Lab  pos {'y': 11, 'x': 6}  facing right  money 3175  badges [] | model 7s ===
+💭 A dialog box is open at the bottom of the screen. I need to clear it before I can move or interact with anything else in Oak's lab.
+  ▶ a_until_dialog_end
+
+=== turn 172 | map: Oak's Lab  pos {'y': 11, 'x': 6}  facing right  money 3175  badges [] | model 7s ===
+💭 I'm in Oak's Lab. I need to talk to Professor Oak to get the Pokédex and his parcel. He is to my left.
+  ▶ walk_left walk_left press_a
+
+=== turn 173 | map: Oak's Lab  pos {'y': 11, 'x': 4}  facing left  money 3175  badges [] | model 6s ===
+💭 I am in Oak's lab facing him. I need to talk to him to receive the Pokédex and the parcel to deliver to Viridian City.
+  ▶ press_a
+
+=== turn 174 | map: Oak's Lab  pos {'y': 11, 'x': 4}  facing left  money 3175  badges [] | model 6s ===
+💭 I am in Oak's lab and need to get the Pokédex and the parcel. Oak is standing right in front of me. I will talk to him to receive them.
+  ▶ press_a
+
+=== turn 175 | map: Oak's Lab  pos {'y': 11, 'x': 4}  facing left  money 3175  badges [] | model 3s ===
+💭 A dialog box is open in the screenshot. Clear it with a_until_dialog_end before moving.
+  ▶ a_until_dialog_end
+
+=== turn 176 | map: Oak's Lab  pos {'y': 11, 'x': 4}  facing left  money 3175  badges [] | model 12s ===
+💭 I'm stuck pressing A at the same spot with empty bag and no pokedex/parcel. I need to find Oak and talk to him to receive the Pokédex and parcel. Let me clear any dialog and move left toward where the professor usually stands.
+  ▶ a_until_dialog_end walk_left walk_left press_a
+
+=== turn 177 | map: Oak's Lab  pos {'y': 11, 'x': 2}  facing left  money 3175  badges [] | model 8s ===
+💭 I'm at Oak's Lab x=2, need to find and talk to Professor Oak to get the Pokédex and parcel. Let me walk left and try talking to him.
+  ▶ walk_left press_a a_until_dialog_end
+
+=== turn 178 | map: Oak's Lab  pos {'y': 11, 'x': 1}  facing left  money 3175  badges [] | model 7s ===
+💭 A dialog box is open at the bottom of the screen. I need to clear it with a_until_dialog_end before I can move or interact. After that I'll look for Oak to talk to and get the Pokédex/parcel.
+  ▶ a_until_dialog_end
+
+=== turn 179 | map: Oak's Lab  pos {'y': 11, 'x': 1}  facing left  money 3175  badges [] | model 9s ===
+💭 I am in Oak's Lab and need to talk to Professor Oak to get the Pokédex. He is standing to my left. I will walk left to face him and press A to start the conversation.
+  ▶ walk_left press_a a_until_dialog_end
+
+=== turn 180 | map: Oak's Lab  pos {'y': 11, 'x': 0}  facing left  money 3175  badges [] | model 15s ===
+💭 I'm at the left edge of Oak's lab (x=0), which is where the exit door is. I need to step onto the door warp tile to leave for Pallet Town. Walking left should trigger the exit.
+  ▶ walk_left walk_left
+
+=== turn 181 | map: Oak's Lab  pos {'y': 11, 'x': 0}  facing left  money 3175  badges [] | model 10s ===
+💭 I'm at the left wall of Oak's Lab (x=0). The exit door is at the bottom; I need to move right along row 5 to reach the door tile and step onto it to leave the lab.
+  ▶ walk_right walk_right walk_right walk_right walk_down
+
+=== turn 182 | map: Pallet Town  pos {'y': 11, 'x': 4}  facing down  money 3175  badges [] | model 24s ===
+💭 I'm in Pallet Town at (11,4). The map shows a wall to the south (row 6 is all #), but the north (row 1) has open tiles. I need to head north to reach Route 1 and then Viridian City. I'll walk up to the top row.
+  ▶ walk_up walk_up walk_up walk_up
+
+=== turn 183 | map: Oak's Lab  pos {'y': 11, 'x': 5}  facing up  money 3175  badges [] | model 11s ===
+💭 I'm in Pallet Town facing north. The walkability map shows open path north to row 1, with exits at D1/E1. I need to reach the tall grass on Route 1 to trigger Oak's cutscene. I'll walk up toward the top edge.
+  ▶ walk_up walk_up walk_up walk_up walk_up
+
+=== turn 184 | map: Oak's Lab  pos {'y': 6, 'x': 5}  facing up  money 3175  badges [] | model 11s ===
+💭 I am in Oak's Lab. I need to find the exit to leave the building and head to the Viridian City Mart to get the Pokédex and deliver the parcel.
+  ▶ walk_down walk_down walk_down
+
+=== turn 185 | map: Oak's Lab  pos {'y': 9, 'x': 5}  facing down  money 3175  badges [] | model 9s ===
+💭 I'm in Oak's Lab and need to exit. I've been re-entering it, so I need to walk down through the door and then step to the side to avoid looping back in.
+  ▶ walk_down walk_down walk_left
+
+=== turn 186 | map: Oak's Lab  pos {'y': 11, 'x': 4}  facing left  money 3175  badges [] | model 15s ===
+💭 I'm still inside Oak's Lab and need to exit through the lab door, which is likely just below my current position. I'll walk down onto the warp tile, then step away from the door afterward to avoid re-entering.
+  ▶ walk_down walk_down walk_right
+
+=== turn 187 | map: Pallet Town  pos {'y': 12, 'x': 12}  facing down  money 3175  badges [] | model 9s ===
+💭 I'm outside the lab but facing the door; I need to step away from it before heading north/west to Route 1. I'll walk down to clear the door tile, then move left toward the west road.
+  ▶ walk_down walk_left walk_left walk_left walk_up
+
+=== turn 188 | map: Pallet Town  pos {'y': 11, 'x': 9}  facing up  money 3175  badges [] | model 22s ===
+💭 I'm outside in Pallet Town with Squirtle and need to head north toward Route 1/Viridian. The local map has an open vertical path directly above me, so I'll walk up to reach the town exit, avoiding the lab door on the right.
+  ▶ walk_up walk_up walk_up walk_up walk_up
+
+=== turn 189 | map: Pallet Town  pos {'y': 6, 'x': 9}  facing up  money 3175  badges [] | model 12s ===
+💭 I am in Pallet Town and need to head north to Route 1 to get the Pokédex/parcel. The map shows a clear vertical path upward from my position, so I will walk up to the town's north exit.
+  ▶ walk_up walk_up walk_up walk_up walk_up
+
+=== turn 190 | map: Pallet Town  pos {'y': 2, 'x': 9}  facing up  money 3175  badges [] | model 30s ===
+💭 I am at the north edge of Pallet Town, in front of the tall grass on Route 1. I need to walk into the tall grass to trigger the next event (Pokédex/parcel from Oak) or proceed to Route 1. I will walk up and handle any dialog.
+  ▶ walk_up a_until_dialog_end
+
+=== turn 191 | map: Pallet Town  pos {'y': 2, 'x': 9}  facing up  money 3175  badges [] | model 8s ===
+💭 I am at the north edge of Pallet Town facing the Route 1 tall grass. I need to step into the grass to trigger Professor Oak's starter/Pokédex event, then clear any dialog.
+  ▶ walk_up a_until_dialog_end
+
+=== turn 192 | map: Pallet Town  pos {'y': 2, 'x': 9}  facing up  money 3175  badges [] | model 19s ===
+💭 I'm at the northern edge of Pallet Town facing Route 1 tall grass. Since I already have Squirtle, I need to head north toward Viridian City to progress the Pokédex/parcel storyline. I'll step into the grass and continue north.
+  ▶ walk_up walk_up walk_up walk_up walk_up walk_up
+
+=== turn 193 | map: Pallet Town  pos {'y': 2, 'x': 9}  facing up  money 3175  badges [] | model 20s ===
+💭 I'm at the edge of Pallet Town facing the Route 1 grass, but directly above me is blocked on the map. I need to step right onto the open path and then walk up into the tall grass to trigger Professor Oak's intercept.
+  ▶ walk_right walk_up walk_up walk_up
+🏁 MILESTONE: Reached Route 1 (turn 194)
+
+=== turn 194 | map: Route 1  pos {'y': 35, 'x': 10}  facing up  money 3175  badges [] | model 9s ===
+💭 I'm in the Route 1 corridor just south of the tall grass. The grass is directly above me. I need to step into the tall grass to trigger Professor Oak's encounter. Moving up through the open column.
+  ▶ walk_up walk_up walk_up walk_up a_until_dialog_end
+
+=== turn 195 | map: Route 1  pos {'y': 33, 'x': 10}  facing up  money 3175  badges [] | model 9s ===
+💭 Wild Rattata battle started on Route 1. Squirtle is healthy and should win easily with Tackle. I'll open the battle menu, choose FIGHT, and use Tackle.
+  ▶ press_a press_a press_a
+
+=== turn 196 | map: Route 1  pos {'y': 33, 'x': 10}  facing up  money 3175  badges [] | model 6s ===
+💭 In a wild battle against Rattata L3. I need to press A to bring up the battle menu, then choose FIGHT and Tackle to take it down.
+  ▶ press_a press_a press_a
+
+=== turn 197 | map: Route 1  pos {'y': 33, 'x': 10}  facing up  money 3175  badges [] | model 7s ===
+💭 I am in a wild battle against a Rattata. My Squirtle is at full HP and the Rattata has 14 HP. I need to use Tackle to finish it off. I will press A to select FIGHT, then A again to choose Tackle.
+  ▶ press_a press_a press_a
+
+=== turn 198 | map: Route 1  pos {'y': 33, 'x': 10}  facing up  money 3175  badges [] | model 12s ===
+💭 In a wild battle vs Rattata L3 with 9 HP left. Squirtle L6 can KO with Tackle. Clear the current dialog, then select FIGHT and Tackle to finish it.
+  ▶ a_until_dialog_end press_a press_a
+[turn 199] model error: Expecting value: line 1 column 1 (char 0)
+[turn 200] model error: Expecting value: line 1 column 1 (char 0)
+[turn 201] model error: Expecting value: line 1 column 1 (char 0)
+[turn 202] model error: Expecting value: line 1 column 1 (char 0)
+[turn 203] model error: Expecting value: line 1 column 1 (char 0)
+
+=== turn 204 | map: Route 1  pos {'y': 33, 'x': 10}  facing up  money 3175  badges [] | model 7s ===
+💭 Rattata fainted (HP 0), critical hit message showing. I need to advance the dialog to end the battle and collect rewards, then continue my route toward Viridian City for the parcel/Pokédex.
+  ▶ a_until_dialog_end a_until_dialog_end a_until_dialog_end
+
+=== turn 205 | map: Route 1  pos {'y': 33, 'x': 10}  facing up  money 3175  badges [] | model 14s ===
+💭 I'm in the Route 1 corridor facing a warp tile (white door) at the top. Position hasn't changed, so I'll step up onto it to warp toward Viridian City.
+  ▶ walk_up walk_up
+
+=== turn 206 | map: Route 1  pos {'y': 31, 'x': 10}  facing up  money 3175  badges [] | model 7s ===
+💭 I am on Route 1 heading north toward Viridian City. The path is clear ahead. I need to reach the Viridian City Mart to get Oak's parcel.
+  ▶ walk_up walk_up walk_up walk_up walk_up walk_up
+
+=== turn 207 | map: Route 1  pos {'y': 28, 'x': 10}  facing up  money 3175  badges [] | model 13s ===
+💭 I'm on Route 1 heading north to Viridian City. There's a wall of trees directly ahead, but the map shows an opening on the left (columns A-C). I need to walk left to get around the trees and then continue north.
+  ▶ walk_left walk_left walk_up walk_up walk_up walk_up
+
+=== turn 208 | map: Route 1  pos {'y': 24, 'x': 8}  facing up  money 3175  badges [] | model 10s ===
+💭 I'm on Route 1 with a horizontal tree/wall blocking directly ahead, but the right side of the map has an opening. I'll move right to the open column and continue north toward Viridian City.
+  ▶ walk_right walk_right walk_right walk_right walk_up walk_up
+
+=== turn 209 | map: Route 1  pos {'y': 22, 'x': 12}  facing up  money 3175  badges [] | model 6s ===
+💭 On Route 1, heading toward Viridian City. Map shows open path north and west. Continue moving up and left to reach the city.
+  ▶ walk_up walk_up walk_left walk_left walk_up walk_up
+
+=== turn 210 | map: Route 1  pos {'y': 20, 'x': 10}  facing up  money 3175  badges [] | model 5s ===
+💭 On Route 1, heading north toward Viridian City. The path is clear, so I will keep walking up.
+  ▶ walk_up walk_up walk_up walk_up
+
+=== turn 211 | map: Route 1  pos {'y': 20, 'x': 10}  facing up  money 3175  badges [] | model 9s ===
+💭 Continuing north on Route 1. The path is clear above me. I need to reach Viridian City to get the parcel from the Mart.
+  ▶ walk_up walk_up walk_up walk_up walk_up walk_up
+
+=== turn 212 | map: Route 1  pos {'y': 20, 'x': 10}  facing up  money 3175  badges [] | model 9s ===
+💭 I am on Route 1 and need to head northwest towards Viridian City. The map shows an opening at D4 which likely leads to the city. I will move left to D5 and then up to D4.
+  ▶ walk_left walk_up walk_up walk_up
+
+=== turn 213 | map: Route 1  pos {'y': 17, 'x': 9}  facing up  money 3175  badges [] | model 5s ===
+💭 On Route 1, heading north toward Viridian City. The path ahead is clear.
+  ▶ walk_up walk_up walk_up walk_up walk_up walk_up
+
+=== turn 214 | map: Route 1  pos {'y': 14, 'x': 9}  facing up  money 3175  badges [] | model 16s ===
+💭 I see a bridge to my left in the screenshot. The map shows row 4 as blocked, but the bridge is the way to continue north-west towards Viridian City. I will walk left to get onto the bridge.
+  ▶ walk_left walk_left walk_up walk_up
+
+=== turn 215 | map: Route 1  pos {'y': 14, 'x': 7}  facing up  money 3175  badges [] | model 37s ===
+💭 I am on the bridge on Route 1. The map shows a blocked row above me, but the screenshot confirms I am on a bridge. I need to cross it to continue toward Viridian City. I will walk up to cross the bridge.
+  ▶ walk_up walk_up walk_up
+
+=== turn 216 | map: Route 1  pos {'y': 14, 'x': 7}  facing up  money 3175  badges [] | model 6s ===
+💭 On Route 1 heading north toward Viridian City. The map shows the path continues up. I'll keep walking up to reach the bridge and Viridian.
+  ▶ walk_up walk_up walk_up walk_up walk_up walk_up
+
+=== turn 217 | map: Route 1  pos {'y': 14, 'x': 7}  facing up  money 3175  badges [] | model 47s ===
+💭 We are blocked by a wall of `#` at row 4 (y=13). This is likely a barrier of trees or the map boundary for this specific area. We need to find a path around it. I will try moving left to see if there is an opening or a warp tile to Viridian City.
+  ▶ walk_left walk_left walk_left
+
+=== turn 218 | map: Route 1  pos {'y': 14, 'x': 4}  facing left  money 3175  badges [] | model 20s ===
+💭 North is blocked by a wall of trees at row 4. The only open reachable area is to the right and below. I'll head right along the path to find an opening toward Viridian City.
+  ▶ walk_right walk_right walk_right walk_right walk_right walk_right
+
+=== turn 219 | map: Route 1  pos {'y': 14, 'x': 10}  facing right  money 3175  badges [] | model 7s ===
+💭 Wall blocks north at row 4 except columns I/J. I'm at E5, so walk right to reach the open I/J column, then head north toward Viridian.
+  ▶ walk_right walk_right walk_right walk_right walk_right walk_up
+
+=== turn 220 | map: Route 1  pos {'y': 14, 'x': 15}  facing right  money 3175  badges [] | model 7s ===
+💭 We're in a wild battle against a weak Pidgey. Squirtle should win with Tackle. I'll select FIGHT and use Tackle.
+  ▶ press_a press_a
+
+=== turn 221 | map: Route 1  pos {'y': 14, 'x': 15}  facing right  money 3175  badges [] | model 9s ===
+💭 In a wild Pidgey battle; Squirtle's Tackle should KO it in one or two hits. Open battle menu, choose FIGHT, then Tackle.
+  ▶ press_a press_a press_a
+
+=== turn 222 | map: Route 1  pos {'y': 14, 'x': 15}  facing right  money 3175  badges [] | model 6s ===
+💭 In a wild battle against a Pidgey L3. Squirtle is L6 and knows Tackle. I will use Tackle to attack.
+  ▶ press_a press_a
+
+=== turn 223 | map: Route 1  pos {'y': 14, 'x': 15}  facing right  money 3175  badges [] | model 10s ===
+💭 In a wild Pidgey battle; Squirtle has 16/22 HP. I need to open the battle menu and use Tackle to finish it quickly.
+  ▶ press_a press_a press_a
+
+=== turn 224 | map: Route 1  pos {'y': 14, 'x': 15}  facing right  money 3175  badges [] | model 3s ===
+💭 
+  ▶ wait_60
+
+=== turn 225 | map: Route 1  pos {'y': 14, 'x': 15}  facing right  money 3175  badges [] | model 5s ===
+💭 I'm stuck in a wild Pidgey battle with dialog still open; clear it and fight. Squirtle's Tackle should beat the low-HP Pidgey, then I'll continue to Viridian.
+  ▶ a_until_dialog_end press_a press_a
+
+=== turn 226 | map: Route 1  pos {'y': 14, 'x': 15}  facing right  money 3175  badges [] | model 10s ===
+💭 Battle with Pidgey, HP 10/15. Squirtle is low at 7/22. Need to finish it with Tackle. Clearing dialog first.
+  ▶ a_until_dialog_end press_a press_a
+
+=== turn 227 | map: Route 1  pos {'y': 14, 'x': 15}  facing right  money 3175  badges [] | model 5s ===
+💭 The Pidgey fainted and Squirtle just leveled to 7, but the XP dialog is still open. Clear it first, then exit battle and continue toward Viridian Forest.
+  ▶ a_until_dialog_end
+
+=== turn 228 | map: Route 1  pos {'y': 14, 'x': 15}  facing right  money 3175  badges [] | model 59s ===
+💭 I've been stuck pressing A with no dialog open — that does nothing here. The map shows open walkable tiles to the west (left) and a lighter road patch in the screenshot at my latitude, which should lead toward Viridian City where I need the Mart parcel. I'll head left to make real progress.
+  ▶ walk_left walk_left walk_left walk_left walk_left walk_left
+
+=== turn 229 | map: Route 1  pos {'y': 14, 'x': 9}  facing left  money 3175  badges [] | model 8s ===
+💭 No dialog open, I'm on Route 1 facing west with open road ahead. Continuing left toward Viridian City to heal and reach the Mart for the parcel.
+  ▶ walk_left walk_left walk_left walk_left walk_left walk_left
+
+=== turn 230 | map: Route 1  pos {'y': 14, 'x': 4}  facing left  money 3175  badges [] | model 27s ===
+💭 I'm at E5 on Route 1, facing left, but the tiles to my left (D5) are walled off (~) and above me (E4) is blocked (#). I can't proceed west directly. I'll walk down to find an opening in the wall to continue toward Viridian City.
+  ▶ walk_down walk_down walk_down walk_left walk_left walk_left
+
+=== turn 231 | map: Route 1  pos {'y': 17, 'x': 4}  facing left  money 3175  badges [] | model 29s ===
+💭 I'm on Route 1 with a walled-off west side in this view; I need to find the opening to Viridian City. Since left is blocked, I'll move north along the path to locate the west exit, then reassess the screenshot for the road into the city.
+  ▶ walk_up walk_up walk_up walk_up walk_up walk_up
+
+=== turn 232 | map: Route 1  pos {'y': 14, 'x': 4}  facing up  money 3175  badges [] | model 7s ===
+💭 I am on Route 1 west side, walled off to the north/west. I need to head east toward Viridian City to heal, get the parcel, and continue. The path east is open.
+  ▶ walk_right walk_right walk_right walk_right walk_right walk_right
+
+=== turn 233 | map: Route 1  pos {'y': 14, 'x': 10}  facing right  money 3175  badges [] | model 13s ===
+💭 I'm on Route 1 with a low-HP Squirtle and need to reach Viridian City to heal and get the Oak parcel. The local map shows open ground to the east, so I'll continue moving right toward the city entrance.
+  ▶ walk_right walk_right walk_right walk_right walk_right walk_right
+
+=== turn 234 | map: Route 1  pos {'y': 14, 'x': 16}  facing right  money 3175  badges [] | model 12s ===
+💭 I'm on Route 1 with Squirtle low HP and no items. I need to head west toward Viridian City to heal and get the Mart parcel, so I'll move left along the open path and avoid the grass/trees on the right.
+  ▶ walk_left walk_left walk_left walk_left walk_left walk_left
+
+=== turn 235 | map: Route 1  pos {'y': 14, 'x': 10}  facing left  money 3175  badges [] | model 7s ===
+💭 I am on Route 1 and need to travel west toward Viridian City. The path directly left along row 5 is open, so I will continue walking left to make progress.
+  ▶ walk_left walk_left walk_left walk_left walk_left walk_left
+
+=== turn 236 | map: Route 1  pos {'y': 14, 'x': 4}  facing left  money 3175  badges [] | model 27s ===
+💭 I am boxed in by trees on the left and above, with only down/right open. The walled-off left side is not pathable, so I need to find the main road by moving down and then reassessing for an opening toward Viridian.
+  ▶ walk_down walk_down walk_down walk_down walk_down walk_down
+
+=== turn 237 | map: Route 1  pos {'y': 20, 'x': 4}  facing down  money 3175  badges [] | model 15s ===
+💭 I'm stuck in a small pocket on Route 1. Left and Up are blocked by trees. I need to go Right to get to the open area at F4, then head North-West towards Viridian City.
+  ▶ walk_right walk_up
+
+=== turn 238 | map: Route 1  pos {'y': 19, 'x': 5}  facing up  money 3175  badges [] | model 18s ===
+💭 I'm on the horizontal Route 1 road and need to head WEST toward Viridian City to buy Oak's parcel. The screenshot shows an opening to my left, so I'll walk left along the road.
+  ▶ walk_left walk_left walk_left walk_left walk_left walk_left
+
+=== turn 239 | map: Route 1  pos {'y': 19, 'x': 5}  facing left  money 3175  badges [] | model 111s ===
+💭 I'm on Route 1 in a narrow corridor (can only go up/down). My goal is Viridian City, which is at the NORTH end of Route 1, where the Mart sells Oak's parcel. Squirtle is low HP but I need to push forward. I'll head north (up) to make progress toward Viridian City.
+  ▶ walk_up walk_up walk_up walk_up walk_up walk_up
+
+=== turn 240 | map: Route 1  pos {'y': 14, 'x': 5}  facing up  money 3175  badges [] | model 13s ===
+💭 I'm stuck in a corridor at E5; north is blocked by trees (row 4 all #) and the left is a wall. The open area is to the right (F-J). I'll head east along row 5 to find a route north toward Viridian City.
+  ▶ walk_right walk_right walk_right walk_right walk_right walk_right
+
+=== turn 241 | map: Route 1  pos {'y': 14, 'x': 11}  facing right  money 3175  badges [] | model 9s ===
+💭 I'm at E5 on Route 1. The map shows row 4 is blocked (trees) except at H, I, J. I need to move east along row 5 to reach H5, then head north to find the path to Viridian City. Moving right toward H.
+  ▶ walk_right walk_right walk_right walk_up
+
+=== turn 242 | map: Route 1  pos {'y': 13, 'x': 14}  facing up  money 3175  badges [] | model 11s ===
+💭 I am on Route 1 with a low HP Squirtle. I need to head north towards Viridian City to heal and progress. The map shows the tile above me is walkable.
+  ▶ walk_up walk_up walk_up walk_up
+
+=== turn 243 | map: Route 1  pos {'y': 9, 'x': 14}  facing up  money 3175  badges [] | model 7s ===
+💭 I am on Route 1 heading north toward Viridian City. The path continues straight up. I will walk up repeatedly to progress north.
+  ▶ walk_up walk_up walk_up walk_up walk_up walk_up
+
+=== turn 244 | map: Route 1  pos {'y': 3, 'x': 14}  facing up  money 3175  badges [] | model 13s ===
+💭 Squirtle is low HP; need to reach Viridian City to heal. The map shows a wall directly north, but column B is open all the way up. I'll walk left to column B, then head north toward the city.
+  ▶ walk_left walk_left walk_left walk_up walk_up walk_up
+
+=== turn 245 | map: Route 1  pos {'y': 0, 'x': 11}  facing up  money 3175  badges [] | model 17s ===
+💭 I'm at the top edge of Route 1 (y=0) in the tree corridor; continuing north should warp into Viridian City where I can heal my low-HP Squirtle.
+  ▶ walk_up walk_up walk_up
+🏁 MILESTONE: Reached Viridian City (turn 246)
+
+=== turn 246 | map: Viridian City  pos {'y': 33, 'x': 21}  facing up  money 3175  badges [] | model 12s ===
+💭 I just entered Viridian City and Squirtle is low HP, so I need to reach the Pokémon Center. The local map only allows movement along this vertical street, so I'll continue north to find the center entrance.
+  ▶ walk_up walk_up walk_up walk_up walk_up walk_up
+
+=== turn 247 | map: Viridian City  pos {'y': 30, 'x': 21}  facing up  money 3175  badges [] | model 10s ===
+💭 Squirtle is at 6/24 HP and needs healing. I am in a street in Viridian City. I will move left to look for the Pokémon Center, which is typically near the main road.
+  ▶ walk_left walk_left walk_up walk_up
+
+=== turn 248 | map: Viridian City  pos {'y': 28, 'x': 19}  facing up  money 3175  badges [] | model 12s ===
+💭 I need to heal Squirtle at the Pokémon Center. The building is visible in the top right of the screenshot. I will move right and up to reach its entrance.
+  ▶ walk_right walk_right walk_right walk_up walk_up
+
+=== turn 249 | map: Viridian City  pos {'y': 28, 'x': 22}  facing up  money 3175  badges [] | model 7s ===
+💭 I'm right at the Pokémon Center door (the # tile directly above me). Walking up onto it should enter the center so I can heal Squirtle.
+  ▶ walk_up
+
+=== turn 250 | map: Viridian City  pos {'y': 28, 'x': 22}  facing up  money 3175  badges [] | model 12s ===
+💭 I'm below the Pokémon Center door. Squirtle is low HP, need to heal. Move right to the door column then up into the center.
+  ▶ walk_right walk_up walk_up walk_up press_a a_until_dialog_end
+
+=== turn 251 | map: Viridian City  pos {'y': 28, 'x': 23}  facing up  money 3175  badges [] | model 21s ===
+💭 I am in front of the Pokémon Center in Viridian City. My Squirtle is low on HP, so I need to enter and heal. The map shows a wall directly ahead, so I will move left along the street to find the entrance door.
+  ▶ walk_left walk_left walk_left walk_up
+
+=== turn 252 | map: Viridian City  pos {'y': 28, 'x': 20}  facing up  money 3175  badges [] | model 12s ===
+💭 Squirtle is at 6/24 HP, need to heal. The map shows an opening to the left (D4) leading up. I will move left and then up to navigate around the wall and find the PC door.
+  ▶ walk_left walk_up
+
+=== turn 253 | map: Viridian City  pos {'y': 27, 'x': 19}  facing up  money 3175  badges [] | model 15s ===
+💭 Squirtle is very low on HP. I need to get to the Pokémon Center. The map shows a wall to my left and right, but the tile above me (E4) is open. I will move up to get onto the main road and then look for the PC door.
+  ▶ walk_up walk_right walk_right walk_right walk_up press_a
+
+=== turn 254 | map: Viridian City  pos {'y': 26, 'x': 22}  facing up  money 3175  badges [] | model 17s ===
+💭 Squirtle is at 6/24 HP. I need to heal. The building I'm facing is the Mart (POKE sign). The PC is to the left. I will move left and then up to enter the PC.
+  ▶ walk_left walk_up press_a a_until_dialog_end
+
+=== turn 255 | map: Viridian City  pos {'y': 25, 'x': 21}  facing up  money 3175  badges [] | model 59s ===
+💭 Squirtle is at 6/24 HP, critically low, so I need to heal at the PC now. I'm adjacent to a building on my right (F-J block). The notes say the PC is left of the Mart, but I'll enter this building to check—if it's the PC I heal, if it's the Mart I'll grab a Potion and leave. Walking right onto the door tile to enter.
+  ▶ walk_right walk_up press_a a_until_dialog_end
+
+=== turn 256 | map: Viridian City  pos {'y': 24, 'x': 21}  facing up  money 3175  badges [] | model 42s ===
+💭 Squirtle is at critical HP and bag is empty. The building to my right is the Pokémon Mart (POKE sign). I'll enter it to buy a Potion. The door is at the building's base (around G6/G5); I'll walk down to the entrance row, across to the door column, then step up into the building to trigger the warp.
+  ▶ walk_down walk_right walk_right walk_up
+
+=== turn 257 | map: Viridian City  pos {'y': 24, 'x': 21}  facing up  money 3175  badges [] | model 15s ===
+💭 Squirtle is critical (6/24). I'm outside the Mart at E5. I need the Pokémon Center to heal, which in Viridian is to the west/left of the Mart. Let me walk left along the road to find it.
+  ▶ walk_left walk_left walk_left walk_up walk_up
+
+=== turn 258 | map: Viridian City  pos {'y': 22, 'x': 18}  facing up  money 3175  badges [] | model 8s ===
+💭 I'm outside the Mart in Viridian City with Squirtle critically low HP. I need the Pokémon Center, which is to the west. The map is open to the left, so I'll walk left to reach it.
+  ▶ walk_left walk_left walk_left walk_left walk_left walk_left
+
+=== turn 259 | map: Viridian City  pos {'y': 22, 'x': 12}  facing left  money 3175  badges [] | model 13s ===
+💭 Squirtle is critically low on HP. I need to find the Pokémon Center in Viridian City to heal. The map shows I'm currently in a spot where I can't go directly left, so I'll move up to the road and then head towards the center.
+  ▶ walk_up walk_up walk_left walk_left walk_left walk_left
+
+=== turn 260 | map: Viridian City  pos {'y': 20, 'x': 8}  facing left  money 3175  badges [] | model 10s ===
+💭 Squirtle is critically low at 6/24 HP. I need to find the Pokémon Center in Viridian City. I'm currently in the middle of town. The Pokémon Center is typically on the west side. Let me head west and then look for the building.
+  ▶ walk_left walk_left walk_left walk_up walk_up
+
+=== turn 261 | map: Viridian City  pos {'y': 18, 'x': 5}  facing up  money 3175  badges [] | model 10s ===
+💭 Squirtle is critically low on HP. I need to find the Pokémon Center in Viridian City to heal. I am currently on a path and will move north to look for the building.
+  ▶ walk_up walk_up walk_left walk_left
+
+=== turn 262 | map: Viridian City  pos {'y': 16, 'x': 3}  facing left  money 3175  badges [] | model 11s ===
+💭 Squirtle is at critical HP. I need to find the Pokémon Center in Viridian City. I will head north and look for the building entrance.
+  ▶ walk_up walk_up walk_up walk_right walk_right walk_right
+
+=== turn 263 | map: Viridian City  pos {'y': 14, 'x': 6}  facing right  money 3175  badges [] | model 20s ===
+💭 Squirtle is critically low on HP. I need to find the Pokémon Center. Looking at the map, there is a clear vertical path at column E going north (rows 1-4 are all '.' at column E). I am currently at E5, so I will walk north along this path to find the center.
+  ▶ walk_up walk_up walk_up walk_up
+
+=== turn 264 | map: Viridian City  pos {'y': 10, 'x': 6}  facing up  money 3175  badges [] | model 8s ===
+💭 Squirtle is at critical HP. I need to find the Pokémon Center in Viridian City. I am on a vertical path, so I will continue walking up to locate it.
+  ▶ walk_up walk_up walk_up walk_up
+
+=== turn 265 | map: Viridian City  pos {'y': 6, 'x': 6}  facing up  money 3175  badges [] | model 9s ===
+💭 Squirtle is critical HP. Need to heal at a Pokémon Center in Viridian City. The path goes up col E to row 3 where it opens east. Heading up to find the center.
+  ▶ walk_up walk_up walk_right walk_right
+
+=== turn 266 | map: Viridian City  pos {'y': 4, 'x': 8}  facing right  money 3175  badges [] | model 15s ===
+💭 Squirtle is at critical HP. I need to find the Pokémon Center in Viridian City to heal. I will explore the map by walking left and right to locate the building.
+  ▶ walk_left walk_left walk_up walk_up
+
+=== turn 267 | map: Viridian City  pos {'y': 4, 'x': 6}  facing up  money 3175  badges [] | model 10s ===
+💭 Squirtle is critical at 6/24. I'm at the north of Viridian City. I need to find the Pokémon Center. The road extends to the right (east). Let me move right along row 5 to locate the center building.
+  ▶ walk_right walk_right walk_right walk_right
+
+=== turn 268 | map: Viridian City  pos {'y': 4, 'x': 10}  facing right  money 3175  badges [] | model 14s ===
+💭 Squirtle is at critical HP and we need to find a Pokémon Center. The road extends to the left, so I'll head that way to look for the Center or a Mart.
+  ▶ walk_left walk_left walk_left walk_left
+
+=== turn 269 | map: Viridian City  pos {'y': 4, 'x': 6}  facing left  money 3175  badges [] | model 18s ===
+💭 Squirtle is at 6/24 HP with no bag and no items, so I must heal at a Pokémon Center. There's a building with T-shaped door tiles to my bottom-right in the screenshot. I'll head toward it to find the center. Moving right then down to approach the building entrance.
+  ▶ walk_right walk_right walk_down walk_down
+
+=== turn 270 | map: Viridian City  pos {'y': 4, 'x': 8}  facing down  money 3175  badges [] | model 12s ===
+💭 Squirtle is critically low on HP and I need to find the Pokémon Center. I can see a building with T-doors to my bottom right. I will walk right to get around the bushes and approach the entrance.
+  ▶ walk_right walk_right walk_down walk_down
+
+=== turn 271 | map: Viridian City  pos {'y': 4, 'x': 10}  facing down  money 3175  badges [] | model 15s ===
+💭 Squirtle is at critical HP and I need to enter the Pokémon Center. The screenshot shows T-door tiles directly below me; I'm aligned with one, so I'll walk down to trigger the warp inside.
+  ▶ walk_down
+
+=== turn 272 | map: Viridian City  pos {'y': 4, 'x': 10}  facing down  money 3175  badges [] | model 21s ===
+💭 I'm at the top-right of the walkable strip. The Pokémon Center doors are below along row 6. I need to align with a door tile and step down onto it to enter and heal my critically low Squirtle.
+  ▶ walk_left walk_left walk_left walk_left walk_down
+
+=== turn 273 | map: Viridian City  pos {'y': 5, 'x': 6}  facing down  money 3175  badges [] | model 8s ===
+💭 Squirtle is nearly fainted. I need to get to the Pokémon Center to heal. I'll head left to the vertical path and then down to find the center.
+  ▶ walk_left walk_left walk_down walk_down walk_down walk_down
+
+=== turn 274 | map: Viridian City  pos {'y': 9, 'x': 6}  facing down  money 3175  badges [] | model 7s ===
+💭 I'm on a vertical path in Viridian City with a building to my left. Squirtle is critically weak and I need to reach the Pokémon Center. I'll continue down the path to find its entrance.
+  ▶ walk_down walk_down walk_down walk_down
+
+=== turn 275 | map: Viridian City  pos {'y': 13, 'x': 6}  facing down  money 3175  badges [] | model 9s ===
+💭 Squirtle is critically low HP with no items, so I need the Pokémon Center. I'm in a narrow vertical path; I'll move down into the open southern area to navigate toward the center's entrance.
+  ▶ walk_down walk_down walk_down walk_down
+
+=== turn 276 | map: Viridian City  pos {'y': 17, 'x': 6}  facing down  money 3175  badges [] | model 9s ===
+💭 I need to reach the Pokémon Center to heal critical Squirtle; in Viridian it is on the eastern side, so I'll move right along the open road and look for an entrance.
+  ▶ walk_right walk_right walk_right walk_right walk_right
+
+=== turn 277 | map: Viridian City  pos {'y': 17, 'x': 11}  facing right  money 3175  badges [] | model 9s ===
+💭 Squirtle is at 6/24 HP and needs healing. I am in the open area of Viridian City. I will move right to find the entrance to the Pokémon Center.
+  ▶ walk_right walk_right walk_up walk_up
+
+=== turn 278 | map: Viridian City  pos {'y': 17, 'x': 13}  facing up  money 3175  badges [] | model 11s ===
+💭 I'm facing a building door directly above me. Squirtle is at 6/24 HP and I need healing, so this is likely the Pokémon Center. I'll walk up into the door to enter.
+  ▶ walk_up walk_up press_a
+
+=== turn 279 | map: Viridian City  pos {'y': 17, 'x': 13}  facing up  money 3175  badges [] | model 22s ===
+💭 I'm inside a building with a clerk at a counter — likely the Viridian Mart (east side). I need to confirm and either heal or exit. Let me face the clerk and talk to identify the building.
+  ▶ walk_right press_a
+
+=== turn 280 | map: Viridian City  pos {'y': 17, 'x': 14}  facing right  money 3175  badges [] | model 8s ===
+💭 Inside a building on the east side of Viridian City (x13-14), likely the Mart. Squirtle is at 6/24 HP and I need to heal. Let me talk to the clerk to identify this place and see if I can heal here.
+  ▶ press_a a_until_dialog_end
+
+=== turn 281 | map: Viridian City  pos {'y': 17, 'x': 14}  facing right  money 3175  badges [] | model 7s ===
+💭 I'm inside a building (looks like the Mart with shelves and counter). Squirtle needs healing. I need to exit and head west to the Pokémon Center. Let me walk left to exit.
+  ▶ walk_left walk_left walk_down
+
+=== turn 282 | map: Viridian City  pos {'y': 18, 'x': 12}  facing down  money 3175  badges [] | model 12s ===
+💭 I am outside in Viridian City and need to find the Pokémon Center to heal my Squirtle. Based on the map, I should head west (left) to find the building.
+  ▶ walk_left walk_left walk_left
+
+=== turn 283 | map: Viridian City  pos {'y': 18, 'x': 9}  facing left  money 3175  badges [] | model 18s ===
+💭 Squirtle is at 6/24 HP. I need to find the Pokémon Center. I can see a building with a red roof to my right (East) in the screenshot, which is likely the Center. I will turn around and head towards it.
+  ▶ walk_right walk_right walk_right walk_up walk_up press_a
+
+=== turn 284 | map: Viridian City  pos {'y': 17, 'x': 12}  facing up  money 3175  badges [] | model 6s ===
+💭 I am facing the door of the Pokémon Center (red roof). I need to walk up to enter the building and heal my Squirtle.
+  ▶ walk_up
+
+=== turn 285 | map: Viridian City  pos {'y': 17, 'x': 12}  facing up  money 3175  badges [] | model 23s ===
+💭 I am inside the Pokémon Center but facing a wall. The nurse is usually to the north, but I can't go up. I'll try walking right to find an opening or the nurse's counter.
+  ▶ walk_right walk_right press_a
+
+=== turn 286 | map: Viridian City  pos {'y': 17, 'x': 14}  facing right  money 3175  badges [] | model 7s ===
+💭 I am inside the Pokémon Center and need to heal Squirtle. I see the counter on the right side of the room. I will walk towards it to find the nurse.
+  ▶ walk_right walk_right press_a a_until_dialog_end
+
+=== turn 287 | map: Viridian City  pos {'y': 17, 'x': 16}  facing right  money 3175  badges [] | model 17s ===
+💭 A sign dialog is open; dismiss it, then move down into the open street and head right to find the Pokémon Center entrance.
+  ▶ a_until_dialog_end walk_down walk_right walk_right walk_right walk_right
+
+=== turn 288 | map: Viridian City  pos {'y': 17, 'x': 16}  facing right  money 3175  badges [] | model 12s ===
+💭 In Viridian City with Squirtle at 6/24 HP, no items. Need to find the Pokémon Center to heal. The street on row 6 is fully walkable, so I'll head right/east along it to locate the center entrance.
+  ▶ walk_down walk_right walk_right walk_right walk_right
+
+=== turn 289 | map: Viridian City  pos {'y': 17, 'x': 16}  facing right  money 3175  badges [] | model 5s ===
+💭 The city sign dialog is open. Close it, then head north to find the Pokémon Center to heal Squirtle.
+  ▶ a_until_dialog_end walk_up walk_up
+
+=== turn 290 | map: Viridian City  pos {'y': 17, 'x': 16}  facing right  money 3175  badges [] | model 10s ===
+💭 A sign dialog is open ('The Eternally Green Paradise'). I've been stuck near this sign. Clear it, then head west along the open street (row 6) to find the Pokémon Center on the west side of Viridian City.
+  ▶ a_until_dialog_end walk_down walk_left walk_left walk_left
+
+=== turn 291 | map: Viridian City  pos {'y': 17, 'x': 16}  facing right  money 3175  badges [] | model 11s ===
+💭 A sign dialog is open ('The Eternally Green Paradise') - I keep re-triggering it. Close it first, then step down to the open row 6 and travel west toward the Pokémon Center to heal Squirtle (HP 6/24).
+  ▶ a_until_dialog_end walk_down walk_left walk_left walk_left walk_left
+
+=== turn 292 | map: Viridian City  pos {'y': 17, 'x': 16}  facing right  money 3175  badges [] | model 9s ===
+💭 A sign dialog 'The Eternally Green Paradise' is open. Close it, then step down to the open row 6 and head west toward the Pokémon Center to heal Squirtle (6/24 HP).
+  ▶ a_until_dialog_end walk_down walk_left walk_left walk_left walk_left
+
+=== turn 293 | map: Viridian City  pos {'y': 17, 'x': 16}  facing right  money 3175  badges [] | model 9s ===
+💭 A dialog box is open ('The Eternally Green Paradise'), which is why my position hasn't changed for 6 turns. I must close it with a_until_dialog_end before I can move. Then I'll head down to the open row 6 and navigate east toward the Pokémon Center to heal Squirtle (HP 6/24).
+  ▶ a_until_dialog_end walk_down walk_right walk_right walk_right walk_right
+
+=== turn 294 | map: Viridian City  pos {'y': 17, 'x': 16}  facing right  money 3175  badges [] | model 11s ===
+💭 A sign dialog 'The Eternally Green Paradise' is open, blocking movement — that's why I've been stuck for 7 turns. Clear it first, then move down to the open row 6 and head west toward the Pokémon Center to heal my 6/24 HP Squirtle.
+  ▶ a_until_dialog_end walk_down walk_left walk_left walk_left walk_left
+
+=== turn 295 | map: Viridian City  pos {'y': 18, 'x': 12}  facing left  money 3175  badges [] | model 9s ===
+💭 Squirtle is at 6/24 HP with no items, so I must heal first. The plan is to head west along row 6 to find the Pokémon Center entrance. I'll clear any dialog and walk left.
+  ▶ a_until_dialog_end walk_left walk_left walk_left walk_left
+
+=== turn 296 | map: Viridian City  pos {'y': 18, 'x': 8}  facing left  money 3175  badges [] | model 13s ===
+💭 Squirtle is at 6/24 HP, need to heal. I am in Viridian City. I will walk left (west) to find the Pokémon Center, which is typically on the west side of the city.
+  ▶ walk_left walk_left walk_left walk_left
+
+=== turn 297 | map: Viridian City  pos {'y': 18, 'x': 4}  facing left  money 3175  badges [] | model 23s ===
+💭 Squirtle is almost fainted, so I need to reach the Pokémon Center. From here I can head north along the open road, then move east along the top road to find the center entrance.
+  ▶ walk_up walk_up walk_up walk_up walk_right walk_right
+
+=== turn 298 | map: Viridian City  pos {'y': 14, 'x': 6}  facing right  money 3175  badges [] | model 7s ===
+💭 I am in a narrow corridor in Viridian City. I need to head north to find the Pokémon Center to heal my Squirtle.
+  ▶ walk_up walk_up walk_up walk_up
+
+=== turn 299 | map: Viridian City  pos {'y': 10, 'x': 6}  facing up  money 3175  badges [] | model 7s ===
+💭 I'm in a narrow corridor in Viridian City; Squirtle is at 6 HP so I need the Pokémon Center. The corridor continues north to row 1, so I'll walk up to the top and then look for the center.
+  ▶ walk_up walk_up walk_up walk_up
+
+=== turn 300 | map: Viridian City  pos {'y': 6, 'x': 6}  facing up  money 3175  badges [] | model 10s ===
+💭 Squirtle is nearly fainted; I need the Pokémon Center. The map shows an opening to the east at row 3, so I'll go up to that row then head right into the city to find the center.
+  ▶ walk_up walk_up walk_right
+
+=== turn 301 | map: Viridian City  pos {'y': 4, 'x': 7}  facing right  money 3175  badges [] | model 20s ===
+💭 Squirtle is at 6/24 HP. I need to find the Pokémon Center. The map shows a path to the left and down. I will move left to D5 and then down to follow the path.
+  ▶ walk_left walk_down walk_down walk_down
+
+=== turn 302 | map: Viridian City  pos {'y': 7, 'x': 6}  facing down  money 3175  badges [] | model 9s ===
+💭 I am in a narrow path in Viridian City. I need to head north to reach the main street where the Pokémon Center is located. The map shows an open area at the top (row 2), so I will walk up.
+  ▶ walk_up walk_up walk_up walk_up
+
+=== turn 303 | map: Viridian City  pos {'y': 4, 'x': 6}  facing up  money 3175  badges [] | model 20s ===
+💭 Squirtle is at 6/24 HP and I need the Pokémon Center. The left side is walled off, so I'll move into the open area on the right to find a path toward the center.
+  ▶ walk_right walk_right walk_right walk_down
+
+=== turn 304 | map: Viridian City  pos {'y': 4, 'x': 9}  facing down  money 3175  badges [] | model 8s ===
+💭 I'm in Viridian City with Squirtle at 6/24 HP, need to heal. The map shows a horizontal walkable row to my right (F5-J5). I'll walk right to find the Pokémon Center entrance, which should be along this street.
+  ▶ walk_right walk_right walk_right walk_right walk_right
+
+=== turn 305 | map: Viridian City  pos {'y': 4, 'x': 13}  facing right  money 3175  badges [] | model 9s ===
+💭 Squirtle is at 6/24 HP and needs healing. I am facing right into trees, so I must move left back towards the main path to find the Pokémon Center.
+  ▶ walk_left walk_left walk_left walk_left
+
+=== turn 306 | map: Viridian City  pos {'y': 4, 'x': 9}  facing left  money 3175  badges [] | model 10s ===
+💭 I'm trapped in a narrow walkable strip (row 5) in Viridian City with my Squirtle at 6/24 HP. I need to reach the Pokémon Center. The only movement is left/right along this row, so I'll head right to find an opening or door leading to the Center.
+  ▶ walk_right walk_right walk_right walk_right
+
+=== turn 307 | map: Viridian City  pos {'y': 4, 'x': 13}  facing right  money 3175  badges [] | model 9s ===
+💭 I'm stuck on row 5 strip, can only move left/right. The white T-shaped entrances are to my left at row 5. I'll walk left to reach a building door, hopefully the Pokémon Center to heal Squirtle (HP 6/24).
+  ▶ walk_left walk_left walk_left walk_left walk_left walk_left
+
+=== turn 308 | map: Viridian City  pos {'y': 4, 'x': 7}  facing left  money 3175  badges [] | model 13s ===
+💭 I'm on the narrow walkway strip in Viridian City. The screenshot shows white door tiles on the building to my right (east). I need to walk right to get adjacent to a door, then face it and press A to enter (likely the Pokémon Center to heal my near-dead Squirtle).
+  ▶ walk_right walk_right press_a
+
+=== turn 309 | map: Viridian City  pos {'y': 4, 'x': 9}  facing right  money 3175  badges [] | model 16s ===
+💭 Squirtle is at 6/24 HP, I must heal. The building with white doors is just below-right of me on the path. I'll walk right along row 5 to align with a door, then step down onto it to enter (likely the Pokémon Center).
+  ▶ walk_right walk_right walk_down
+
+=== turn 310 | map: Viridian City  pos {'y': 4, 'x': 11}  facing down  money 3175  badges [] | model 9s ===
+💭 Squirtle is at 6/24 HP and needs healing. I am in Viridian City on a walkable strip (row 5). I see white buildings to my right (east). I will walk right to find the Pokémon Center door and enter it to heal.
+  ▶ walk_right walk_right walk_right walk_right
+
+=== turn 311 | map: Viridian City  pos {'y': 4, 'x': 13}  facing right  money 3175  badges [] | model 16s ===
+💭 I'm in Viridian City, Squirtle at 6/24 HP. The white building (Pokémon Center/Mart) is to my west in the screenshot. I need to walk left toward its doors to enter and heal. Walking left along the walkable row 5.
+  ▶ walk_left walk_left walk_left walk_left
+
+=== turn 312 | map: Viridian City  pos {'y': 4, 'x': 9}  facing left  money 3175  badges [] | model 35s ===
+💭 I'm in Viridian City needing to heal Squirtle (HP 6/24) at the Center, which is the building just below-left of me. I'll move left to line up with a door tile, then step down onto it to enter.
+  ▶ walk_left walk_left walk_down
+
+=== turn 313 | map: Viridian City  pos {'y': 5, 'x': 7}  facing down  money 3175  badges [] | model 20s ===
+💭 Squirtle is at 6/24 HP and needs healing. I am on the main road in Viridian City. The Pokémon Center and Mart are to the west (left) of the road. I need to move to the road (column D) and face left to find the doors.
+  ▶ walk_left walk_up walk_left
+
+=== turn 314 | map: Viridian City  pos {'y': 4, 'x': 6}  facing left  money 3175  badges [] | model 11s ===
+💭 I'm at E5 facing left, near a wall. The building with doors is below-right; map shows E6 and F6 walkable. I'll step down and right toward the door to enter and heal Squirtle.
+  ▶ walk_down walk_right walk_down walk_right
+
+=== turn 315 | map: Viridian City  pos {'y': 5, 'x': 7}  facing right  money 3175  badges [] | model 22s ===
+💭 Squirtle is nearly fainted and I need to enter the building to heal. The screenshot shows a door directly to my right, so I'll step onto it as a warp tile despite the map marking it blocked.
+  ▶ walk_right
+
+=== turn 316 | map: Viridian City  pos {'y': 5, 'x': 7}  facing right  money 3175  badges [] | model 20s ===
+💭 Squirtle is at 6/24 HP and needs healing. I see a building to my right which is likely the Pokémon Center. The door is on its left wall. I will walk up to align with the door, then walk right to enter.
+  ▶ walk_up walk_right
+
+=== turn 317 | map: Viridian City  pos {'y': 4, 'x': 8}  facing right  money 3175  badges [] | model 14s ===
+💭 I'm at E5 facing right, and the Pokémon Center (red cross building) is to my right. I need to walk right to reach the building entrance, then up to the door to heal Squirtle.
+  ▶ walk_right walk_right walk_up
+
+=== turn 318 | map: Viridian City  pos {'y': 4, 'x': 10}  facing up  money 3175  badges [] | model 24s ===
+💭 I'm in Viridian City with Squirtle at 6/24 HP, need to heal at the Pokémon Center. The center building is just south of me with doors along its top edge. I'll walk down onto a door to enter.
+  ▶ walk_down walk_down
+
+=== turn 319 | map: Viridian City  pos {'y': 4, 'x': 10}  facing down  money 3175  badges [] | model 8s ===
+💭 Squirtle is at 6 HP, must heal. The Center building is directly south of me. I'll walk down onto the door tile to enter, then talk to the nurse.
+  ▶ walk_down walk_down press_a
+
+=== turn 320 | map: Viridian City  pos {'y': 4, 'x': 10}  facing down  money 3175  badges [] | model 26s ===
+💭 I'm at the top edge of the Pokémon Center building but the tile directly below me is wall, not a door. The doors are to my left on the building's top edge. I'll shift left to align with a door, then step down onto it to enter.
+  ▶ walk_left walk_left walk_down walk_down
+
+=== turn 321 | map: Viridian City  pos {'y': 4, 'x': 8}  facing down  money 3175  badges [] | model 16s ===
+💭 I'm in the open road; the Pokémon Center is the building below me. I need to find its door tile on the building's road-facing edge and step onto it. Let me move left along the road to locate the entrance, then step up onto the door.
+  ▶ walk_left walk_left walk_up
+
+=== turn 322 | map: Viridian City  pos {'y': 4, 'x': 6}  facing up  money 3175  badges [] | model 61s ===
+💭 Squirtle is at 6/24 HP and I need the Pokémon Center. The screenshot shows a building door to my right along the road. I'll move right to line up with the door, then step up onto it (doors are warp tiles even if shown as #).
+  ▶ walk_right walk_right walk_up
+
+=== turn 323 | map: Viridian City  pos {'y': 4, 'x': 8}  facing up  money 3175  badges [] | model 9s ===
+💭 I need to heal my Squirtle. The Pokémon Center is to my right. I will walk right to align with the door, then walk up to enter.
+  ▶ walk_right walk_up
+
+=== turn 324 | map: Viridian City  pos {'y': 4, 'x': 9}  facing up  money 3175  badges [] | model 16s ===
+💭 I am in Viridian City and need to heal my Squirtle. I see a door on the right side of the screen. I will walk right to approach it and enter the building, which is likely the Pokémon Center.
+  ▶ walk_right walk_right walk_right walk_right
+
+=== turn 325 | map: Viridian City  pos {'y': 4, 'x': 13}  facing right  money 3175  badges [] | model 17s ===
+💭 I'm at E5 with only left (A-D) walkable; up/down/right are blocked. The arched-door building in the screenshot (likely Pokémon Center) is to my left. I'll walk left along the road to reach it.
+  ▶ walk_left walk_left walk_left

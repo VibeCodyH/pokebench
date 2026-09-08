@@ -1,0 +1,21 @@
+# ROMs are never committed
+roms/
+*.gb
+*.gbc
+*.gba
+# local env / caches
+.venv/
+__pycache__/
+*.pyc
+# live run scratch (per-run artifacts under runs/<id>/ are kept as benchmark receipts)
+runs/harness.log
+qwen-log.jsonl
+zelda-log.jsonl
+qwen-run.log
+zelda-run.log
+server.log
+notes.md
+screen.png
+screen-big.png
+model-view.png
+site/runs.json

@@ -1,0 +1,337 @@
+[
+  {
+    "run_id": "sample-astra",
+    "model": "GPT-6 Astra",
+    "provider": "openai",
+    "family": "GPT",
+    "run_name": "Illustrative sample",
+    "prompt_version": "sample-red-v1",
+    "execution_route": "openai-api",
+    "think_level": "high",
+    "num_ctx": 65536,
+    "run_date": "2026-09-07",
+    "model_params": null,
+    "quant": null,
+    "budget_turns": 1000,
+    "turns_used": 612,
+    "wall_time_s": 6120,
+    "tokens_in": 412000,
+    "tokens_out": 16160,
+    "cost_usd": 1.84,
+    "youtube_url": null,
+    "timestamp": "20260907_120000",
+    "milestones": [
+      {
+        "key": "left_house",
+        "label": "Left the house",
+        "turn": 68
+      },
+      {
+        "key": "route_1",
+        "label": "Reached Route 1",
+        "turn": 136
+      },
+      {
+        "key": "got_starter",
+        "label": "Got a starter",
+        "turn": 204
+      },
+      {
+        "key": "viridian_city",
+        "label": "Reached Viridian City",
+        "turn": 272
+      },
+      {
+        "key": "viridian_forest",
+        "label": "Entered Viridian Forest",
+        "turn": 340
+      },
+      {
+        "key": "pewter_city",
+        "label": "Reached Pewter City",
+        "turn": 408
+      },
+      {
+        "key": "pewter_gym",
+        "label": "Entered Brock's Gym",
+        "turn": 476
+      },
+      {
+        "key": "beat_brock",
+        "label": "Beat Brock (Boulder Badge)",
+        "turn": 612
+      }
+    ],
+    "furthest_key": "beat_brock",
+    "furthest_label": "Beat Brock (Boulder Badge)",
+    "furthest_index": 7,
+    "beat_brock": true,
+    "in_game_name": "AAAAA",
+    "rival_name": "BLUE"
+  },
+  {
+    "run_id": "sample-opus",
+    "model": "Claude Opus 4.8",
+    "provider": "anthropic",
+    "family": "Claude",
+    "run_name": "Illustrative sample",
+    "prompt_version": "sample-red-v1",
+    "execution_route": "anthropic-api",
+    "think_level": "high",
+    "num_ctx": 65536,
+    "run_date": "2026-09-07",
+    "model_params": null,
+    "quant": null,
+    "budget_turns": 1000,
+    "turns_used": 740,
+    "wall_time_s": 8280,
+    "tokens_in": 541000,
+    "tokens_out": 21400,
+    "cost_usd": 2.1,
+    "youtube_url": null,
+    "timestamp": "20260907_120000",
+    "milestones": [
+      {
+        "key": "left_house",
+        "label": "Left the house",
+        "turn": 82
+      },
+      {
+        "key": "route_1",
+        "label": "Reached Route 1",
+        "turn": 164
+      },
+      {
+        "key": "got_starter",
+        "label": "Got a starter",
+        "turn": 247
+      },
+      {
+        "key": "viridian_city",
+        "label": "Reached Viridian City",
+        "turn": 329
+      },
+      {
+        "key": "viridian_forest",
+        "label": "Entered Viridian Forest",
+        "turn": 411
+      },
+      {
+        "key": "pewter_city",
+        "label": "Reached Pewter City",
+        "turn": 493
+      },
+      {
+        "key": "pewter_gym",
+        "label": "Entered Brock's Gym",
+        "turn": 576
+      },
+      {
+        "key": "beat_brock",
+        "label": "Beat Brock (Boulder Badge)",
+        "turn": 740
+      }
+    ],
+    "furthest_key": "beat_brock",
+    "furthest_label": "Beat Brock (Boulder Badge)",
+    "furthest_index": 7,
+    "beat_brock": true,
+    "in_game_name": "HELPER",
+    "rival_name": "GARY"
+  },
+  {
+    "run_id": "sample-gemini",
+    "model": "Gemini 3.8 Flash",
+    "provider": "google",
+    "family": "Gemini",
+    "run_name": "Illustrative sample",
+    "prompt_version": "sample-red-v1",
+    "execution_route": "google-api",
+    "think_level": "medium",
+    "num_ctx": 65536,
+    "run_date": "2026-09-06",
+    "model_params": null,
+    "quant": null,
+    "budget_turns": 1000,
+    "turns_used": 1000,
+    "wall_time_s": 5160,
+    "tokens_in": 297000,
+    "tokens_out": 13000,
+    "cost_usd": 0.42,
+    "youtube_url": null,
+    "timestamp": "20260906_120000",
+    "milestones": [
+      {
+        "key": "left_house",
+        "label": "Left the house",
+        "turn": 143
+      },
+      {
+        "key": "route_1",
+        "label": "Reached Route 1",
+        "turn": 286
+      },
+      {
+        "key": "got_starter",
+        "label": "Got a starter",
+        "turn": 429
+      },
+      {
+        "key": "viridian_city",
+        "label": "Reached Viridian City",
+        "turn": 571
+      },
+      {
+        "key": "viridian_forest",
+        "label": "Entered Viridian Forest",
+        "turn": 714
+      },
+      {
+        "key": "pewter_city",
+        "label": "Reached Pewter City",
+        "turn": 700
+      }
+    ],
+    "furthest_key": "pewter_city",
+    "furthest_label": "Reached Pewter City",
+    "furthest_index": 5,
+    "beat_brock": false,
+    "in_game_name": "CLAUDE",
+    "rival_name": "RIVAL"
+  },
+  {
+    "run_id": "sample-qwen",
+    "model": "qwen3.8:27b",
+    "provider": "ollama",
+    "family": "Qwen",
+    "run_name": "Illustrative sample",
+    "prompt_version": "sample-red-v1",
+    "execution_route": "ollama-local",
+    "think_level": "high",
+    "num_ctx": 65536,
+    "run_date": "2026-09-06",
+    "model_params": "27B",
+    "quant": "Q4_K_M",
+    "budget_turns": 1000,
+    "turns_used": 1000,
+    "wall_time_s": 20820,
+    "tokens_in": 262000,
+    "tokens_out": 14000,
+    "cost_usd": 0,
+    "youtube_url": null,
+    "timestamp": "20260906_120000",
+    "milestones": [
+      {
+        "key": "left_house",
+        "label": "Left the house",
+        "turn": 167
+      },
+      {
+        "key": "route_1",
+        "label": "Reached Route 1",
+        "turn": 333
+      },
+      {
+        "key": "got_starter",
+        "label": "Got a starter",
+        "turn": 500
+      },
+      {
+        "key": "viridian_city",
+        "label": "Reached Viridian City",
+        "turn": 667
+      },
+      {
+        "key": "viridian_forest",
+        "label": "Entered Viridian Forest",
+        "turn": 700
+      }
+    ],
+    "furthest_key": "viridian_forest",
+    "furthest_label": "Entered Viridian Forest",
+    "furthest_index": 4,
+    "beat_brock": false,
+    "in_game_name": "GPT",
+    "rival_name": "ASH"
+  },
+  {
+    "run_id": "sample-llama",
+    "model": "Llama 4 8B",
+    "provider": "ollama-local",
+    "family": "Llama",
+    "run_name": "Illustrative sample",
+    "prompt_version": "sample-red-v1",
+    "execution_route": "ollama-local",
+    "think_level": "off",
+    "num_ctx": 65536,
+    "run_date": "2026-09-05",
+    "model_params": "8B",
+    "quant": "Q4_K_M",
+    "budget_turns": 1000,
+    "turns_used": 1000,
+    "wall_time_s": 10440,
+    "tokens_in": 175000,
+    "tokens_out": 9000,
+    "cost_usd": 0,
+    "youtube_url": null,
+    "timestamp": "20260905_120000",
+    "milestones": [
+      {
+        "key": "left_house",
+        "label": "Left the house",
+        "turn": 250
+      },
+      {
+        "key": "route_1",
+        "label": "Reached Route 1",
+        "turn": 500
+      },
+      {
+        "key": "got_starter",
+        "label": "Got a starter",
+        "turn": 700
+      }
+    ],
+    "furthest_key": "got_starter",
+    "furthest_label": "Got a starter",
+    "furthest_index": 2,
+    "beat_brock": false,
+    "in_game_name": "AI",
+    "rival_name": "JOHN"
+  },
+  {
+    "run_id": "sample-mistral",
+    "model": "Mistral Small",
+    "provider": "ollama",
+    "family": "Mistral",
+    "run_name": "Illustrative sample",
+    "prompt_version": "sample-red-v1",
+    "execution_route": "ollama-local",
+    "think_level": "off",
+    "num_ctx": 65536,
+    "run_date": "2026-09-05",
+    "model_params": null,
+    "quant": "Q4_K_M",
+    "budget_turns": 1000,
+    "turns_used": 1000,
+    "wall_time_s": 12960,
+    "tokens_in": 201000,
+    "tokens_out": 11000,
+    "cost_usd": 0,
+    "youtube_url": null,
+    "timestamp": "20260905_120000",
+    "milestones": [
+      {
+        "key": "left_house",
+        "label": "Left the house",
+        "turn": 700
+      }
+    ],
+    "furthest_key": "left_house",
+    "furthest_label": "Left the house",
+    "furthest_index": 0,
+    "beat_brock": false,
+    "in_game_name": "QWEN",
+    "rival_name": "XXX"
+  }
+]

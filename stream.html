@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PokéBench</title>
+<style>
+  :root{
+    --bg:#0a0f1c; --bg2:#0c1424; --panel:#0f1a2e; --panel2:#122038;
+    --hair:#1d2c4a; --hair2:#263a60;
+    --teal:#2dd4bf; --teal-dim:#0f766e; --blue:#38bdf8; --blue2:#3b82f6;
+    --ink:#e6edf7; --dim:#9db0cc; --faint:#5f7292;
+    --gold:#fbbf24; --good:#34d399; --bad:#f87171;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --r:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:
+     radial-gradient(1200px 600px at 20% -10%, #10203a 0%, transparent 60%),
+     radial-gradient(1000px 700px at 110% 10%, #0d2836 0%, transparent 55%),
+     var(--bg);
+    color:var(--ink);font-family:var(--sans);font-size:15px;-webkit-font-smoothing:antialiased}
+  #app{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.85fr);grid-template-rows:auto 1fr;
+    gap:14px;height:100vh;padding:14px}
+  /* ---- top bar ---- */
+  #top{grid-column:1/3;display:flex;align-items:center;gap:16px;
+    background:linear-gradient(90deg,var(--panel) 0%,var(--bg2) 100%);
+    border:1px solid var(--hair);border-radius:var(--r);padding:10px 16px}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .mark{width:34px;height:34px;flex:0 0 auto}
+  .brand .name{font-weight:800;letter-spacing:.02em;font-size:20px}
+  .brand .name b{background:linear-gradient(90deg,var(--teal),var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand .sub{font-size:11px;color:var(--faint);letter-spacing:.16em;text-transform:uppercase;margin-top:1px}
+  .model{margin-left:6px;font-family:var(--mono);font-size:12px;color:var(--teal);
+    border:1px solid var(--teal-dim);background:rgba(45,212,191,.08);border-radius:99px;padding:3px 10px}
+  .counters{margin-left:auto;display:flex;gap:22px;align-items:center}
+  .counter{text-align:right}
+  .counter .k{font-size:10px;color:var(--faint);letter-spacing:.14em;text-transform:uppercase}
+  .counter .v{font-family:var(--mono);font-size:17px;color:var(--ink)}
+  .live{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .dot{width:8px;height:8px;border-radius:99px;background:var(--faint);box-shadow:0 0 0 0 rgba(52,211,153,.6)}
+  .dot.on{background:var(--good);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}70%{box-shadow:0 0 0 7px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+  /* ---- stage ---- */
+  #stage{display:flex;flex-direction:column;gap:12px;min-height:0}
+  .screen-wrap{position:relative;border:1px solid var(--hair2);border-radius:var(--r);overflow:hidden;
+    background:#05070d;flex:0 0 auto;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  .screen-wrap::before{content:"";position:absolute;inset:0;border-radius:var(--r);
+    box-shadow:inset 0 0 0 1px rgba(56,189,248,.08);pointer-events:none;z-index:2}
+  #screen{display:block;width:100%;aspect-ratio:160/144;image-rendering:pixelated;object-fit:fill;background:#05070d}
+  .readout{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--hair);
+    border:1px solid var(--hair);border-radius:var(--r);overflow:hidden}
+  .readout .cell{background:var(--panel);padding:8px 11px}
+  .readout .k{font-size:9.5px;color:var(--faint);letter-spacing:.13em;text-transform:uppercase}
+  .readout .v{font-family:var(--mono);font-size:14px;margin-top:2px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* ---- thought ---- */
+  .think{flex:0 0 auto;border:1px solid var(--hair);border-left:3px solid var(--teal);border-radius:var(--r);
+    background:linear-gradient(180deg,rgba(45,212,191,.05),transparent);padding:12px 15px}
+  .think .lbl{font-size:10px;color:var(--teal);letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
+  #thought{font-size:16px;line-height:1.45;color:var(--ink)}
+  .inputs{margin-top:9px;font-family:var(--mono);font-size:13px;color:var(--blue)}
+  .inputs .chip{display:inline-block;border:1px solid var(--hair2);background:rgba(56,189,248,.07);
+    border-radius:6px;padding:1px 8px;margin:2px 4px 0 0}
+  /* ---- side ---- */
+  #side{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden}
+  .card{border:1px solid var(--hair);border-radius:var(--r);background:var(--panel);padding:11px 13px}
+  .card .lbl{font-size:10px;color:var(--faint);letter-spacing:.15em;text-transform:uppercase;margin-bottom:9px;display:flex;justify-content:space-between}
+  .obj{display:flex;align-items:flex-start;gap:9px;padding:4px 0;font-size:13.5px;color:var(--dim)}
+  .obj .t{flex:0 0 auto;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;font-family:var(--mono)}
+  .obj.p .t{background:rgba(56,189,248,.14);color:var(--blue);border:1px solid var(--blue2)}
+  .obj.s .t{background:rgba(45,212,191,.12);color:var(--teal);border:1px solid var(--teal-dim)}
+  .obj.t3 .t{background:rgba(148,176,204,.1);color:var(--dim);border:1px solid var(--hair2)}
+  .obj.done{color:var(--faint);text-decoration:line-through}
+  .obj.done .t{background:rgba(52,211,153,.14);color:var(--good);border-color:var(--good)}
+  .badges{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+  .badge{aspect-ratio:1;border-radius:8px;border:1px solid var(--hair2);background:var(--bg2);
+    display:grid;place-items:center;font-family:var(--mono);font-size:10px;color:var(--faint);position:relative}
+  .badge.earned{border-color:var(--teal);color:var(--teal);background:rgba(45,212,191,.1);
+    box-shadow:0 0 12px rgba(45,212,191,.25)}
+  .tele{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .tele .box{background:var(--bg2);border:1px solid var(--hair);border-radius:9px;padding:9px 6px;text-align:center}
+  .tele .v{font-family:var(--mono);font-size:20px;color:var(--ink)}
+  .tele .k{font-size:9px;color:var(--faint);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+  .party{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .mon{background:var(--bg2);border:1px solid var(--hair);border-radius:9px;padding:8px 10px;min-height:44px}
+  .mon .n{font-size:12.5px;font-weight:600;color:var(--ink);display:flex;justify-content:space-between}
+  .mon .n .lv{font-family:var(--mono);color:var(--teal);font-size:11px}
+  .mon .sp{font-size:10.5px;color:var(--faint);margin:1px 0 5px}
+  .hpbar{height:5px;border-radius:99px;background:#1a2740;overflow:hidden}
+  .hpbar > i{display:block;height:100%;background:linear-gradient(90deg,var(--good),var(--teal))}
+  .mon.empty{display:grid;place-items:center;color:var(--faint);font-size:18px}
+  .logcard{flex:1;display:flex;flex-direction:column;min-height:0}
+  #log{overflow:hidden;flex:1;display:flex;flex-direction:column;gap:0}
+  #log .row{font-size:12px;color:var(--dim);padding:5px 0;border-bottom:1px dashed var(--hair);line-height:1.4}
+  #log .row.moment{color:var(--gold)}
+  #log .row .ic{color:var(--teal);margin-right:5px}
+</style></head>
+<body>
+<div id="app">
+  <div id="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#2dd4bf"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs>
+        <rect x="1.5" y="1.5" width="37" height="37" rx="10" stroke="url(#g)" stroke-width="2"/>
+        <path d="M9 27 A11 11 0 0 1 31 27" stroke="url(#g)" stroke-width="2.6" stroke-linecap="round"/>
+        <line x1="20" y1="27" x2="27" y2="15" stroke="#e6edf7" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="20" cy="27" r="2.4" fill="#38bdf8"/>
+      </svg>
+      <div><div class="name"><b>Poké</b>Bench</div><div class="sub">Local LLM · Pokémon Red</div></div>
+    </div>
+    <span class="model" id="model">qwen3.8:27b · local · 64K ctx</span>
+    <div class="counters">
+      <div class="counter"><div class="k">Run</div><div class="v" id="runName">—</div></div>
+      <div class="counter"><div class="k">Turn</div><div class="v" id="turn">0</div></div>
+      <div class="counter"><div class="k">Session</div><div class="v" id="session">0:00:00</div></div>
+      <div class="live"><span class="dot" id="dot"></span><span id="status">connecting</span></div>
+    </div>
+  </div>
+
+  <div id="stage">
+    <div class="screen-wrap"><img id="screen" alt="game"></div>
+    <div class="readout">
+      <div class="cell"><div class="k">Location</div><div class="v" id="rLoc">—</div></div>
+      <div class="cell"><div class="k">Cell</div><div class="v" id="rCell">—</div></div>
+      <div class="cell"><div class="k">Pos</div><div class="v" id="rPos">—</div></div>
+      <div class="cell"><div class="k">Money</div><div class="v" id="rMoney">—</div></div>
+      <div class="cell"><div class="k">Pokédex</div><div class="v" id="rDex">0</div></div>
+    </div>
+    <div class="think">
+      <div class="lbl">Reasoning</div>
+      <div id="thought">…</div>
+      <div class="inputs" id="inputs"></div>
+    </div>
+  </div>
+
+  <div id="side">
+    <div class="card"><div class="lbl">Objectives</div><div id="objectives"></div></div>
+    <div class="card"><div class="lbl">Gym Badges <span id="badgeCount" style="color:var(--teal)">0/8</span></div>
+      <div class="badges" id="badges"></div></div>
+    <div class="card"><div class="lbl">Telemetry</div>
+      <div class="tele">
+        <div class="box"><div class="v" id="tActions">0</div><div class="k">Actions</div></div>
+        <div class="box"><div class="v" id="tTurns">0</div><div class="k">Turns</div></div>
+        <div class="box"><div class="v" id="tBlackout">0</div><div class="k">Blackouts</div></div>
+        <div class="box"><div class="v" id="tCaught">0</div><div class="k">Caught</div></div>
+      </div></div>
+    <div class="card"><div class="lbl">Party</div><div class="party" id="party"></div></div>
+    <div class="card logcard"><div class="lbl">Field Log</div><div id="log"></div></div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id), screenEl=$('screen');
+const BADGES=["BLD","CSC","THD","RBW","SOU","MSH","VOL","ERT"];
+let caught=0;
+
+function show(b64){ if(typeof b64==='string'&&b64.length) screenEl.src='data:image/png;base64,'+b64.replace(/^data:image\/png;base64,/,''); }
+function esc(s){ return (s||'').toString(); }
+function logRow(txt,moment){ const d=document.createElement('div'); d.className='row'+(moment?' moment':'');
+  d.innerHTML=(moment?'<span class="ic">★</span>':'<span class="ic">›</span>')+esc(txt); const l=$('log'); l.prepend(d);
+  while(l.children.length>30) l.lastChild.remove(); }
+
+function setThought(t){ $('thought').textContent=t||''; }
+function setInputs(str){ const box=$('inputs'); box.innerHTML=''; (str||'').split(/\s+/).filter(Boolean).forEach(a=>{
+  const s=document.createElement('span'); s.className='chip'; s.textContent=a; box.appendChild(s); }); }
+
+function handle(m){
+  switch(m.type){
+    case 'screenshot': if(m.data&&m.data.image) show(m.data.image); break;
+    case 'reasoning': case 'thought': setThought(m.text); logRow('💭 '+esc(m.text)); break;
+    case 'decision': setInputs(m.text); break;
+    case 'key_moment': case 'moment':
+      logRow(esc(m.description),true);
+      if((m.category||'').toLowerCase()==='catch') caught++;
+      break;
+    case 'replay': (m.events||[]).slice(-12).forEach(handle); break;
+  }
+}
+
+function renderObjectives(objs){
+  const map={primary:'p',secondary:'s',tertiary:'t3'}, tag={primary:'P',secondary:'S',tertiary:'T'};
+  $('objectives').innerHTML=(objs||[]).map(o=>`<div class="obj ${map[o.tier]||'t3'} ${o.done?'done':''}">
+    <span class="t">${o.done?'✓':(tag[o.tier]||'·')}</span><span>${esc(o.text)}</span></div>`).join('');
+}
+function renderBadges(n){
+  $('badgeCount').textContent=n+'/8';
+  $('badges').innerHTML=BADGES.map((b,i)=>`<div class="badge ${i<n?'earned':''}">${b}</div>`).join('');
+}
+function renderParty(party){
+  const slots=[];
+  for(let i=0;i<6;i++){ const m=party[i];
+    if(!m){ slots.push('<div class="mon empty">＋</div>'); continue; }
+    const pct=m.max_hp?Math.max(0,Math.min(100,100*m.hp/m.max_hp)):0;
+    slots.push(`<div class="mon"><div class="n"><span>${esc(m.nickname||m.species)}</span><span class="lv">L${esc(m.level)}</span></div>
+      <div class="sp">${esc(m.species)} · ${m.hp}/${m.max_hp} HP</div>
+      <div class="hpbar"><i style="width:${pct}%"></i></div></div>`);
+  }
+  $('party').innerHTML=slots.join('');
+}
+
+async function pollMeta(){
+  try{
+    const [s,g,o,gl]=await Promise.all([
+      fetch('/state').then(r=>r.json()),
+      fetch('/games/current').then(r=>r.json()).catch(()=>({})),
+      fetch('/objectives').then(r=>r.json()).catch(()=>({})),
+      fetch('/games').then(r=>r.json()).catch(()=>({games:[]}))
+    ]);
+    const p=s.player||{}, map=s.map||{}, pos=p.position||{}, fl=s.flags||{};
+    $('rLoc').textContent=map.map_name||'—';
+    $('rCell').textContent=(s.collision&&s.collision.player_cell)||'E5';
+    $('rPos').textContent=`${pos.x},${pos.y}`;
+    $('rMoney').textContent='₽'+(p.money??0);
+    $('rDex').textContent=(fl.pokedex_owned??0)+' owned';
+    renderBadges(p.badge_count||(p.badges||[]).length||0);
+    renderParty(s.party||[]);
+    const st=(g.active&&g.active.stats)||{};
+    $('tActions').textContent=st.actions??0;
+    $('tTurns').textContent=st.turns??0; $('turn').textContent=st.turns??0;
+    $('tBlackout').textContent=st.blackouts??0;
+    $('tCaught').textContent=Math.max(caught,(s.party||[]).length);
+    if(g.active&&g.active.name) $('runName').textContent=g.active.name.replace(/zelda/ig,'Qwen');
+    renderObjectives((o.objectives)||(g.active&&g.active.objectives)||[]);
+    // Session timer anchor: prefer the active game's server-side created_at (true
+    // first-turn, refresh-proof); else persist a per-run anchor in localStorage.
+    if(g.active&&g.active.id){
+      const gm=(gl.games||[]).find(x=>x.id===g.active.id);
+      if(gm&&gm.created_at){ sesAnchor=Date.parse(gm.created_at); }
+      else { const k='pb_ses_'+g.active.id; let v=localStorage.getItem(k); if(!v){v=String(Date.now());localStorage.setItem(k,v);} sesAnchor=+v; }
+      localStorage.removeItem('pb_ses_nogame');
+    } else {
+      let v=localStorage.getItem('pb_ses_nogame'); if(!v){v=String(Date.now());localStorage.setItem('pb_ses_nogame',v);} sesAnchor=+v;
+    }
+  }catch(_){}
+  setTimeout(pollMeta,2000);
+}
+
+let delay=1000, wsOpen=false, seenEv=0;
+function setLive(txt,on){ $('status').textContent=txt; $('dot').classList.toggle('on',!!on); }
+async function pollFrame(){ if(!wsOpen){ try{ const r=await (await fetch('/screenshot/base64?_t='+Date.now())).json(); show(r.image||r.data||r.base64||r.screenshot);}catch(_){} } setTimeout(pollFrame,120); }
+async function pollEvents(){ if(!wsOpen){ try{ const r=await (await fetch('/events/recent?n=20')).json(); (r.events||[]).slice(seenEv).forEach(handle); seenEv=(r.events||[]).length;}catch(_){} } setTimeout(pollEvents,900); }
+function connect(){
+  let ws; try{ ws=new WebSocket((location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws'); }catch(_){ setTimeout(connect,delay); return; }
+  ws.onopen=()=>{ wsOpen=true; seenEv=0; setLive('live',true); delay=1000; };
+  ws.onmessage=e=>{ try{handle(JSON.parse(e.data));}catch(_){} };
+  ws.onclose=()=>{ wsOpen=false; setLive('polling',true); setTimeout(connect,delay); delay=Math.min(delay*2,10000); };
+  ws.onerror=()=>{ setLive('polling',true); try{ws.close();}catch(_){} };
+}
+// Refresh-proof anchor: seed from any persisted value so the timer survives reload
+// before pollMeta runs; pollMeta then re-anchors to the active game's created_at.
+let sesAnchor=+(localStorage.getItem('pb_ses_nogame')||Date.now());
+setInterval(()=>{ let s=Math.max(0,Math.floor((Date.now()-sesAnchor)/1000));
+  const h=Math.floor(s/3600), m=Math.floor(s%3600/60); s=s%60;
+  $('session').textContent=h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); },1000);
+renderBadges(0); renderParty([]); pollFrame(); pollEvents(); pollMeta(); connect();
+</script></body></html>

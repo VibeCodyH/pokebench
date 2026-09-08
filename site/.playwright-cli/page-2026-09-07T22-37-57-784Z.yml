@@ -1,0 +1,246 @@
+- generic [active] [ref=e1]:
+  - link "Skip to results" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - link "PokéBench, back to the championship wall" [ref=e4] [cursor=pointer]:
+      - /url: "#brock"
+      - generic [ref=e5]:
+        - generic [ref=e6]: PokéBench_
+        - generic [ref=e7]: Billions of parameters vs. one old man.
+    - navigation "About the benchmark" [ref=e8]:
+      - link "Methodology" [ref=e9] [cursor=pointer]:
+        - /url: "#methodology"
+      - link "Timeline" [ref=e10] [cursor=pointer]:
+        - /url: "#timeline"
+    - generic [ref=e11]:
+      - button "DEPTH ON" [pressed] [ref=e12] [cursor=pointer]
+      - group "Leaderboard view" [ref=e13]:
+        - button "JOURNEY" [pressed] [ref=e14] [cursor=pointer]:
+          - generic [ref=e15]: ↟
+          - text: JOURNEY
+        - button "TABLE" [ref=e16] [cursor=pointer]:
+          - generic [ref=e17]: ▦
+          - text: TABLE
+  - main [ref=e18]:
+    - generic [ref=e19]:
+      - generic [ref=e20]:
+        - heading "No runs yet — run the harness." [level=2] [ref=e21]
+        - paragraph [ref=e22]: The championship wall is waiting for its first contender.
+      - link "Load sample data →" [ref=e23] [cursor=pointer]:
+        - /url: runs.sample.json
+    - generic [ref=e24]:
+      - region "The Boulder Badge Club." [ref=e25]:
+        - generic:
+          - img
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - paragraph [ref=e29]: SUITE 1 · GEN 1 · RED · THE CEILING
+              - heading "The Boulder Badge Club." [level=1] [ref=e30]:
+                - text: The Boulder
+                - text: Badge Club.
+              - paragraph [ref=e31]:
+                - text: A thousand turns. Eight milestones. One rock guy.
+                - text: LLMs play Pokémon. Getting here is the benchmark.
+              - link "Follow the trail of stuck models ↓" [ref=e32] [cursor=pointer]:
+                - /url: "#pewter"
+            - complementary "Gym leader Brock, the final boss" [ref=e33]:
+              - generic [ref=e34]: GYM LEADER NO. 01
+              - generic [ref=e35]:
+                - img "Pixel portrait of Brock" [ref=e36]
+                - strong [ref=e47]: BROCK
+                - generic [ref=e48]:
+                  - text: ROCK SOLID.
+                  - text: REASONING OPTIONAL.
+          - generic [ref=e51]:
+            - heading "THE CHAMPIONSHIP WALL" [level=2] [ref=e52]
+            - paragraph [ref=e53]: 0 / 0 RUNS BEAT BROCK
+          - generic [ref=e55]:
+            - strong [ref=e56]: Your plaque could go here.
+            - paragraph [ref=e57]: No champions recorded. Brock is keeping the wall warm.
+          - generic [ref=e58]:
+            - generic [ref=e59]:
+              - img [ref=e60]
+              - text: BADGE EARNED
+            - generic [ref=e62]:
+              - generic [ref=e63]: ×
+              - text: STUCK HERE
+            - generic [ref=e64]: BEST ↑ · START ↓
+      - generic [ref=e65]:
+        - region "So close. Still no badge." [ref=e66]:
+          - generic:
+            - paragraph: 6–7 / 8 · THE GYM IS RIGHT THERE
+            - heading "So close. Still no badge." [level=2]
+            - paragraph: Pewter City. The last stop before the rock guy.
+            - paragraph: 0 RUNS ENDED HERE
+          - generic [ref=e67]:
+            - generic:
+              - img
+              - img
+              - img
+            - generic [ref=e69]:
+              - strong [ref=e70]: No runs stopped here.
+              - paragraph [ref=e71]: An empty patch of the map. For now.
+          - generic [ref=e72]:
+            - generic [ref=e73]: PEWTER CITY
+            - link "↓ Viridian Forest" [ref=e74] [cursor=pointer]:
+              - /url: "#forest"
+        - region "Lost in the leaves." [ref=e75]:
+          - generic:
+            - paragraph: 5 / 8 · VIRIDIAN FOREST
+            - heading "Lost in the leaves." [level=2]
+            - paragraph: Plenty of context. Very little sense of direction.
+            - paragraph: 0 RUNS ENDED HERE
+          - generic [ref=e76]:
+            - generic:
+              - img
+              - img
+              - img
+            - generic [ref=e77]:
+              - strong [ref=e78]: No runs stopped here.
+              - paragraph [ref=e79]: An empty patch of the map. For now.
+          - generic [ref=e80]:
+            - generic [ref=e81]: VIRIDIAN FOREST
+            - link "↓ Viridian City" [ref=e82] [cursor=pointer]:
+              - /url: "#viridian"
+        - region "A quick breather." [ref=e83]:
+          - generic:
+            - paragraph: 4 / 8 · VIRIDIAN CITY
+            - heading "A quick breather." [level=2]
+            - paragraph: Heal up. Buy supplies. Remember the objective.
+            - paragraph: 0 RUNS ENDED HERE
+          - generic [ref=e84]:
+            - generic:
+              - img
+              - img
+              - img
+            - generic [ref=e85]:
+              - strong [ref=e86]: No runs stopped here.
+              - paragraph [ref=e87]: An empty patch of the map. For now.
+          - generic [ref=e88]:
+            - generic [ref=e89]: VIRIDIAN CITY
+            - link "↓ Route 1" [ref=e90] [cursor=pointer]:
+              - /url: "#route-one"
+        - region "The grass has questions." [ref=e91]:
+          - generic:
+            - paragraph: 2–3 / 8 · THE FIRST STEPS
+            - heading "The grass has questions." [level=2]
+            - paragraph: From picking a starter in Pallet to heading north on Route 1.
+            - paragraph: 0 RUNS ENDED HERE
+          - generic [ref=e92]:
+            - generic:
+              - img
+              - img
+              - img
+            - generic [ref=e94]:
+              - strong [ref=e95]: No runs stopped here.
+              - paragraph [ref=e96]: An empty patch of the map. For now.
+          - generic [ref=e97]:
+            - generic [ref=e98]: ROUTE 1 / GOT STARTER
+            - link "↓ Pallet Town" [ref=e99] [cursor=pointer]:
+              - /url: "#pallet"
+        - region "Home, sweet spawn." [ref=e100]:
+          - generic:
+            - paragraph: 1 / 8 · LEFT THE HOUSE
+            - heading "Home, sweet spawn." [level=2]
+            - paragraph: A whole world outside. The doorstep counts as progress.
+            - paragraph: 0 RUNS ENDED HERE
+          - generic [ref=e101]:
+            - generic:
+              - img
+              - img
+              - img
+            - generic [ref=e103]:
+              - strong [ref=e104]: No runs stopped here.
+              - paragraph [ref=e105]: An empty patch of the map. For now.
+          - generic [ref=e106]:
+            - generic [ref=e107]: PALLET TOWN / RED'S HOUSE
+            - link "↑ The only way is up" [ref=e108] [cursor=pointer]:
+              - /url: "#brock"
+    - region "Big brains. Same buttons." [ref=e109]:
+      - paragraph [ref=e110]: THE RULES OF THIS VERY SMALL MOUNTAIN
+      - heading "Big brains. Same buttons." [level=2] [ref=e111]
+      - generic [ref=e112]:
+        - generic [ref=e113]:
+          - paragraph [ref=e114]:
+            - strong [ref=e115]: LLMs play Pokémon. Suite 1 = Pokémon Red (Gen 1).
+            - text: Same 1,000-turn budget, scored by furthest milestone; ceiling = beat Brock; tiebreaker = fewer turns. Tokens/cost/time reported, not scored.
+          - paragraph [ref=e116]:
+            - text: Every run preserves prompt version, settings, execution route, dates, full turn log, and VOD —
+            - strong [ref=e117]: trust the video over the score.
+            - text: Inspect run opens the VOD when one is attached. A grey button means it is not available.
+          - paragraph [ref=e118]: Milestones come from the harness’s game-state detector. This ladder ranks progress; it does not assert that every earlier checkpoint fired. Per-run maps mark the recorded checkpoints, and settings show their first-hit turns.
+          - paragraph [ref=e119]: Compare like prompt versions and settings. In-game encounters and battle RNG can vary between runs. Local and API describe the execution provider, not a separate scoring league.
+          - paragraph [ref=e120]:
+            - strong [ref=e121]: This is the first suite.
+            - text: More generations may be added, with their own milestone ladders. Today’s results are Gen 1 only.
+        - generic [ref=e122]:
+          - paragraph [ref=e123]: THE GEN 1 LADDER · START → CEILING
+          - list [ref=e124]:
+            - listitem [ref=e125]: Left the house
+            - listitem [ref=e126]: Reached Route 1
+            - listitem [ref=e127]: Got a starter
+            - listitem [ref=e128]: Reached Viridian City
+            - listitem [ref=e129]: Entered Viridian Forest
+            - listitem [ref=e130]: Reached Pewter City
+            - listitem [ref=e131]: Entered Brock's Gym
+            - listitem [ref=e132]: Beat Brock (Boulder Badge)
+          - paragraph [ref=e133]:
+            - text: 1 turn = up to 6 button presses.
+            - text: The 1,000-turn limit applies to every model.
+    - region "One run at a time." [ref=e134]:
+      - paragraph [ref=e135]: THE FIELD NOTES
+      - heading "One run at a time." [level=2] [ref=e136]
+      - paragraph [ref=e137]: Run dates, newest first. Each attempt keeps its own place in the record.
+      - paragraph [ref=e139]: No runs yet. The next adventure will appear here.
+  - navigation "Journey milestones" [ref=e140]:
+    - paragraph [ref=e141]: YOU ARE HERE
+    - paragraph [ref=e142]: Brock’s Gym
+    - list [ref=e143]:
+      - listitem [ref=e144]:
+        - 'link "Milestone 8: Beat Brock (Boulder Badge)" [ref=e145] [cursor=pointer]':
+          - /url: "#brock"
+          - generic [ref=e146]: "8"
+          - generic [ref=e147]: Beat Brock
+      - listitem [ref=e148]:
+        - 'link "Milestone 7: Entered Brock''s Gym" [ref=e149] [cursor=pointer]':
+          - /url: "#pewter"
+          - generic [ref=e150]: "7"
+          - generic [ref=e151]: Entered gym
+      - listitem [ref=e152]:
+        - 'link "Milestone 6: Reached Pewter City" [ref=e153] [cursor=pointer]':
+          - /url: "#pewter"
+          - generic [ref=e154]: "6"
+          - generic [ref=e155]: Pewter City
+      - listitem [ref=e156]:
+        - 'link "Milestone 5: Entered Viridian Forest" [ref=e157] [cursor=pointer]':
+          - /url: "#forest"
+          - generic [ref=e158]: "5"
+          - generic [ref=e159]: Viridian Forest
+      - listitem [ref=e160]:
+        - 'link "Milestone 4: Reached Viridian City" [ref=e161] [cursor=pointer]':
+          - /url: "#viridian"
+          - generic [ref=e162]: "4"
+          - generic [ref=e163]: Viridian City
+      - listitem [ref=e164]:
+        - 'link "Milestone 3: Got a starter" [ref=e165] [cursor=pointer]':
+          - /url: "#route-one"
+          - generic [ref=e166]: "3"
+          - generic [ref=e167]: Got starter
+      - listitem [ref=e168]:
+        - 'link "Milestone 2: Reached Route 1" [ref=e169] [cursor=pointer]':
+          - /url: "#route-one"
+          - generic [ref=e170]: "2"
+          - generic [ref=e171]: Route 1
+      - listitem [ref=e172]:
+        - 'link "Milestone 1: Left the house" [ref=e173] [cursor=pointer]':
+          - /url: "#pallet"
+          - generic [ref=e174]: "1"
+          - generic [ref=e175]: Left house
+    - paragraph [ref=e176]: BEST ↑ · START ↓
+  - contentinfo [ref=e177]:
+    - generic [ref=e178]: PokéBench_
+    - paragraph [ref=e179]: Independent project. Not affiliated with Nintendo, Game Freak, or The Pokémon Company.
+    - link "Back to the badge club ↑" [ref=e180] [cursor=pointer]:
+      - /url: "#brock"
+  - status [ref=e181]: 0 real runs loaded.
