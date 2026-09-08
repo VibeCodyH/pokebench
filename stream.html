@@ -65,6 +65,12 @@
   .journey-left .eyebrow{color:var(--ink)}
   #badgeCount{font:800 10px var(--mono);background:var(--ink);color:var(--paper);padding:3px 7px;border-radius:99px;letter-spacing:.04em;flex:none}
   #badges{display:flex;gap:6px;flex:none}
+  #ladder{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;flex:1;min-width:0}
+  #ladder .rung{border:2px dashed #b9b4a4;border-radius:6px;padding:3px 2px;text-align:center;font:800 9px/1.15 var(--mono);color:#9a958a;min-width:0;overflow:hidden}
+  #ladder .rung b{display:block;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #ladder .rung small{display:block;font-size:8px;opacity:.85}
+  #ladder .rung.hit{border:2px solid var(--ink);background:var(--gold);color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+  #ladder .rung.next{border:2px solid var(--ink);color:var(--ink);background:var(--paper)}
   .badge{width:34px;height:34px;border-radius:7px;display:grid;place-items:center;flex:none;position:relative}
   .badge.earned{background:var(--gold);border:2px solid var(--ink);box-shadow:1.5px 1.5px 0 var(--ink)}
   .badge.ghost{border:1.5px dashed var(--ink);background:transparent;opacity:.35}
@@ -82,7 +88,7 @@
   .log-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;flex:none}
   #log{flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden;min-height:0;-webkit-mask-image:linear-gradient(to bottom,#000 78%,transparent 97%);mask-image:linear-gradient(to bottom,#000 78%,transparent 97%)}
   #log .row{font:600 12px/1.35 var(--sans);padding:4px 7px;overflow:hidden;display:flex;align-items:flex-start;gap:6px;flex:none;min-height:24px;border-bottom:1px dashed #cfcabd;word-break:break-word}
-  #log .row.normal{color:var(--ink);background:transparent;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal}
+  #log .row.normal{color:var(--ink);background:transparent;white-space:normal}
   #log .row.moment{background:var(--gold);color:var(--ink);border:1px solid var(--ink);border-radius:6px;box-shadow:1.5px 1.5px 0 var(--ink);border-bottom-style:solid;margin-bottom:1px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;-webkit-line-clamp:unset}
   #log .row.moment .ic{color:var(--ink)}
   #log .row .ic{flex:none;font-size:11px}
@@ -154,12 +160,12 @@
       </div>
 
       <div class="journey-card">
-        <div class="journey-row badges-row"><div class="journey-left"><span class="journey-label">GYM BADGES</span><span id="badgeCount">0/8</span></div><div id="badges"></div></div>
+        <div class="journey-row badges-row"><div class="journey-left"><span class="journey-label">JOURNEY</span><span id="badgeCount" hidden>0/8</span></div><div id="badges" hidden></div><div id="ladder"></div></div>
         <div class="journey-row party-row"><span class="journey-label">PARTY</span><div id="party"></div></div>
       </div>
 
       <div class="log-card">
-        <div class="log-head"><span class="eyebrow">FIELD LOG</span><span class="eyebrow" style="color:#008577">★ KEY · 💭 THOUGHT</span></div>
+        <div class="log-head"><span class="eyebrow">FIELD LOG</span></div>
         <div id="log"></div>
       </div>
     </div>
@@ -206,6 +212,7 @@ function setInputs(str){ const box=$('inputs'); box.innerHTML=''; (str||'').spli
 function handle(m){
   switch(m.type){
     case 'screenshot': if(m.data&&m.data.image) show(m.data.image); break;
+    case 'milestone': if(m.key){ hit[m.key]=m.turn; renderLadder(); } break;
     case 'reasoning': case 'thought': setThought(m.text); logRow(esc(m.text)); break;
     case 'decision': setInputs(m.text); break;
     case 'key_moment': case 'moment':
@@ -220,6 +227,17 @@ function renderObjectives(objs){
   const map={primary:'p',secondary:'s',tertiary:'t3'}, tag={primary:'P',secondary:'S',tertiary:'T'};
   $('objectives').innerHTML=(objs||[]).map(o=>`<div class="obj ${map[o.tier]||'t3'} ${o.done?'done':''}">
     <span class="t">${o.done?'✓':(tag[o.tier]||'·')}</span><span>${esc(o.text)}</span></div>`).join('');
+}
+const RUNG_SHORT={left_house:'House',route_1:'Route 1',got_starter:'Starter',viridian_city:'Viridian',viridian_forest:'Forest',pewter_city:'Pewter',pewter_gym:'Gym',beat_brock:'Brock'};
+let ladder=[], hit={};
+function renderLadder(){
+  if(!ladder.length) return;
+  let nextSeen=false;
+  $('ladder').innerHTML=ladder.map(r=>{
+    const t=hit[r.key];
+    let cls='rung'; if(t!=null) cls+=' hit'; else if(!nextSeen){cls+=' next'; nextSeen=true;}
+    return `<div class="${cls}" title="${esc(r.label)}"><b>${esc(RUNG_SHORT[r.key]||r.label)}</b><small>${t!=null?'turn '+esc(t):'—'}</small></div>`;
+  }).join('');
 }
 function renderBadges(n){
   $('badgeCount').textContent=n+'/8';
@@ -242,11 +260,12 @@ function renderParty(party){
 
 async function pollMeta(){
   try{
-    const [s,g,o,gl]=await Promise.all([
+    const [s,g,o,gl,ms]=await Promise.all([
       fetch('/state').then(r=>r.json()),
       fetch('/games/current').then(r=>r.json()).catch(()=>({})),
       fetch('/objectives').then(r=>r.json()).catch(()=>({})),
-      fetch('/games').then(r=>r.json()).catch(()=>({games:[]}))
+      fetch('/games').then(r=>r.json()).catch(()=>({games:[]})),
+      fetch('/milestones').then(r=>r.json()).catch(()=>null)
     ]);
     const p=s.player||{}, map=s.map||{}, pos=p.position||{}, fl=s.flags||{};
     $('rLoc').textContent=map.map_name||'—';
@@ -256,6 +275,7 @@ async function pollMeta(){
     $('rMoney').textContent=String(money);
     $('rDex').textContent=(fl.pokedex_owned??0);
     renderBadges(p.badge_count||(p.badges||[]).length||0);
+    if(ms&&ms.ladder){ ladder=ms.ladder; hit=ms.hit||{}; renderLadder(); }
     renderParty(s.party||[]);
     const st=(g.active&&g.active.stats)||{};
     $('tActions').textContent=st.actions??0;

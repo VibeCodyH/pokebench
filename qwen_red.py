@@ -279,6 +279,10 @@ def main():
         for key, label in newly:
             print(f"🏁 MILESTONE: {label} (turn {turn})", flush=True)
             event(S, "key_moment", description=f"Milestone: {label}", category="milestone")
+            try:
+                requests.post(f"{S}/milestones", json={"key": key, "label": label, "turn": turn}, timeout=10)
+            except Exception:
+                pass
         if "beat_brock" in tracker.first_turn:
             print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
             break

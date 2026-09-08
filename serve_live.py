@@ -198,6 +198,8 @@ async def _busy_guard(request, call_next):
     mutating = request.method == "POST" and request.url.path.split("/")[1] in ("save", "load", "games")
     if mutating:
         _busy += 1
+        if request.url.path == "/games/new":
+            _milestones.clear()
         async with _lock:  # wait for any in-flight tick, then hold nothing (handler runs unlocked)
             pass
     try:
@@ -316,6 +318,26 @@ async def traced_action(req: S.ActionRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Action error: {e}")
+
+
+from milestones import MILESTONES as _LADDER  # noqa: E402  (same dir; baked into the image with us)
+
+_milestones: dict = {}  # key -> turn, for the current game; cleared on /games/new
+
+
+@S.app.post("/milestones")
+async def post_milestone(body: dict):
+    """Harness reports a newly hit milestone {key, label, turn}; stored for /stream refreshes and broadcast live."""
+    key, turn = body.get("key"), body.get("turn")
+    if key and key not in _milestones:
+        _milestones[key] = turn
+        await S.broadcast({"type": "milestone", "key": key, "label": body.get("label"), "turn": turn})
+    return {"success": True, "hit": _milestones}
+
+
+@S.app.get("/milestones")
+async def get_milestones():
+    return {"ladder": [{"key": k, "label": l} for k, l, _ in _LADDER], "hit": _milestones}
 
 
 @S.app.get("/frame")
