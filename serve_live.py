@@ -62,6 +62,18 @@ _TILEMAP_ROW12 = 0xC3A0 + 12 * 20   # wTileMap row 12 = top edge of the standard
 _BOX_CORNER = 0x79                  # top-left border tile; measured 0x79 open / overworld tile closed
 
 
+def _transition_busy() -> bool:
+    """wd730 bit 5: joypad ignored. Set during warps (fade + auto-step), scripted walks (Oak's
+    intercept) and text printing; CLEAR while a text box or menu waits for input (measured
+    2026-09-08). So it means 'the game is moving on its own right now'."""
+    return bool(S._emulator.read_u8(_red.ADDR_JOY_IGNORE) & 0x20)
+
+
+def _ui_open() -> bool:
+    """A text box, menu or battle is on screen: direction presses move a cursor, not the player."""
+    return _dialog_open() or _menu_open() or S._emulator.read_u8(_red.ADDR_BATTLE_TYPE) != 0
+
+
 def _dialog_open() -> bool:
     """Positive dialog check from RAM. The standard text box is drawn at (0,12) with
     corner tile 0x79; it is gone the frame the box closes. In battle the box is
@@ -89,6 +101,9 @@ def _menu_open() -> bool:
 _TILEMAP = 0xC3A0
 _TEXT_ROWS = (14, 16)  # the two text lines of the standard box
 _red.GEN1_ENCODING.setdefault(0xBA, "é")  # POKéMON; upstream table lacks it
+for _b, _ch in {0xBB: "'d", 0xBC: "'l", 0xBD: "'s", 0xBE: "'t", 0xBF: "'v", 0xE4: "'r", 0xE5: "'m",
+                0xEF: "♂", 0xF5: "♀", 0xF2: ".", 0x9A: "(", 0x9B: ")", 0x9C: ":", 0x9D: ";", 0x9E: "[", 0x9F: "]"}.items():
+    _red.GEN1_ENCODING.setdefault(_b, _ch)  # Gen 1 ligatures/punctuation; test run 3 T74 lost "OAK's" -> "OAK"
 
 
 def _squash(lines):
@@ -196,6 +211,7 @@ async def _settle_text() -> None:
 
 
 _WARP_CAP_TICKS = 30  # 30 x 6 frames = 3 s for a door/stairs fade to finish
+_FRAME_SETTLE_TICKS = 80  # 80 x 6 frames = 8 s for a scripted scene to hand control back before /frame
 
 
 async def _settle_warp(stale: dict) -> dict:
@@ -240,7 +256,8 @@ def _pose() -> dict:
     mi = S._reader.read_map_info()  # {"map_id","map_name"}
     pl = S._reader.read_player()  # {"position":{"y","x"}, "facing", ...}
     pos = pl.get("position") or {}
-    return {"map_id": mi.get("map_id"), "map_name": mi.get("map_name"), "pos": [pos.get("x"), pos.get("y")], "facing": pl.get("facing")}
+    return {"map_id": mi.get("map_id"), "map_name": mi.get("map_name"), "pos": [pos.get("x"), pos.get("y")], "facing": pl.get("facing"),
+            "ui": _ui_open()}
 
 
 @S.app.middleware("http")
@@ -342,7 +359,11 @@ async def traced_action(req: S.ActionRequest):
                 after = await S._run_sync(_pose)
                 if after.get("map_id") != before.get("map_id"):
                     after = await _settle_warp(after)
-            steps.append({"action": a, "before": before, "after": after, "dialog": detail})
+                said = await S._run_sync(lambda: _box_lines() if _dialog_open() else "")
+            step = {"action": a, "before": before, "after": after, "dialog": detail}
+            if said and not isinstance(detail, dict):
+                step["said"] = said  # the page a plain press left on screen (a_until carries its own transcript)
+            steps.append(step)
             executed += 1
         state_after = await S._run_sync(S._get_state_dict)
         if S._active_session is not None and S._session_mgr is not None:
@@ -413,6 +434,14 @@ async def get_frame():
     """One consistent frame for the harness: state + screenshot + ascii."""
     S._ensure_emulator()
     async with _lock:
+        # Test run 3 (2026-09-08): black or fading screenshots and pre-warp coordinates went to the model
+        # (T121/T186/T189), and Oak's intercept ran while she was thinking so the prompt said Pallet but the
+        # actions started in the lab (T74->T75). Wait for the game to hand control back, cap 8 s.
+        for _ in range(_FRAME_SETTLE_TICKS):
+            if not await S._run_sync(_transition_busy):
+                break
+            await S._run_sync(S._emulator.tick, 6)
+
         def _build():
             state = S._get_state_dict()
             png = S._get_screenshot_bytes()
