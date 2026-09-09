@@ -25,6 +25,8 @@ Inspiration: BuseyBench (leaderboard of model runs) — but our scoring is **obj
   quit early). Never what she should be tracking herself (quest step, where she has been, what
   she already triggered). Game info yes, benchmark-step info no. Per-turn output is capped at
   `num_predict` 8192 for every model; a reasoning runaway ends there, not at the 600s timeout.
+- **Naming is the model's choice.** The prompt describes both the preset names and the letter grid
+  and takes no side. What a model names itself and its rival is part of the run, not a harness rule.
 
 ## 0. Eligibility
 
