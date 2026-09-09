@@ -63,15 +63,14 @@ _BOX_CORNER = 0x79                  # top-left border tile; measured 0x79 open /
 
 
 def _transition_busy() -> bool:
-    """wd730 bit 5: joypad ignored. Set during warps (fade + auto-step), scripted walks (Oak's
-    intercept) and text printing; CLEAR while a text box or menu waits for input (measured
-    2026-09-08). So it means 'the game is moving on its own right now'."""
-    # wJoyIgnore is a mask of ignored buttons: any nonzero value means a script owns the input right now.
-    # 0xA0 (bits 5+7) missed Oak's escort into the lab (test run 7 T26: /frame reported the lab door (5,11) with no
-    # text while the scene was still walking her to (5,3)); the settle caps bound the cost of the wider test.
-    # A fully blank tilemap (every tile the same id) is a fade/black frame, never a playable screen (T39: black
-    # screenshot + all-# grid right before the rival battle).
-    if S._emulator.read_u8(_red.ADDR_JOY_IGNORE) != 0:
+    """0xD730 (wd730) bit 5 = joypad ignored, bit 7 = simulated/scripted movement: together (0xA0)
+    they mean 'the game is moving on its own right now' (warp fades + auto-step, Oak's intercept).
+    Bit 6 (0x40) is the no-text-delay flag, NOT busy: test run 9 v13 read the whole byte != 0 and
+    treated the Charmander info screen (0x40 set) as busy, so every /frame there waited ~8 s
+    (Codex run-9 review; 0xD730 verified against pokered's joypad routine). A fully blank tilemap
+    (every tile the same id) is a fade/black frame, never a playable screen (T39: black screenshot
+    + all-# grid right before the rival battle), so it counts as busy too."""
+    if S._emulator.read_u8(_red.ADDR_JOY_IGNORE) & 0xA0:
         return True
     raw = S._emulator.read_range(_TILEMAP, 18 * 20)
     return len(set(raw)) == 1
@@ -253,10 +252,19 @@ async def _settle_after(action: str) -> None:
     """After any action: wait for scripted movement to hand control back (ledge jumps, Oak's
     intercept, door fades; cap 3 s), then for the screen to stop changing (cap 4 s). Measured
     2026-09-08: press_a next to Oak's aide returned before the box drew, so the frame the model
-    got was empty and the next A dismissed a line she never read (12-turn loop)."""
+    got was empty and the next A dismissed a line she never read (12-turn loop).
+    The busy flag must read CLEAR twice in a row before we call it settled: a single sample can
+    land in the gap between one scripted step ending and the next beginning (Codex run-9 review,
+    T35->T36: /frame caught Oak's escort mid-walk, reporting the lab door pose while the script
+    was still walking her to the aide)."""
+    clear = 0
     for _ in range(_WARP_CAP_TICKS):
-        if not await S._run_sync(_transition_busy):
-            break
+        if await S._run_sync(_transition_busy):
+            clear = 0
+        else:
+            clear += 1
+            if clear >= 2:
+                break
         await S._run_sync(S._emulator.tick, 6)
     await _settle_screen(_SETTLE_CAP_TICKS)
 
