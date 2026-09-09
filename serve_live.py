@@ -481,6 +481,28 @@ async def traced_action(req: S.ActionRequest):
 
 from milestones import MILESTONES as _LADDER  # noqa: E402  (same dir; baked into the image with us)
 
+# pokemon_agent's MAP_NAMES mislabels the Viridian Forest -> Pewter cluster: its table drifts
+# from ID 50 on (it calls 51 "Pewter Museum 1F" when the RAM's 51 is the Viridian Forest, per
+# pret/pokered). The RAM map_id is authoritative; only the NAME lookup is wrong, and we feed that
+# name straight to the model. Correct the benchmark-path IDs in place so no model is handed a lie.
+# Scoring already keys off map_id (milestones.py), so this is purely the player-facing name.
+try:  # noqa: E402
+    from pokemon_agent.memory.red import MAP_NAMES as _MAP_NAMES
+    _MAP_NAMES.update({
+        47: "Viridian Forest North Gate",
+        50: "Viridian Forest South Gate",
+        51: "Viridian Forest",
+        52: "Museum 1F",
+        53: "Museum 2F",
+        54: "Pewter Gym",
+        55: "Pewter House (Nidoran)",
+        56: "Pewter Mart",
+        57: "Pewter House",
+        58: "Pewter Pokecenter",
+    })
+except Exception:
+    pass
+
 _milestones: dict = {}  # key -> turn, for the current game; cleared on /games/new
 
 
