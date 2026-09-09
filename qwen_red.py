@@ -437,8 +437,9 @@ def main():
         requests.post(f"{S}/games/new", json={"name": run_label}, timeout=45)
         print(f"registered game session '{run_label}' (fresh boot)", flush=True)
         try:  # tells the /stream page which model is playing (sprite colors, kicker)
-            requests.post(f"{S}/run_meta", json={"model": args.model, "think": rec_think, "ctx": NUM_CTX,
-                                                 "route": ("api" if provider == "anthropic" else "local"), "prompt_version": PROMPT_VERSION}, timeout=10)
+            requests.post(f"{S}/run_meta", json={"model": args.model, "think": rec_think,
+                                                 "ctx": (NUM_CTX if provider == "ollama" else None),  # NUM_CTX is Ollama-only; API models use their own (much larger) window
+                                                 "route": ("local" if provider == "ollama" else "api"), "prompt_version": PROMPT_VERSION}, timeout=10)
         except Exception:
             pass
     except Exception as e:
