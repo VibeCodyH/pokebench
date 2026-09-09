@@ -25,7 +25,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OLLAMA = os.environ.get("OLLAMA_HOST", "http://<server-host>:11434")
 RUNS_DIR = os.path.join(HERE, "runs")
 
-SYSTEM = """You are Qwen, a local AI playing Pokémon Red live on stream. You get the game state read from RAM, an ASCII walkability map, and a screenshot. The game keeps running in real time between turns (NPCs move, animations finish), so the screenshot is a moment in time; each turn only 1-6 button presses happen, so make them count.
+SYSTEM = """__IDENTITY__ You get the game state read from RAM, an ASCII walkability map, and a screenshot. The game keeps running in real time between turns (NPCs move, animations finish), so the screenshot is a moment in time; each turn only 1-6 button presses happen, so make them count.
 
 How the game works: overworld movement is one tile per walk_X. Talk to people/signs with press_a while facing them. DOORS, STAIRS, and building entrances/exits are WARP tiles: you trigger them just by WALKING ONTO them, never with A. Every warp tile is marked on the ASCII map (read from the game's own warp table): `D` = a door between inside and outside (a building's street entrance from the outside, or its exit mat from the inside), `S` = a warp to some OTHER map (stairs to another floor, a cave mouth, the far side of a gate house). So a `.` is NEVER a door, and inside a house or shop the `S` is the stairs, not the way out: to reach the street find the `D`. IMPORTANT: after leaving a building you stand directly BELOW its `D`; walking up re-enters it. Step away sideways first, then head to your goal. In menus and dialog, press_a advances/confirms, press_b cancels. Use a_until_dialog_end to skip through long text. ★SCREEN TEXT below is exactly what is written on screen right now, read from the game's memory. If a text box is open, READ IT FIRST: people tell you what to do next (if someone says "don't leave yet", stay and talk to them; if the text names a place or a person, that is your lead). Then clear the box with a_until_dialog_end; whatever it skipped past is quoted back to you in RECENT TURNS. You cannot walk while a text box is open. The title/intro screens need press_start then press_a. Name entry (yours, then your rival's): your call. The preset names are the fast path (move onto one, press_a). If you want a name of your own, pick NEW NAME: on the letter grid walk_X moves the cursor, press_a types the highlighted letter, press_b deletes. To finish the name, move the cursor to the ED (end) tile at the bottom-right and press_a, or just press_start to submit it directly.
 
@@ -60,12 +60,44 @@ ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk
            "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 
 # Provenance (BENCHMARK-SPEC.md §2b — same prompt, same rules, public receipts).
-PROMPT_VERSION = "v15"          # bump whenever SYSTEM changes; old runs keep their version
+PROMPT_VERSION = "v16"          # bump whenever SYSTEM changes; old runs keep their version (v16 = __IDENTITY__ template; Qwen's rendered text is byte-identical to v15)
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
 NUM_PREDICT = 8192          # ceiling on thinking+answer tokens per turn; a runaway ends in ~1 min, not the 600s timeout
-PROMPT_SHA = hashlib.sha256(SYSTEM.encode()).hexdigest()[:16]
+PROMPT_SHA = hashlib.sha256(SYSTEM.encode()).hexdigest()[:16]  # hashes the __IDENTITY__ template: name-independent "prompt design" fingerprint, stable across models
+
+# The opening identity sentence is the ONLY model-specific part of the prompt. Same framing for
+# every model so runs stay comparable; only the name changes ("Name only" per Cody, 2026-09-09).
+IDENTITY_SENTENCES = {
+    "qwen": "You are Qwen, a local AI playing Pokémon Red live on stream.",
+}
+ANTHROPIC_DISPLAY = {  # model-id prefix -> on-prompt name
+    "claude-haiku": "Claude Haiku",
+    "claude-sonnet": "Claude Sonnet",
+    "claude-opus": "Claude Opus",
+}
+ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
+ANTHROPIC_VERSION = "2023-06-01"
+THINK_BUDGET = {"low": 2048, "medium": 4096, "high": 8192}  # extended-thinking token budget per --think level
+
+
+def infer_provider(model: str) -> str:
+    return "anthropic" if model.startswith("claude-") else "ollama"
+
+
+def resolve_identity(model: str, provider: str) -> str:
+    if provider == "anthropic":
+        name = next((v for k, v in ANTHROPIC_DISPLAY.items() if model.startswith(k)), None)
+        if not name:  # unknown claude id: title-case the middle token, e.g. claude-foo-5 -> "Claude Foo"
+            parts = model.split("-")
+            name = "Claude " + (parts[1].capitalize() if len(parts) > 1 else model)
+        return f"You are {name}, an AI playing Pokémon Red live on stream."
+    return IDENTITY_SENTENCES.get("qwen")
+
+
+def render_system(identity: str) -> str:
+    return SYSTEM.replace("__IDENTITY__", identity)
 
 
 def compact(state):
@@ -110,6 +142,55 @@ def ask(model, think, system, user, image_b64):
     return msg["content"], msg.get("thinking", ""), tokens
 
 
+def _extract_json(text: str) -> str:
+    """Pull the JSON object out of a model text reply: strip a ```json fence, else slice first { .. last }.
+    The caller's json.loads + parse-error path still guards anything this misses."""
+    t = text.strip()
+    if t.startswith("```"):
+        t = t.split("\n", 1)[-1] if "\n" in t else t
+        t = t.rsplit("```", 1)[0].strip()
+        if t.lower().startswith("json"):
+            t = t[4:].strip()
+    i, j = t.find("{"), t.rfind("}")
+    return t[i:j + 1] if i != -1 and j > i else t
+
+
+def ask_anthropic(model, think, system, user, image_b64):
+    """Anthropic Messages API adapter. Returns the same (content_json_str, thinking, tokens) tuple as ask().
+
+    Extended thinking is ON (reasoning parity with Qwen's `think=high`, per BENCHMARK-SPEC line-318 invariant).
+    Thinking forces temperature=1 on the API, so we omit temperature. JSON comes from the text block and is
+    parsed by the caller's existing json.loads + parse-error fallback; the reasoning fills the `thinking` field.
+    """
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    if not key:
+        raise RuntimeError("ANTHROPIC_API_KEY not set in the container env")
+    budget = THINK_BUDGET.get(think, THINK_BUDGET["high"])
+    r = requests.post(ANTHROPIC_URL, headers={
+        "x-api-key": key, "anthropic-version": ANTHROPIC_VERSION, "content-type": "application/json",
+    }, json={
+        "model": model, "max_tokens": budget + 1024, "system": system,  # +1024 headroom for the JSON answer after thinking
+        "thinking": {"type": "enabled", "budget_tokens": budget},
+        "messages": [{"role": "user", "content": [
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": image_b64}},
+            {"type": "text", "text": user},
+        ]}],
+    }, timeout=600)
+    r.raise_for_status()
+    body = r.json()
+    text = "".join(b.get("text", "") for b in body.get("content", []) if b.get("type") == "text")
+    thinking = "".join(b.get("thinking", "") for b in body.get("content", []) if b.get("type") == "thinking")
+    usage = body.get("usage", {})
+    tokens = {"prompt": usage.get("input_tokens", 0), "completion": usage.get("output_tokens", 0)}
+    return _extract_json(text), thinking, tokens
+
+
+def ask_model(provider, model, think, system, user, image_b64):
+    if provider == "anthropic":
+        return ask_anthropic(model, think, system, user, image_b64)
+    return ask(model, think, system, user, image_b64)
+
+
 def event(server, typ, **kw):
     try:
         requests.post(f"{server}/event", json={"type": typ, **kw}, timeout=10)
@@ -118,7 +199,9 @@ def event(server, typ, **kw):
 
 
 def write_summary(artifact_dir, run_id, model, run_name, think, tracker, turns_used, budget,
-                  tokens, wall_s, notes, in_game_name="", rival_name="", frames_saved=True, acts=None):
+                  tokens, wall_s, notes, in_game_name="", rival_name="", frames_saved=True, acts=None,
+                  provider="ollama-local", family="qwen", execution_route="ollama-local",
+                  model_params="27B", quant="Q4_K_M", cost_usd=0.0, num_ctx=NUM_CTX, temperature=TEMPERATURE):
     """Emit the per-run scoring + provenance JSON the leaderboard reads (BENCHMARK-SPEC.md §2/§2b)."""
     # harness provenance
     try:
@@ -133,18 +216,18 @@ def write_summary(artifact_dir, run_id, model, run_name, think, tracker, turns_u
     except Exception:
         harness_files_sha = None
     summary = {
-        "run_id": run_id, "model": model, "provider": "ollama-local", "family": "qwen",
+        "run_id": run_id, "model": model, "provider": provider, "family": family,
         "run_name": run_name,
         # the name the model gave itself / its rival in-game (personality for the card)
         "in_game_name": in_game_name, "rival_name": rival_name,
         # --- provenance / receipts ---
         "prompt_version": PROMPT_VERSION, "prompt_sha": PROMPT_SHA,
-        "harness_version": HARNESS_VERSION, "execution_route": "ollama-local",
+        "harness_version": HARNESS_VERSION, "execution_route": execution_route,
         "harness_git_sha": harness_git_sha, "harness_files_sha": harness_files_sha, "frames_saved": frames_saved,
-        "think_level": think, "num_ctx": NUM_CTX, "temperature": TEMPERATURE, "num_predict": NUM_PREDICT,
+        "think_level": think, "num_ctx": num_ctx, "temperature": temperature, "num_predict": NUM_PREDICT,
         "allowed_actions": sorted(ALLOWED),
         "run_date": time.strftime("%Y-%m-%d"), "model_release_date": None,  # filled via models.yaml (phase 2)
-        "model_params": "27B", "quant": "Q4_K_M",
+        "model_params": model_params, "quant": quant,
         "artifacts": {"log": "log.jsonl", "save_state": run_id},
         "notes": notes,
         # --- scoring ---
@@ -156,7 +239,7 @@ def write_summary(artifact_dir, run_id, model, run_name, think, tracker, turns_u
         "avg_actions_per_turn": round((acts or {}).get("actions", 0) / (acts or {}).get("turns", 1), 2) if (acts or {}).get("turns") else None,
         "a_until_presses_total": (acts or {}).get("a_presses", 0),
         "model_errors": (acts or {}).get("model_errors", 0),  # Ollama/API failures that re-ran a turn (not counted against the budget)
-        "cost_usd": 0.0,  # local; provider adapters set real cost in phase 2
+        "cost_usd": cost_usd,  # ollama-local = 0.0; anthropic left None unless a price rate is provided
         "youtube_url": None, "timestamp": time.strftime("%Y%m%d_%H%M%S"),
         **tracker.summary(),
     }
@@ -248,8 +331,27 @@ def main():
     ap.add_argument("--save-every", type=int, default=25)
     ap.add_argument("--run-name", default="")
     ap.add_argument("--no-frames", action="store_true", help="don't save frame PNGs")
+    ap.add_argument("--provider", default="auto", choices=["auto", "ollama", "anthropic"],
+                    help="auto = infer from --model (claude-* -> anthropic, else ollama)")
+    ap.add_argument("--identity", default="",
+                    help="override the opening identity sentence; default derived from the model")
     args = ap.parse_args()
     S = args.server
+
+    provider = args.provider if args.provider != "auto" else infer_provider(args.model)
+    identity = args.identity or resolve_identity(args.model, provider)
+    system_prompt = render_system(identity)
+    if provider == "anthropic":
+        # Extended thinking ON forces temperature=1 and has no num_ctx analog. Record what the call actually did.
+        prov_fields = dict(provider="anthropic", family="claude", execution_route="anthropic-api",
+                           model_params=None, quant=None, cost_usd=None,  # cost left null: no fabricated rate
+                           num_ctx=None, temperature=1.0)
+        rec_think = args.think  # real: thinking runs at THINK_BUDGET[args.think]
+    else:
+        prov_fields = dict(provider="ollama-local", family="qwen", execution_route="ollama-local",
+                           model_params="27B", quant="Q4_K_M", cost_usd=0.0,
+                           num_ctx=NUM_CTX, temperature=TEMPERATURE)
+        rec_think = args.think
 
     tracker = MilestoneTracker()
     run_start = time.time()
@@ -273,8 +375,8 @@ def main():
         requests.post(f"{S}/games/new", json={"name": run_label}, timeout=45)
         print(f"registered game session '{run_label}' (fresh boot)", flush=True)
         try:  # tells the /stream page which model is playing (sprite colors, kicker)
-            requests.post(f"{S}/run_meta", json={"model": args.model, "think": args.think, "ctx": NUM_CTX,
-                                                 "route": "local", "prompt_version": PROMPT_VERSION}, timeout=10)
+            requests.post(f"{S}/run_meta", json={"model": args.model, "think": rec_think, "ctx": NUM_CTX,
+                                                 "route": ("api" if provider == "anthropic" else "local"), "prompt_version": PROMPT_VERSION}, timeout=10)
         except Exception:
             pass
     except Exception as e:
@@ -360,15 +462,19 @@ def main():
         t0 = time.time()
         retried = False
         try:
-            content_str, thinking, tokens = ask(args.model, args.think, SYSTEM, user, img)
+            content_str, thinking, tokens = ask_model(provider, args.model, args.think, system_prompt, user, img)
             if not content_str.strip():
                 # Ollama structured output sometimes ends the reply inside the thinking and returns empty content
                 # (test run 3: T19, T31; local smoke T2). A serving glitch, not a decision: one retry, logged.
                 retried = True
-                c2, th2, tk2 = ask(args.model, args.think, SYSTEM, user, img)
+                c2, th2, tk2 = ask_model(provider, args.model, args.think, system_prompt, user, img)
                 tokens = {"prompt": tokens["prompt"] + tk2["prompt"], "completion": tokens["completion"] + tk2["completion"]}
                 content_str, thinking = c2, (thinking + "\n---retry---\n" + th2)
         except Exception as e:
+            status = getattr(getattr(e, "response", None), "status_code", None)
+            if status in (401, 403):  # bad/missing API key: retrying forever is pointless, abort loudly
+                print(f"[turn {turn}] FATAL: model API auth error {status} — check ANTHROPIC_API_KEY on the box. Aborting run.", flush=True)
+                raise SystemExit(2)
             model_errors += 1; acts["model_errors"] = model_errors
             with open(log_path, "a") as f:
                 f.write(json.dumps({"turn": turn, "prompt_version": PROMPT_VERSION, "model_error": str(e), "turn_not_counted": True,
@@ -474,9 +580,10 @@ def main():
                 pass
 
     final_notes = open(notes_path).read() if os.path.exists(notes_path) else ""
-    write_summary(artifact_dir, run_id, args.model, args.run_name or "run", args.think, tracker,
+    write_summary(artifact_dir, run_id, args.model, args.run_name or "run", rec_think, tracker,
                   turn, args.turns, tok, time.time() - run_start, final_notes,
-                  in_game_name=in_game_name, rival_name=rival_name, frames_saved=not args.no_frames, acts=acts)
+                  in_game_name=in_game_name, rival_name=rival_name, frames_saved=not args.no_frames, acts=acts,
+                  **prov_fields)
 
 
 if __name__ == "__main__":
