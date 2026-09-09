@@ -153,6 +153,7 @@ def write_summary(artifact_dir, run_id, model, run_name, think, tracker, turns_u
         "acted_turns": (acts or {}).get("turns", 0), "actions_total": (acts or {}).get("actions", 0),
         "avg_actions_per_turn": round((acts or {}).get("actions", 0) / (acts or {}).get("turns", 1), 2) if (acts or {}).get("turns") else None,
         "a_until_presses_total": (acts or {}).get("a_presses", 0),
+        "model_errors": (acts or {}).get("model_errors", 0),  # Ollama/API failures that re-ran a turn (not counted against the budget)
         "cost_usd": 0.0,  # local; provider adapters set real cost in phase 2
         "youtube_url": None, "timestamp": time.strftime("%Y%m%d_%H%M%S"),
         **tracker.summary(),
@@ -284,13 +285,19 @@ def main():
     history = []
     last_pos = None; same_pos = 0
     in_game_name = ""; rival_name = ""  # captured once she names herself / the rival
-    for turn in range(1, args.turns + 1):
+    # `turn` only advances on a real decision: a pause, an unreachable server, or a model/Ollama outage re-runs
+    # the same turn number (test run 7: the 2 AM appdata backup stopped Ollama and 41 turns burned on
+    # connection errors; the paused path also ate a turn every 3 s).
+    turn = 0
+    model_errors = 0
+    while turn < args.turns:
+        turn += 1
         try:
             ctl = requests.get(f"{S}/control", timeout=10).json().get("state", "running")
         except Exception:
             ctl = "running"
         if ctl == "paused":
-            time.sleep(3); continue
+            turn -= 1; time.sleep(3); continue
         if ctl == "stopped":
             print("control = stopped, exiting"); break
 
@@ -313,7 +320,7 @@ def main():
                     frame_file = None
             img = shrink_png(png_bytes)
         except Exception as e:
-            print(f"[turn {turn}] server not reachable ({e}); retrying"); time.sleep(5); continue
+            print(f"[turn {turn}] server not reachable ({e}); retrying"); turn -= 1; time.sleep(5); continue
         pos = ((state.get("map") or {}).get("map_id"), json.dumps((state.get("player") or {}).get("position")))
         ui_now = (frame.get("screen_text") or "") != "" or ((state.get("battle") or {}).get("in_battle"))
         same_pos = 0 if ui_now else (same_pos + 1 if pos == last_pos else 0)  # menus/dialog/battle do not move you
@@ -351,9 +358,12 @@ def main():
                 tokens = {"prompt": tokens["prompt"] + tk2["prompt"], "completion": tokens["completion"] + tk2["completion"]}
                 content_str, thinking = c2, (thinking + "\n---retry---\n" + th2)
         except Exception as e:
+            model_errors += 1; acts["model_errors"] = model_errors
             with open(log_path, "a") as f:
-                f.write(json.dumps({"turn": turn, "prompt_version": PROMPT_VERSION, "model_error": str(e), "user_message": user, "screenshot_sha256": screenshot_sha256}) + "\n")
-            print(f"[turn {turn}] model error: {e}"); time.sleep(5); continue
+                f.write(json.dumps({"turn": turn, "prompt_version": PROMPT_VERSION, "model_error": str(e), "turn_not_counted": True,
+                                    "model_error_count": model_errors, "screenshot_sha256": screenshot_sha256}) + "\n")
+            print(f"[turn {turn}] model error #{model_errors}: {e}; retrying the same turn in 15 s")
+            turn -= 1; time.sleep(15); continue
         dt = time.time() - t0
         # parse JSON in caller
         try:

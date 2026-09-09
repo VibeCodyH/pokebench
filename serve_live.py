@@ -56,7 +56,7 @@ _busy = 0
 _orig_execute = S._execute_action
 
 
-_A_UNTIL_CAP = 40          # presses; 15 capped out on Oak's speeches (measured 2026-09-08)
+_A_UNTIL_CAP = 100         # presses; 15 capped out on Oak's speeches (measured 2026-09-08); 40 capped on the Pokedex speech (test run 7, 18 boxes in 40 presses)
 _REOPEN_GRACE_TICKS = 6    # x30 frames = ~3 s of "is the next box coming?" after a close
 _TILEMAP_ROW12 = 0xC3A0 + 12 * 20   # wTileMap row 12 = top edge of the standard text box
 _BOX_CORNER = 0x79                  # top-left border tile; measured 0x79 open / overworld tile closed
