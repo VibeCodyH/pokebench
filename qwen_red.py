@@ -165,10 +165,12 @@ def ask_anthropic(model, think, system, user, image_b64):
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:
         raise RuntimeError("ANTHROPIC_API_KEY not set in the container env")
+    headers = {"x-api-key": key, "anthropic-version": ANTHROPIC_VERSION, "content-type": "application/json"}
+    ws = os.environ.get("ANTHROPIC_WORKSPACE_ID")  # org-scoped keys need this to bill the right workspace's credits
+    if ws:
+        headers["anthropic-workspace-id"] = ws
     budget = THINK_BUDGET.get(think, THINK_BUDGET["high"])
-    r = requests.post(ANTHROPIC_URL, headers={
-        "x-api-key": key, "anthropic-version": ANTHROPIC_VERSION, "content-type": "application/json",
-    }, json={
+    r = requests.post(ANTHROPIC_URL, headers=headers, json={
         "model": model, "max_tokens": budget + 1024, "system": system,  # +1024 headroom for the JSON answer after thinking
         "thinking": {"type": "enabled", "budget_tokens": budget},
         "messages": [{"role": "user", "content": [
@@ -472,8 +474,9 @@ def main():
                 content_str, thinking = c2, (thinking + "\n---retry---\n" + th2)
         except Exception as e:
             status = getattr(getattr(e, "response", None), "status_code", None)
-            if status in (401, 403):  # bad/missing API key: retrying forever is pointless, abort loudly
-                print(f"[turn {turn}] FATAL: model API auth error {status} — check ANTHROPIC_API_KEY on the box. Aborting run.", flush=True)
+            if status in (400, 401, 403):  # bad request / key / scope: config error, won't self-heal, abort loudly
+                detail = getattr(getattr(e, "response", None), "text", "")[:300]
+                print(f"[turn {turn}] FATAL: model API {status} — config error, not transient. Aborting run.\n{detail}", flush=True)
                 raise SystemExit(2)
             model_errors += 1; acts["model_errors"] = model_errors
             with open(log_path, "a") as f:
