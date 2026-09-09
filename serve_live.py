@@ -122,6 +122,20 @@ def _squash(lines):
     return out
 
 
+_NUM_WARPS = 0xD3AE   # wNumberOfWarps; entries follow at wWarpEntries, 4 bytes each: y, x, dest warp id, dest map
+
+
+def _warps() -> list:
+    """[x, y] of every door/stairs/warp tile on the current map, from the game's own warp table.
+    Test run 4 (2026-09-08): Red's front door rendered `.` on the grid while the prompt said doors
+    read as `#`; she walked 'north toward the lab' into her own house 25 times."""
+    n = S._emulator.read_u8(_NUM_WARPS)
+    if not 0 < n <= 32:
+        return []
+    raw = S._emulator.read_range(_NUM_WARPS + 1, n * 4)
+    return [[raw[i * 4 + 1], raw[i * 4]] for i in range(n)]
+
+
 def _screen_text() -> str:
     """Every word on screen right now, decoded from wTileMap with the game's own charmap
     (letters are >= 0x80; overworld tiles are < 0x60 so they decode to nothing). This is
@@ -447,7 +461,7 @@ async def get_frame():
             png = S._get_screenshot_bytes()
             b64 = base64.b64encode(png).decode("ascii")
             ascii_text = (state.get("collision") or {}).get("ascii")
-            return {"state": state, "screenshot_b64": b64, "ascii": ascii_text, "screen_text": _screen_text()}
+            return {"state": state, "screenshot_b64": b64, "ascii": ascii_text, "screen_text": _screen_text(), "warps": _warps()}
         data = await S._run_sync(_build)
     return data
 
