@@ -24,7 +24,17 @@ def main():
             continue
         runs.append(run)
 
-    runs.sort(key=lambda run: (-run["furthest_index"], run["turns_used"]))
+    def furthest_turn(run):
+        # Spec tiebreaker: same furthest milestone -> fewer turns to REACH it. Non-winners all
+        # run to budget, so turns_used ties them all; the furthest milestone's first-hit turn
+        # is the real discriminator. Falls back to turns_used when no milestone was reached.
+        key = run.get("furthest_key")
+        for milestone in run.get("milestones") or []:
+            if milestone.get("key") == key and type(milestone.get("turn")) in (int, float):
+                return milestone["turn"]
+        return run["turns_used"]
+
+    runs.sort(key=lambda run: (-run["furthest_index"], furthest_turn(run)))
     output = root / "site" / "runs.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(runs, indent=2, allow_nan=False) + "\n", encoding="utf-8")

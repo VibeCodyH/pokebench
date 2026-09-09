@@ -32,9 +32,11 @@ MILESTONES = [
     ("viridian_city",    "Reached Viridian City", lambda s: _map_id(s) == 1),
     ("got_parcel",       "Got Oak's Parcel",      lambda s: (s.get("flags") or {}).get("has_oaks_parcel")),  # the flag goes false again once she hands it to Oak, the tracker keeps the first turn it was ever true.
     ("got_pokedex",      "Got the Pokédex",       lambda s: (s.get("flags") or {}).get("has_pokedex")),
-    ("viridian_forest",  "Entered Viridian Forest", lambda s: _map_id(s) == 50),
+    # pokered map IDs (RAM-authoritative): 51=Viridian Forest, 54=Pewter Gym. The pokemon_agent
+    # name table mislabels 50-56 (calls 51 "Pewter Museum"); score off map_id, never the name.
+    ("viridian_forest",  "Entered Viridian Forest", lambda s: _map_id(s) == 51),
     ("pewter_city",      "Reached Pewter City",   lambda s: _map_id(s) == 2),
-    ("pewter_gym",       "Entered Brock's Gym",   lambda s: _map_id(s) == 53),
+    ("pewter_gym",       "Entered Brock's Gym",   lambda s: _map_id(s) == 54),
     ("beat_brock",       "Beat Brock (Boulder Badge)", _boulder_badge),
 ]
 

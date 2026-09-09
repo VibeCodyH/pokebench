@@ -1,5 +1,7 @@
 # Registry shape: {models: [entry, ...]}. Costs are USD per 1,000,000 tokens.
 # params is parameter-count metadata, not request options. null means unknown.
+# Unverified rates/dates are null on purpose: an honest unknown beats a fabricated number.
+# cost() returns null when rates are null, so the run records cost_usd: null.
 models:
   - key: "qwen3.8:27b"
     provider: ollama
@@ -10,44 +12,43 @@ models:
     context: 65536 # Configured harness context; not a claim about the model's maximum.
     think: low
     release_date: null # TODO: verify the model release date; do not use the run date.
-    input_cost_per_mtok: 0.0
+    input_cost_per_mtok: 0.0 # local inference: genuinely free
     output_cost_per_mtok: 0.0
 
-  # PLACEHOLDER — TODO: verify this model ID, capabilities, date, and rates before a real run.
-  - key: claude-opus-4-8
+  - key: claude-haiku-4-5
     provider: anthropic
-    api_model_id: claude-opus-4-8
+    api_model_id: claude-haiku-4-5-20251001 # verified: the id run in prior smoke tests
     family: claude
     params: null
     quant: null
-    context: 200000 # PLACEHOLDER — TODO: verify supported context.
+    context: 200000 # TODO: verify supported context before a scored run.
     think: low
-    release_date: "2026-08-01" # PLACEHOLDER — TODO: replace; illustrative ISO date only.
-    input_cost_per_mtok: 5.0 # PLACEHOLDER — TODO: replace; not an authoritative price.
-    output_cost_per_mtok: 25.0 # PLACEHOLDER — TODO: replace; not an authoritative price.
+    release_date: null # TODO: verify.
+    input_cost_per_mtok: null # TODO: set the authoritative Haiku 4.5 rates before a scored run.
+    output_cost_per_mtok: null
 
-  # PLACEHOLDER — TODO: verify this model ID, capabilities, date, and rates before a real run.
-  - key: gpt-6-astra
-    provider: openai
-    api_model_id: gpt-6-astra
-    family: gpt
-    params: null
-    quant: null
-    context: 1000000 # PLACEHOLDER — TODO: verify supported context.
-    think: low
-    release_date: "2026-08-15" # PLACEHOLDER — TODO: replace; illustrative ISO date only.
-    input_cost_per_mtok: 5.0 # PLACEHOLDER — TODO: replace; not an authoritative price.
-    output_cost_per_mtok: 30.0 # PLACEHOLDER — TODO: replace; not an authoritative price.
-
-  # PLACEHOLDER — TODO: verify this model ID, capabilities, date, and rates before a real run.
   - key: gemini-3.8-flash
     provider: google
-    api_model_id: gemini-3.8-flash
+    api_model_id: gemini-3.8-flash # verified: the id run via the AI Studio route
     family: gemini
     params: null
     quant: null
-    context: 1000000 # PLACEHOLDER — TODO: verify supported context.
+    context: 1000000 # TODO: verify supported context before a scored run.
     think: low
-    release_date: "2026-09-01" # PLACEHOLDER — TODO: replace; illustrative ISO date only.
-    input_cost_per_mtok: 0.5 # PLACEHOLDER — TODO: replace; not an authoritative price.
-    output_cost_per_mtok: 3.0 # PLACEHOLDER — TODO: replace; not an authoritative price.
+    release_date: null # TODO: verify.
+    input_cost_per_mtok: null # AI Studio route is free (GDP credits); set rates only if billed.
+    output_cost_per_mtok: null
+
+  # TEMPLATE — not runnable as-is. Replace api_model_id with a real OpenAI-compatible model
+  # before use (this is also the row shape the future NIM/ModelScope roster will copy).
+  - key: openai-template
+    provider: openai
+    api_model_id: REPLACE_ME # UNVERIFIED placeholder id — do not run until set.
+    family: gpt
+    params: null
+    quant: null
+    context: 128000 # TODO: verify before a scored run.
+    think: low
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null

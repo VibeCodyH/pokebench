@@ -88,10 +88,12 @@ class Provider(ABC):
         """Return (plan, available thinking text, {prompt: int, completion: int})."""
         raise NotImplementedError
 
-    def cost(self, tokens: dict[str, int]) -> float:
-        """Estimate USD at the supplied standard input/output rates (no cache tiers)."""
+    def cost(self, tokens: dict[str, int]) -> float | None:
+        """Estimate USD at the supplied standard input/output rates (no cache tiers).
+        Returns None when rates are unset, so a run records cost_usd: null rather than a
+        fabricated number — an unverified price is worse than an honest unknown."""
         if self.input_cost_per_mtok is None or self.output_cost_per_mtok is None:
-            raise ValueError("cost() requires input_cost_per_mtok and output_cost_per_mtok")
+            return None
         return (
             tokens["prompt"] * self.input_cost_per_mtok
             + tokens["completion"] * self.output_cost_per_mtok
@@ -162,12 +164,22 @@ class AnthropicProvider(Provider):
         if effort in {"off", "none"}:
             payload["thinking"] = {"type": "disabled"}
         elif effort not in {"", "default"}:
-            payload["thinking"] = {"type": "adaptive"}
-            payload["output_config"]["effort"] = effort
-        body = self._post("https://api.anthropic.com/v1/messages", payload, {
+            # budget_tokens extended thinking (adaptive/effort is rejected by Haiku 4.5 and kin);
+            # it coexists with output_config json_schema on this API version. max_tokens must
+            # exceed the budget, so bump it when a high budget would meet the configured ceiling.
+            budget = {"low": 2048, "medium": 4096, "high": 8192}.get(effort, 4096)
+            payload["thinking"] = {"type": "enabled", "budget_tokens": budget}
+            if payload["max_tokens"] <= budget:
+                payload["max_tokens"] = budget + 4096
+        headers = {
             "x-api-key": self.api_key, "anthropic-version": "2023-06-01",
             "content-type": "application/json",
-        })
+        }
+        # Org-scoped keys must name a workspace or the API 400s before any inference.
+        workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID", "").strip()
+        if workspace:
+            headers["anthropic-workspace-id"] = workspace
+        body = self._post("https://api.anthropic.com/v1/messages", payload, headers)
         if body.get("stop_reason") in {"max_tokens", "refusal"}:
             raise ValueError(f"Anthropic returned no complete plan: {body['stop_reason']}")
         blocks = body.get("content", [])

@@ -90,8 +90,11 @@
   }
   const formatDay = day => day ? new Date(day + 'T12:00:00Z').toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'}) : 'Date not reported';
   const ascending = (a, b) => a === b ? 0 : a < b ? -1 : 1;
-  const rankSort = (a, b) => b.furthest_index - a.furthest_index || ascending(finite(a.turns_used) ? a.turns_used : Infinity, finite(b.turns_used) ? b.turns_used : Infinity) || modelName(a).localeCompare(modelName(b)) || a.uid.localeCompare(b.uid);
-  const displayRank = run => 1 + state.runs.filter(other => other.furthest_index > run.furthest_index || other.furthest_index === run.furthest_index && other.turns_used < run.turns_used).length;
+  // Spec tiebreaker: same furthest milestone -> fewer turns to REACH it. turns_used ties every
+  // non-winner at budget, so rank on the furthest milestone's first-hit turn instead.
+  const furthestTurn = run => { const m = (run.milestones || []).find(x => x && x.key === run.furthest_key); return m && finite(m.turn) ? m.turn : (finite(run.turns_used) ? run.turns_used : Infinity); };
+  const rankSort = (a, b) => b.furthest_index - a.furthest_index || ascending(furthestTurn(a), furthestTurn(b)) || modelName(a).localeCompare(modelName(b)) || a.uid.localeCompare(b.uid);
+  const displayRank = run => 1 + state.runs.filter(other => other.furthest_index > run.furthest_index || other.furthest_index === run.furthest_index && furthestTurn(other) < furthestTurn(run)).length;
   function videoURL(run) {
     if (typeof run.youtube_url !== 'string' || !run.youtube_url.trim()) return null;
     try { const url = new URL(run.youtube_url); return ['https:', 'http:'].includes(url.protocol) ? url.href : null; } catch { return null; }

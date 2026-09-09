@@ -143,6 +143,12 @@ def shrink_png(png_bytes: bytes) -> str:
     return base64.b64encode(buf.getvalue()).decode()
 
 
+def screenshot_b64(server: str) -> str:
+    """Fetch the live frame and return the shrunk PNG as base64 (the wire image providers send)."""
+    frame = requests.get(f"{server}/frame", timeout=20).json()
+    return shrink_png(base64.b64decode(frame["screenshot_b64"]))
+
+
 def ask(model, think, system, user, image_b64):
     r = requests.post(f"{OLLAMA}/api/chat", json={
         "model": model, "stream": False, "format": SCHEMA, "think": think, "keep_alive": "30m",

@@ -8,10 +8,12 @@ Imports make no requests. The game must already exist and /control must be runni
 """
 
 import argparse
+import hashlib
 import json
 import math
 import os
 import re
+import subprocess
 import tempfile
 import time
 
@@ -87,8 +89,29 @@ def make_provider(model):
     return provider
 
 
+def harness_fingerprint():
+    """Git SHA + a hash over every file that defines run behavior or scoring. Call at run
+    START so a mid-run edit can't mislabel the code the process actually loaded."""
+    try:
+        git_sha = subprocess.check_output(
+            ["git", "-C", HERE, "rev-parse", "--short", "HEAD"], text=True, timeout=5).strip()
+    except Exception:  # container has no .git: deploy drops the sha in env or a GIT_SHA file
+        git_sha = os.environ.get("POKEBENCH_GIT_SHA")
+        if not git_sha and os.path.exists(os.path.join(HERE, "GIT_SHA")):
+            git_sha = open(os.path.join(HERE, "GIT_SHA")).read().strip() or None
+    try:
+        blob = b""
+        for name in ("milestones.py", "providers.py", "run_benchmark.py", "qwen_red.py", "serve_live.py"):
+            blob += open(os.path.join(HERE, name), "rb").read()
+        files_sha = hashlib.sha256(blob).hexdigest()[:16]
+    except Exception:
+        files_sha = None
+    return git_sha, files_sha
+
+
 def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
-                  turns_used, budget, tokens, wall_s, notes, save_name):
+                  turns_used, budget, tokens, wall_s, notes, save_name,
+                  harness_git_sha=None, harness_files_sha=None):
     """The qwen_red.write_summary JSON keys, with registry/adapter provenance."""
     provider_name = model["provider"]
     summary = {
@@ -100,6 +123,10 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         "prompt_version": PROMPT_VERSION,
         "prompt_sha": PROMPT_SHA,
         "harness_version": HARNESS_VERSION,
+        "harness_git_sha": harness_git_sha,
+        "harness_files_sha": harness_files_sha,
+        # the model's actual output ceiling, recorded so it can't drift from the setting a run claims
+        "max_output_tokens": getattr(provider, "max_tokens", None),
         "execution_route": "ollama-local" if provider_name == "ollama" else f"{provider_name}-api",
         "think_level": model["think"],
         "num_ctx": model["num_ctx"],
@@ -126,9 +153,11 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
     with open(path, "x") as output:
         json.dump(summary, output, indent=2)
     print(f"\n=== RUN SUMMARY -> {path} ===", flush=True)
+    cost = summary["cost_usd"]
+    cost_str = f"${cost:.6f}" if isinstance(cost, (int, float)) else "$? (rates unset)"
     print(f"furthest: {summary['furthest_label']} (idx {summary['furthest_index']}) | "
           f"turns {turns_used}/{budget} | tok in/out {tokens['prompt']}/{tokens['completion']} | "
-          f"${summary['cost_usd']:.6f} | {wall_s:.0f}s", flush=True)
+          f"{cost_str} | {wall_s:.0f}s", flush=True)
     return path
 
 
@@ -154,6 +183,31 @@ def save_game(server, name):
     return None
 
 
+# Headroom (tokens) reserved on top of the measured text so the assembled request — system,
+# notes, state, map, screenshot, and the model's own output — never overflows the context.
+# A 480x432 PNG costs well under 1600 tokens on every provider we run; 8192 covers the
+# largest output allowance.
+_IMAGE_TOKENS = 1600
+_OUTPUT_TOKENS = 8192
+_SAFETY_TOKENS = 1024
+
+
+def fit_recent(history, num_ctx, static_chars):
+    """Newest whole history entries that fit the model's context after reserving room for the
+    rest of the request. Keeps a chronological suffix; returns [] when nothing fits — never the
+    whole list, which a bare history[-0:] slice would wrongly return."""
+    reserve = _IMAGE_TOKENS + _OUTPUT_TOKENS + _SAFETY_TOKENS + -(-static_chars // 4)
+    budget_chars = max(0, num_ctx - reserve) * 4  # ~4 chars/token, conservative
+    kept, used = [], 0
+    for line in reversed(history):
+        used += len(line) + 1
+        if used > budget_chars:
+            break
+        kept.append(line)
+    kept.reverse()
+    return kept
+
+
 def run(model, provider, server, budget=1000, run_name="run"):
     server = server.rstrip("/")
     os.makedirs(RUNS_DIR, exist_ok=True)
@@ -170,6 +224,7 @@ def run(model, provider, server, budget=1000, run_name="run"):
 
     tracker = MilestoneTracker()
     run_start = time.time()
+    harness_git_sha, harness_files_sha = harness_fingerprint()  # snapshot the code at run start
     total_tokens = {"prompt": 0, "completion": 0}
     notes = ""
     history = []
@@ -213,10 +268,11 @@ def run(model, provider, server, budget=1000, run_name="run"):
                 break
             stuck = (f"\nWARNING: position unchanged for {same_pos} turns. Do something different."
                      if same_pos >= 3 else "")
-            user = (f"NOTES:\n{notes or '(no notes yet)'}\n\nRECENT TURNS:\n"
-                    + "\n".join(history[-12:])
-                    + f"\n\nSTATE:\n{compact(state)}\n\nWALKABILITY MAP (you are @ at E5):\n"
-                    + f"{amap}{stuck}\n\nThe screenshot is attached. Take your turn.")
+            head = f"NOTES:\n{notes or '(no notes yet)'}\n\nRECENT TURNS:\n"
+            tail = (f"\n\nSTATE:\n{compact(state)}\n\nWALKABILITY MAP (you are @ at E5):\n"
+                    f"{amap}{stuck}\n\nThe screenshot is attached. Take your turn.")
+            recent = fit_recent(history, model["num_ctx"], len(SYSTEM) + len(head) + len(tail))
+            user = head + "\n".join(recent) + tail
             started = time.time()
             try:
                 plan, thinking, tokens = provider.chat(SYSTEM, user, img, SCHEMA, model["think"])
@@ -238,6 +294,7 @@ def run(model, provider, server, budget=1000, run_name="run"):
             if plan.get("key_moment"):
                 event(server, "key_moment", description=str(plan["key_moment"])[:200], category="milestone")
             state_after = None
+            steps = []
             try:
                 acted = True
                 response = requests.post(f"{server}/action", json={"actions": actions}, timeout=120)
@@ -245,6 +302,7 @@ def run(model, provider, server, budget=1000, run_name="run"):
                 result_body = response.json()
                 result = f"executed {result_body.get('actions_executed')}"
                 state_after = result_body.get("state_after")
+                steps = result_body.get("steps") or []
             except Exception as exc:
                 result = f"action error: {exc}"
             if plan.get("notes"):
@@ -259,6 +317,13 @@ def run(model, provider, server, budget=1000, run_name="run"):
                     "turn": turn, "state": compact(state), "thinking": thinking,
                     "plan": plan, "result": result, "model_s": elapsed, "tokens": tokens,
                 }) + "\n")
+            # A milestone map can be entered and left inside one 6-action batch; the per-step RAM
+            # poses expose those transient map_ids the pre/post-turn states miss (map rungs only —
+            # party/flags/badge rungs still resolve on the full state_after below).
+            for step in steps:
+                after = step.get("after") if isinstance(step, dict) else None
+                if isinstance(after, dict) and after.get("map_id") is not None:
+                    record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn)
             # /action supplies RAM state: credit even a milestone on the last budgeted turn.
             if isinstance(state_after, dict) and record_milestones(server, tracker, state_after, turn):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
@@ -271,6 +336,7 @@ def run(model, provider, server, budget=1000, run_name="run"):
         summary_path = write_summary(
             artifact_dir, run_id, model, provider, run_name, tracker, turn, budget,
             total_tokens, time.time() - run_start, notes, save_name,
+            harness_git_sha, harness_files_sha,
         )
     return summary_path
 
