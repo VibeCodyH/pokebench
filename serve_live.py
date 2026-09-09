@@ -137,14 +137,18 @@ _NUM_WARPS = 0xD3AE   # wNumberOfWarps; entries follow at wWarpEntries, 4 bytes 
 
 
 def _warps() -> list:
-    """[x, y] of every door/stairs/warp tile on the current map, from the game's own warp table.
+    """[x, y, dest_map] of every door/stairs/warp tile on the current map, from the game's own warp
+    table. dest_map 0xFF = LAST_MAP (the outdoor map you came in from, i.e. this is the way out);
+    anything else is another map (stairs to the other floor, a gate, a cave mouth).
     Test run 4 (2026-09-08): Red's front door rendered `.` on the grid while the prompt said doors
-    read as `#`; she walked 'north toward the lab' into her own house 25 times."""
+    read as `#`; she walked 'north toward the lab' into her own house 25 times.
+    Test run 6 (2026-09-09): stairs and exit mat both rendered `D`; she rode the stairs 1F<->2F for
+    15 turns thinking the stairs were the door out (measured: lab mat = 0xFF, house stairs = 0x26)."""
     n = S._emulator.read_u8(_NUM_WARPS)
     if not 0 < n <= 32:
         return []
     raw = S._emulator.read_range(_NUM_WARPS + 1, n * 4)
-    return [[raw[i * 4 + 1], raw[i * 4]] for i in range(n)]
+    return [[raw[i * 4 + 1], raw[i * 4], raw[i * 4 + 3]] for i in range(n)]
 
 
 def _screen_text() -> str:
