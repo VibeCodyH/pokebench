@@ -81,9 +81,17 @@ ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 THINK_BUDGET = {"low": 2048, "medium": 4096, "high": 8192}  # extended-thinking token budget per --think level
 
+# Gemini via Vertex AI Express (API key bound to a service account; bills the project's $300 credit).
+GEMINI_URL = "https://aiplatform.googleapis.com/v1/publishers/google/models/{model}:generateContent"
+GEMINI_DISPLAY = {"gemini-3.8": "Gemini 3.8 Flash", "gemini-3": "Gemini 3", "gemini-2.5": "Gemini 2.5"}
+
 
 def infer_provider(model: str) -> str:
-    return "anthropic" if model.startswith("claude-") else "ollama"
+    if model.startswith("claude-"):
+        return "anthropic"
+    if model.startswith("gemini-"):
+        return "gemini"
+    return "ollama"
 
 
 def resolve_identity(model: str, provider: str) -> str:
@@ -92,6 +100,12 @@ def resolve_identity(model: str, provider: str) -> str:
         if not name:  # unknown claude id: title-case the middle token, e.g. claude-foo-5 -> "Claude Foo"
             parts = model.split("-")
             name = "Claude " + (parts[1].capitalize() if len(parts) > 1 else model)
+        return f"You are {name}, an AI playing Pokémon Red live on stream."
+    if provider == "gemini":
+        name = next((v for k, v in GEMINI_DISPLAY.items() if model.startswith(k)), None)
+        if not name:  # unknown gemini id: e.g. gemini-3.8-flash -> "Gemini 3.8 Flash"
+            toks = model.split("-")[1:]
+            name = "Gemini " + " ".join(t.capitalize() for t in toks) if toks else "Gemini"
         return f"You are {name}, an AI playing Pokémon Red live on stream."
     return IDENTITY_SENTENCES.get("qwen")
 
@@ -187,9 +201,42 @@ def ask_anthropic(model, think, system, user, image_b64):
     return _extract_json(text), thinking, tokens
 
 
+def ask_gemini(model, think, system, user, image_b64):
+    """Gemini via Vertex AI Express. Returns the same (content_json_str, thinking, tokens) tuple as ask().
+
+    Gemini 3.x reasons by default (its recommended setting = the benchmark's 'max reasoning' invariant), so
+    `think` is unused; responseMimeType application/json makes it emit the schema JSON without a tool call,
+    parsed by the caller's json.loads + parse-error fallback.
+    """
+    key = os.environ.get("GOOGLE_API_KEY")
+    if not key:
+        raise RuntimeError("GOOGLE_API_KEY not set in the container env")
+    r = requests.post(GEMINI_URL.format(model=model), headers={
+        "x-goog-api-key": key, "Content-Type": "application/json",
+    }, json={
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [
+            {"inline_data": {"mime_type": "image/png", "data": image_b64}},
+            {"text": user},
+        ]}],
+        "generationConfig": {"responseMimeType": "application/json", "maxOutputTokens": NUM_PREDICT},
+    }, timeout=600)
+    r.raise_for_status()
+    body = r.json()
+    parts = (((body.get("candidates") or [{}])[0]).get("content") or {}).get("parts") or []
+    text = "".join(p.get("text", "") for p in parts if not p.get("thought"))
+    thinking = "".join(p.get("text", "") for p in parts if p.get("thought"))  # 3.x thoughts are usually opaque
+    um = body.get("usageMetadata") or {}
+    tokens = {"prompt": um.get("promptTokenCount", 0),
+              "completion": um.get("candidatesTokenCount", 0) + um.get("thoughtsTokenCount", 0)}
+    return _extract_json(text), thinking, tokens
+
+
 def ask_model(provider, model, think, system, user, image_b64):
     if provider == "anthropic":
         return ask_anthropic(model, think, system, user, image_b64)
+    if provider == "gemini":
+        return ask_gemini(model, think, system, user, image_b64)
     return ask(model, think, system, user, image_b64)
 
 
@@ -333,8 +380,8 @@ def main():
     ap.add_argument("--save-every", type=int, default=25)
     ap.add_argument("--run-name", default="")
     ap.add_argument("--no-frames", action="store_true", help="don't save frame PNGs")
-    ap.add_argument("--provider", default="auto", choices=["auto", "ollama", "anthropic"],
-                    help="auto = infer from --model (claude-* -> anthropic, else ollama)")
+    ap.add_argument("--provider", default="auto", choices=["auto", "ollama", "anthropic", "gemini"],
+                    help="auto = infer from --model (claude-* -> anthropic, gemini-* -> gemini, else ollama)")
     ap.add_argument("--identity", default="",
                     help="override the opening identity sentence; default derived from the model")
     args = ap.parse_args()
@@ -349,6 +396,11 @@ def main():
                            model_params=None, quant=None, cost_usd=None,  # cost left null: no fabricated rate
                            num_ctx=None, temperature=1.0)
         rec_think = args.think  # real: thinking runs at THINK_BUDGET[args.think]
+    elif provider == "gemini":
+        # Vertex AI Express. Gemini 3.x reasons by default; no num_ctx analog, temperature left at the API default.
+        prov_fields = dict(provider="vertex-express", family="gemini", execution_route="vertex-express-api",
+                           model_params=None, quant=None, cost_usd=None, num_ctx=None, temperature=None)
+        rec_think = "default"  # Gemini 3.x thinking is on by default; we don't override the level
     else:
         prov_fields = dict(provider="ollama-local", family="qwen", execution_route="ollama-local",
                            model_params="27B", quant="Q4_K_M", cost_usd=0.0,
