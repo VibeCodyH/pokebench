@@ -168,6 +168,10 @@ def record_milestones(server, tracker, state, turn):
         if key in tracker.first_turn and key not in before:
             print(f"🏁 MILESTONE: {label} (turn {turn})", flush=True)
             event(server, "key_moment", description=f"Milestone: {label}", category="milestone")
+            try:  # feed the dashboard JOURNEY tracker; summary.json is the scoring source of truth
+                requests.post(f"{server}/milestones", json={"key": key, "label": label, "turn": turn}, timeout=10)
+            except Exception:
+                pass
     return "beat_brock" in tracker.first_turn
 
 
@@ -225,6 +229,14 @@ def run(model, provider, server, budget=1000, run_name="run"):
     tracker = MilestoneTracker()
     run_start = time.time()
     harness_git_sha, harness_files_sha = harness_fingerprint()  # snapshot the code at run start
+    try:  # tell the /stream dashboard which model is playing (branding, colors, ctx label)
+        requests.post(f"{server}/run_meta", json={
+            "model": model["api_model_id"], "think": model["think"], "ctx": model["num_ctx"],
+            "route": ("local" if model["provider"] == "ollama" else "api"),
+            "prompt_version": PROMPT_VERSION,
+        }, timeout=10)
+    except Exception:
+        pass
     total_tokens = {"prompt": 0, "completion": 0}
     notes = ""
     history = []
