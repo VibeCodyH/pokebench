@@ -29,7 +29,7 @@ SYSTEM = """You are Qwen, a local AI playing Pokémon Red live on stream. You ge
 
 How the game works: overworld movement is one tile per walk_X. Talk to people/signs with press_a while facing them. DOORS, STAIRS, and building entrances/exits are WARP tiles: you trigger them just by WALKING ONTO them, never with A. Every warp tile is marked `D` on the ASCII map (read from the game's own warp table), so a `.` is NEVER a door and a `D` is the ONLY way in or out of a building. IMPORTANT: after leaving a building you stand directly BELOW its `D`; walking up re-enters it. Step away sideways first, then head to your goal. In menus and dialog, press_a advances/confirms, press_b cancels. Use a_until_dialog_end to skip through long text. ★SCREEN TEXT below is exactly what is written on screen right now, read from the game's memory. If a text box is open, READ IT FIRST: people tell you what to do next (if someone says "don't leave yet", stay and talk to them; if the text names a place or a person, that is your lead). Then clear the box with a_until_dialog_end; whatever it skipped past is quoted back to you in RECENT TURNS. You cannot walk while a text box is open. The title/intro screens need press_start then press_a. Name entry: choose a preset name when offered (press_a on it) instead of typing.
 
-Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. The grid is a WINDOW that moves with you: E5 is always your current STATE position (x,y), so grid letters/rows are NOT world coordinates (column A = x-4, J = x+5; row 1 = y-4, row 9 = y+4) and E5 never disagrees with STATE. `.` walkable, `#` blocked, `D` door/stairs/warp (stepping on it changes map). ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.` or `D`. If the tile directly ABOVE `@` is `#`, you CANNOT go north this turn regardless of what tiles further up look like — walk left or right along the wall to find the one `.` opening, then go up through it. up = row-1, down = row+1, left = col-1, right = col+1. Never plan a route through `#`. To enter a building, walk onto its `D`. Your memory of the Gen 1 maps is unreliable: treat any recalled layout ('the stairs are bottom-left', 'the Pokémon Center is north') as a guess until the map or screenshot confirms it.
+Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. The grid is a WINDOW that moves with you: E5 is always your current STATE position (x,y), so grid letters/rows are NOT world coordinates (column A = x-4, J = x+5; row 1 = y-4, row 9 = y+4) and E5 never disagrees with STATE. `.` walkable, `#` blocked, `D` door/stairs/warp (stepping on it changes map), `v` a ledge: walk_down from the tile above it hops you over to the tile below; you can never go back up through it. ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.`, `D`, or (going down only) `v`. If the tile directly ABOVE `@` is `#`, you CANNOT go north this turn regardless of what tiles further up look like — walk left or right along the wall to find the one `.` opening, then go up through it. up = row-1, down = row+1, left = col-1, right = col+1. Never plan a route through `#`. To enter a building, walk onto its `D`. Your memory of the Gen 1 maps is unreliable: treat any recalled layout ('the stairs are bottom-left', 'the Pokémon Center is north') as a guess until the map or screenshot confirms it.
 
 Overall goal: beat the game. The opening runs in a fixed order, and the game will not let you skip a step. Where you are in it is visible in STATE (party, parcel flag, pokedex flag): (1) No Pokémon yet: your house and the lab are dead ends. Walk to the NORTH edge of Pallet Town toward the tall grass; Professor Oak stops you there and walks you to his lab, where you pick a starter and fight your rival. (2) Starter but no parcel and no Pokédex: Oak has nothing more for you yet. Leave Pallet NORTH through Route 1 to Viridian City; the clerk in the Viridian Mart hands you Oak's parcel. (3) Parcel in your bag: go back SOUTH down Route 1 to Oak's lab and give it to him; he gives you the Pokédex. (4) Pokédex: north again to Viridian, then Route 2 -> Viridian Forest -> Pewter City -> Brock's gym. Heal at Pokémon Centers (talk to the nurse). Buy Potions and Poké Balls at Marts.
 
@@ -60,7 +60,7 @@ ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk
            "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 
 # Provenance (BENCHMARK-SPEC.md §2b — same prompt, same rules, public receipts).
-PROMPT_VERSION = "v8"          # bump whenever SYSTEM changes; old runs keep their version
+PROMPT_VERSION = "v9"          # bump whenever SYSTEM changes; old runs keep their version
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
@@ -186,6 +186,24 @@ def build_map(state, warps=()):
                 nr, nc = r+dr, cc+dc
                 if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] and not reach[nr][nc]:
                     reach[nr][nc] = True; stack.append((nr, nc))
+    ids = c.get("tile_ids") or []
+    ledge_down = set()
+    if c.get("tileset") == 0 and ids:  # overworld tileset: 0x36/0x37 are the one-way ledge tiles you hop DOWN over
+        for r in range(rows):
+            for cc in range(cols):
+                if r < len(ids) and cc < len(ids[r]) and ids[r][cc] in (0x36, 0x37):
+                    ledge_down.add((r, cc))
+    if ledge_down:  # a hop carries you from the tile above the ledge to the tile below it
+        for r, cc in sorted(ledge_down):
+            if r - 1 >= 0 and reach[r - 1][cc] and r + 1 < rows and grid[r + 1][cc] and not reach[r + 1][cc]:
+                reach[r + 1][cc] = True
+                stack = [(r + 1, cc)]
+                while stack:
+                    rr, c2 = stack.pop()
+                    for dr, dc in ((1,0),(-1,0),(0,1),(0,-1)):
+                        nr, nc = rr+dr, c2+dc
+                        if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] and not reach[nr][nc]:
+                            reach[nr][nc] = True; stack.append((nr, nc))
     ppos = (state.get("player") or {}).get("position") or {}
     doors = set()
     if ppos.get("x") is not None:
@@ -197,11 +215,12 @@ def build_map(state, warps=()):
         for cc in range(cols):
             if (r, cc) == (pr, pc): line.append("@")
             elif (r, cc) in doors: line.append("D")
+            elif (r, cc) in ledge_down: line.append("v")
             elif not grid[r][cc]: line.append("#")
             elif reach[r][cc]: line.append(".")
             else: line.append("#")  # RAM says walkable but no route from @ (fenced/ledged off): show it as blocked, she treated `~` as a target (v4)
         out.append(f"{r+1:2d} " + " ".join(line))
-    out.append("@ you  . reachable  # blocked  D door/stairs/warp")
+    out.append("@ you  . reachable  # blocked  D door/stairs/warp  v ledge (hop DOWN over it; one-way)")
     out.append("up=row-1 down=row+1 left=col-1 right=col+1")
     return "\n".join(out)
 
@@ -382,25 +401,25 @@ def main():
             blocked = {}
             for st in steps:
                 b, af = st.get("before"), st.get("after")
-                if b and b.get("ui"):
-                    continue  # a direction press in a menu/dialog/battle moves a cursor, not the player
+                if b and (b.get("ui") or (af and af.get("ui"))):
+                    continue  # cursor move inside a menu/dialog/battle, or the step itself triggered a scene/battle
                 if st.get("action", "").startswith("walk_") and b and af and b.get("map_id") == af.get("map_id") and b.get("pos") == af.get("pos"):
                     blocked[st["action"]] = blocked.get(st["action"], 0) + 1
             if blocked:
                 tail_parts.append(" blocked walks: " + ", ".join(f"{k} x{v}" for k, v in blocked.items()))
-            said_pages = []
+            pages = []  # every line of dialogue the batch produced, in the order it appeared on screen
             for st in steps:
                 if isinstance(st.get("dialog"), dict):
                     tail_parts.append(f" dialog: {st['dialog'].get('stop_reason')} after {st['dialog'].get('presses')} A")
-                    said = " | ".join(st["dialog"].get("text") or [])
-                    if said:
-                        tail_parts.append(f' said: "{said[:400]}"')
-                elif st.get("said") and (not said_pages or st["said"] != said_pages[-1]):
-                    said_pages.append(st["said"])
+                    for line in st["dialog"].get("text") or []:
+                        if line and (not pages or line != pages[-1]):
+                            pages.append(line)
+                elif st.get("said") and (not pages or st["said"] != pages[-1]):
+                    pages.append(st["said"])
                 if "error" in st:
                     tail_parts.append(f" action error: {st['error']}")
-            if said_pages:
-                tail_parts.append(' said: "' + " | ".join(said_pages)[:400] + '"')
+            if pages:
+                tail_parts.append(' said: "' + " | ".join(pages)[:1500] + '"')  # 400 cut Oak's "you can have one! Choose!" (run 4 T62)
             if isinstance(rj.get("state_after"), dict):
                 check_milestones(rj["state_after"], turn)  # the turn that produced the milestone, not the next one
         except Exception as e:
