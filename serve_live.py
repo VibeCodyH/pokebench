@@ -66,7 +66,15 @@ def _transition_busy() -> bool:
     """wd730 bit 5: joypad ignored. Set during warps (fade + auto-step), scripted walks (Oak's
     intercept) and text printing; CLEAR while a text box or menu waits for input (measured
     2026-09-08). So it means 'the game is moving on its own right now'."""
-    return bool(S._emulator.read_u8(_red.ADDR_JOY_IGNORE) & 0xA0)  # bit 7 = scripted movement/ledge jump (test run 4: joy_ignore 128 mid-jump)
+    # wJoyIgnore is a mask of ignored buttons: any nonzero value means a script owns the input right now.
+    # 0xA0 (bits 5+7) missed Oak's escort into the lab (test run 7 T26: /frame reported the lab door (5,11) with no
+    # text while the scene was still walking her to (5,3)); the settle caps bound the cost of the wider test.
+    # A fully blank tilemap (every tile the same id) is a fade/black frame, never a playable screen (T39: black
+    # screenshot + all-# grid right before the rival battle).
+    if S._emulator.read_u8(_red.ADDR_JOY_IGNORE) != 0:
+        return True
+    raw = S._emulator.read_range(_TILEMAP, 18 * 20)
+    return len(set(raw)) == 1
 
 
 def _ui_open() -> bool:

@@ -27,9 +27,9 @@ RUNS_DIR = os.path.join(HERE, "runs")
 
 SYSTEM = """You are Qwen, a local AI playing Pokémon Red live on stream. You get the game state read from RAM, an ASCII walkability map, and a screenshot. The game keeps running in real time between turns (NPCs move, animations finish), so the screenshot is a moment in time; each turn only 1-6 button presses happen, so make them count.
 
-How the game works: overworld movement is one tile per walk_X. Talk to people/signs with press_a while facing them. DOORS, STAIRS, and building entrances/exits are WARP tiles: you trigger them just by WALKING ONTO them, never with A. Every warp tile is marked on the ASCII map (read from the game's own warp table): `D` = a door that leads OUTSIDE (a building's entrance from the street, or its exit mat from inside), `S` = stairs or a passage to a DIFFERENT indoor map (the other floor, a gate, a cave). So a `.` is NEVER a door, a `D` is the ONLY way in or out of a building, and an `S` NEVER takes you outside: if you are inside and want the street, ignore every `S` and find the `D`. IMPORTANT: after leaving a building you stand directly BELOW its `D`; walking up re-enters it. Step away sideways first, then head to your goal. In menus and dialog, press_a advances/confirms, press_b cancels. Use a_until_dialog_end to skip through long text. ★SCREEN TEXT below is exactly what is written on screen right now, read from the game's memory. If a text box is open, READ IT FIRST: people tell you what to do next (if someone says "don't leave yet", stay and talk to them; if the text names a place or a person, that is your lead). Then clear the box with a_until_dialog_end; whatever it skipped past is quoted back to you in RECENT TURNS. You cannot walk while a text box is open. The title/intro screens need press_start then press_a. Name entry (yours, then your rival's): your call. The preset names are the fast path (move onto one, press_a). If you want a name of your own, pick NEW NAME: on the letter grid walk_X moves the cursor, press_a types the letter under it, press_b deletes, press_start jumps the cursor to END, then press_a to confirm.
+How the game works: overworld movement is one tile per walk_X. Talk to people/signs with press_a while facing them. DOORS, STAIRS, and building entrances/exits are WARP tiles: you trigger them just by WALKING ONTO them, never with A. Every warp tile is marked on the ASCII map (read from the game's own warp table): `D` = a door back to the map you came in from (a building's entrance from the street, or its exit mat from inside), `S` = a warp to some OTHER map (stairs to the other floor, a cave mouth, the far side of a gate house). So a `.` is NEVER a door, and inside a house or shop the `S` is the stairs, not the way out: to get back to the street find the `D`. IMPORTANT: after leaving a building you stand directly BELOW its `D`; walking up re-enters it. Step away sideways first, then head to your goal. In menus and dialog, press_a advances/confirms, press_b cancels. Use a_until_dialog_end to skip through long text. ★SCREEN TEXT below is exactly what is written on screen right now, read from the game's memory. If a text box is open, READ IT FIRST: people tell you what to do next (if someone says "don't leave yet", stay and talk to them; if the text names a place or a person, that is your lead). Then clear the box with a_until_dialog_end; whatever it skipped past is quoted back to you in RECENT TURNS. You cannot walk while a text box is open. The title/intro screens need press_start then press_a. Name entry (yours, then your rival's): your call. The preset names are the fast path (move onto one, press_a). If you want a name of your own, pick NEW NAME: on the letter grid walk_X moves the cursor, press_a types the letter under it, press_b deletes, press_start jumps the cursor to END, then press_a to confirm.
 
-Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. The grid is a WINDOW that moves with you: E5 is always your current STATE position (x,y), so grid letters/rows are NOT world coordinates (column A = x-4, J = x+5; row 1 = y-4, row 9 = y+4) and E5 never disagrees with STATE. `.` walkable, `#` blocked, `D` door to outside / `S` stairs or passage to another indoor map: outdoor doors and stairs trigger the moment you step onto them, but the EXIT MAT inside a building (the `D` tiles on its bottom wall) does not: stand on it and walk_down once more, into the wall, to go outside (test: sidestepping between the two mat tiles does nothing), `v` a ledge: walk_down from the tile above it hops you over to the tile below; you can never go back up through it. ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.`, `D`, `S`, or (going down only) `v`. If the tile directly ABOVE `@` is `#`, you CANNOT go north this turn regardless of what tiles further up look like — walk left or right along the wall to find the one `.` opening, then go up through it. up = row-1, down = row+1, left = col-1, right = col+1. Never plan a route through `#`. To enter a building, walk onto its `D`. Your memory of the Gen 1 maps is unreliable: treat any recalled layout ('the stairs are bottom-left', 'the Pokémon Center is north') as a guess until the map or screenshot confirms it.
+Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. The grid is a WINDOW that moves with you: E5 is always your current STATE position (x,y), so grid letters/rows are NOT world coordinates (column A = x-4, J = x+5; row 1 = y-4, row 9 = y+4) and E5 never disagrees with STATE. `.` walkable, `#` blocked, `D` door back to where you came from / `S` warp to another map: outdoor doors and stairs trigger the moment you step onto them, but an EXIT MAT inside a building (the `D` tiles on its edge wall) does not: stand on it and walk once more INTO the wall behind it (down for a bottom-wall mat, up for a top-wall mat) to go through; the grid tells you which. Sidestepping between the two mat tiles does nothing, `v` a ledge: walk_down from the tile above it hops you over to the tile below; you can never go back up through it. ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.`, `D`, `S`, or (going down only) `v`. The ONE exception is the exit-mat step above: from a `D` mat you walk into the `#` wall behind it. If the tile directly ABOVE `@` is `#`, you CANNOT go north this turn regardless of what tiles further up look like — walk left or right along the wall to find the one `.` opening, then go up through it. up = row-1, down = row+1, left = col-1, right = col+1. Never plan a route through `#`. To enter a building, walk onto its `D`. Your memory of the Gen 1 maps is unreliable: treat any recalled layout ('the stairs are bottom-left', 'the Pokémon Center is north') as a guess until the map or screenshot confirms it.
 
 Overall goal: beat the game. The opening runs in a fixed order, and the game will not let you skip a step. Where you are in it is visible in STATE (party, parcel flag, pokedex flag): (1) No Pokémon yet: your house and the lab are dead ends. Walk to the NORTH edge of Pallet Town toward the tall grass; Professor Oak stops you there and walks you to his lab, where you pick a starter and fight your rival. (2) Starter but no parcel and no Pokédex: Oak has nothing more for you yet. Leave Pallet NORTH through Route 1 to Viridian City; the clerk in the Viridian Mart hands you Oak's parcel. (3) Parcel in your bag: go back SOUTH down Route 1 to Oak's lab and give it to him; he gives you the Pokédex. (4) Pokédex: north again to Viridian, then Route 2 -> Viridian Forest -> Pewter City -> Brock's gym. Heal at Pokémon Centers (talk to the nurse). Buy Potions and Poké Balls at Marts.
 
@@ -60,7 +60,7 @@ ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk
            "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 
 # Provenance (BENCHMARK-SPEC.md §2b — same prompt, same rules, public receipts).
-PROMPT_VERSION = "v12"          # bump whenever SYSTEM changes; old runs keep their version
+PROMPT_VERSION = "v13"          # bump whenever SYSTEM changes; old runs keep their version
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
@@ -84,7 +84,9 @@ def compact(state):
     if b.get("in_battle"):
         lines.append("battle: " + json.dumps({k: v for k, v in b.items() if k != "in_battle"})[:400])
     fl = state.get("flags") or {}
-    lines.append(f"flags: pokedex {fl.get('has_pokedex')}, parcel {fl.get('has_oaks_parcel')}, seen {fl.get('pokedex_seen')} owned {fl.get('pokedex_owned')}")
+    in_bag = any("PARCEL" in str(i.get("item", "")).upper() for i in state.get("bag", []) or [])
+    parcel = "in your bag" if in_bag else ("already delivered to Oak" if fl.get("has_oaks_parcel") else "not yet picked up")
+    lines.append(f"flags: pokedex {fl.get('has_pokedex')}, parcel {parcel}, seen {fl.get('pokedex_seen')} owned {fl.get('pokedex_owned')}")
     return "\n".join(lines)
 
 
@@ -228,9 +230,11 @@ def build_map(state, warps=()):
             elif reach[r][cc]: line.append(".")
             else: line.append("#")  # RAM says walkable but no route from @ (fenced/ledged off): show it as blocked, she treated `~` as a target (v4)
         out.append(f"{r+1:2d} " + " ".join(line))
-    out.append("@ you  . reachable  # blocked  D door to OUTSIDE  S stairs/passage to another indoor map (never outside)  v ledge (hop DOWN over it; one-way)")
+    out.append("@ you  . reachable  # blocked  D door back to the map you came from  S warp to another map (stairs/cave/far side of a gate)  v ledge (hop DOWN over it; one-way)")
     if (pr, pc) in doors and not outdoors:
-        out.append("★ YOU ARE STANDING ON THE EXIT MAT (a D is under @). walk_down once more to go outside.")
+        # a mat on the map's top row (gate houses' north exits, y == 0) is walked UP through; every other mat is on the bottom wall
+        step = "walk_up" if ppos.get("y") == 0 else "walk_down"
+        out.append(f"★ YOU ARE STANDING ON THE EXIT MAT (a D is under @). {step} once more, into the wall, to go through.")
     out.append("up=row-1 down=row+1 left=col-1 right=col+1")
     return "\n".join(out)
 
@@ -400,7 +404,7 @@ def main():
             sm = st.get("map") or {}; sp = (st.get("player") or {}).get("position") or {}
             return {"map_id": sm.get("map_id"), "map_name": sm.get("map_name"), "pos": [sp.get("x"), sp.get("y")]}
         def fmt(p): return f"{p.get('map_name') or 'Unknown'} ({(p.get('pos') or [None, None])[0]},{(p.get('pos') or [None, None])[1]})"
-        steps = []; start = end = pose_of(state); tail_parts = []
+        steps = []; start = end = pose_of(state); tail_parts = []; rj = {}
         try:
             r = requests.post(f"{S}/action/traced", json={"actions": actions}, timeout=120)
             r.raise_for_status()
@@ -455,7 +459,7 @@ def main():
         acts["turns"] += 1; acts["actions"] += len(actions)
         acts["a_presses"] += sum((st.get("dialog") or {}).get("presses", 0) for st in steps if isinstance(st.get("dialog"), dict))
         with open(log_path, "a") as f:
-            f.write(json.dumps({"turn": turn, "prompt_version": PROMPT_VERSION, "user_message": user, "screenshot_sha256": screenshot_sha256, "frame_file": frame_file, "state": state, "screen_text": screen_text, "thinking": thinking, "plan": plan, "plan_actions_raw": plan_actions_raw, "actions": actions, "fallback_reason": fallback_reason, "steps": steps, "result": result_tail, "model_s": dt, "tokens": tokens, "retried": retried}) + "\n")
+            f.write(json.dumps({"turn": turn, "prompt_version": PROMPT_VERSION, "user_message": user, "screenshot_sha256": screenshot_sha256, "frame_file": frame_file, "state": state, "screen_text": screen_text, "thinking": thinking, "plan": plan, "plan_actions_raw": plan_actions_raw, "actions": actions, "fallback_reason": fallback_reason, "steps": steps, "result": result_tail, "model_s": dt, "tokens": tokens, "retried": retried, "warps": frame.get("warps"), "state_after": rj.get("state_after")}) + "\n")
         if turn % args.save_every == 0:
             try:
                 requests.post(f"{S}/save", json={"name": run_id}, timeout=30)
