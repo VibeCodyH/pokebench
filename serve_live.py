@@ -62,18 +62,23 @@ _TILEMAP_ROW12 = 0xC3A0 + 12 * 20   # wTileMap row 12 = top edge of the standard
 _BOX_CORNER = 0x79                  # top-left border tile; measured 0x79 open / overworld tile closed
 
 
+_BUSY_MASK = 0xA1   # 0xD730 bits 0 (scripted NPC movement) + 5 (joypad ignored) + 7 (simulated movement)
+_BLANK_DISTINCT = 3  # a tilemap with <= this many distinct tile ids is a black/fade frame
+
+
 def _transition_busy() -> bool:
-    """0xD730 (wd730) bit 5 = joypad ignored, bit 7 = simulated/scripted movement: together (0xA0)
-    they mean 'the game is moving on its own right now' (warp fades + auto-step, Oak's intercept).
-    Bit 6 (0x40) is the no-text-delay flag, NOT busy: test run 9 v13 read the whole byte != 0 and
-    treated the Charmander info screen (0x40 set) as busy, so every /frame there waited ~8 s
-    (Codex run-9 review; 0xD730 verified against pokered's joypad routine). A fully blank tilemap
-    (every tile the same id) is a fade/black frame, never a playable screen (T39: black screenshot
-    + all-# grid right before the rival battle), so it counts as busy too."""
-    if S._emulator.read_u8(_red.ADDR_JOY_IGNORE) & 0xA0:
+    """0xD730 (wd730): bit 5 = joypad ignored, bit 7 = simulated/scripted movement, bit 0 = scripted
+    NPC movement (Oak's escort). The mask is 0xA1 and deliberately EXCLUDES bit 6 (0x40, no-text-delay):
+    v13 read the whole byte != 0 and treated the Charmander info screen (0x40 set) as busy, so every
+    /frame there waited ~8 s (Codex run-9). Bit 0 was added after Codex run-10 caught T39/T49 escort
+    frames leaking with only bit 0 set; measured 2026-09-09 that bit 0 is NEVER set during ambient
+    overworld NPC movement (40 Pallet + 15 lab samples all 0), so it is safe in the mask.
+    A near-blank tilemap (<= 3 distinct tile ids) is a fade/black/wipe frame, never a playable screen
+    (T39/T59 black screenshot + all-# grid before the rival battle); normal screens have 10-38."""
+    if S._emulator.read_u8(_red.ADDR_JOY_IGNORE) & _BUSY_MASK:
         return True
     raw = S._emulator.read_range(_TILEMAP, 18 * 20)
-    return len(set(raw)) == 1
+    return len(set(raw)) <= _BLANK_DISTINCT
 
 
 def _ui_open() -> bool:
@@ -161,7 +166,12 @@ def _warps() -> list:
 def _screen_text() -> str:
     """Every word on screen right now, decoded from wTileMap with the game's own charmap
     (letters are >= 0x80; overworld tiles are < 0x60 so they decode to nothing). This is
-    what the model would read from the screenshot, as text: dialog, menus, battle HUD."""
+    what the model would read from the screenshot, as text: dialog, menus, battle HUD.
+    Only decode when a box/menu/battle is actually up: the title screen draws its logo with
+    tile ids in the letter range, which otherwise decodes to a fake 'ABCDEFG...' alphabet the
+    model reads as a name-entry screen (Codex run-10, T2)."""
+    if not _ui_open():
+        return ""
     raw = S._emulator.read_range(_TILEMAP, 18 * 20)
     rows = []
     for r in range(18):
@@ -248,6 +258,9 @@ async def _settle_screen(cap_ticks: int) -> None:
             return
 
 
+_last_settle: dict = {}  # busy_reason of the most recent _settle_after, surfaced in /action/traced for review
+
+
 async def _settle_after(action: str) -> None:
     """After any action: wait for scripted movement to hand control back (ledge jumps, Oak's
     intercept, door fades; cap 3 s), then for the screen to stop changing (cap 4 s). Measured
@@ -258,15 +271,18 @@ async def _settle_after(action: str) -> None:
     T35->T36: /frame caught Oak's escort mid-walk, reporting the lab door pose while the script
     was still walking her to the aide)."""
     clear = 0
-    for _ in range(_WARP_CAP_TICKS):
+    busy_reason = "capped"
+    for i in range(_WARP_CAP_TICKS):
         if await S._run_sync(_transition_busy):
             clear = 0
         else:
             clear += 1
             if clear >= 2:
+                busy_reason = "cleared"
                 break
         await S._run_sync(S._emulator.tick, 6)
     await _settle_screen(_SETTLE_CAP_TICKS)
+    _last_settle["busy_reason"] = busy_reason  # logged per action so a review can tell a premature release from a cap
 
 
 async def _settle_warp(stale: dict) -> dict:
@@ -291,7 +307,9 @@ async def _settle_warp(stale: dict) -> dict:
 async def _execute_unlocked(action_str: str):
     a = action_str.strip().lower()
     if a == "a_until_dialog_end":
-        return await _a_until_dialog_end()
+        res = await _a_until_dialog_end()
+        await _settle_after(a)  # a scripted scene can keep moving after the last box closes (Oak's escort ends
+        return res              # here); v14 settled every OTHER action but this path, so T39 leaked (Codex run-10)
     res = await _orig_execute(action_str)
     await _settle_after(a)
     return res
@@ -405,16 +423,18 @@ async def traced_action(req: S.ActionRequest):
         for a in req.actions:
             async with _lock:  # one lock span per action: the idle ticker cannot move the game between the pose reads
                 before = await S._run_sync(_pose)
+                _last_settle.pop("busy_reason", None)
                 try:
                     detail = await _execute_unlocked(a)
                 except ValueError as e:
                     steps.append({"action": a, "error": str(e)})
                     break
+                settle = _last_settle.get("busy_reason")  # "cleared" or "capped"; capped = the scene never settled
                 after = await S._run_sync(_pose)
                 if after.get("map_id") != before.get("map_id"):
                     after = await _settle_warp(after)
                 said = await S._run_sync(lambda: _box_lines() if _dialog_open() else "")
-            step = {"action": a, "before": before, "after": after, "dialog": detail}
+            step = {"action": a, "before": before, "after": after, "dialog": detail, "settle": settle}
             if said and not isinstance(detail, dict):
                 step["said"] = said  # the page a plain press left on screen (a_until carries its own transcript)
             steps.append(step)
