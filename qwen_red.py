@@ -83,6 +83,7 @@ THINK_BUDGET = {"low": 2048, "medium": 4096, "high": 8192}  # extended-thinking 
 
 # Gemini via Vertex AI Express (API key bound to a service account; bills the project's $300 credit).
 GEMINI_URL = "https://aiplatform.googleapis.com/v1/publishers/google/models/{model}:generateContent"
+AISTUDIO_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"  # AI Studio (GDP free credits); same body, different base
 GEMINI_DISPLAY = {"gemini-3.8": "Gemini 3.8 Flash", "gemini-3": "Gemini 3", "gemini-2.5": "Gemini 2.5"}
 
 
@@ -208,10 +209,15 @@ def ask_gemini(model, think, system, user, image_b64):
     `think` is unused; responseMimeType application/json makes it emit the schema JSON without a tool call,
     parsed by the caller's json.loads + parse-error fallback.
     """
-    key = os.environ.get("GOOGLE_API_KEY")
-    if not key:
-        raise RuntimeError("GOOGLE_API_KEY not set in the container env")
-    r = requests.post(GEMINI_URL.format(model=model), headers={
+    studio = os.environ.get("GEMINI_API_KEY")  # AI Studio key (GDP credits ~ free); preferred when present
+    if studio:
+        url, key = AISTUDIO_URL.format(model=model), studio
+    else:
+        key = os.environ.get("GOOGLE_API_KEY")
+        if not key:
+            raise RuntimeError("no Gemini key: set GEMINI_API_KEY (AI Studio) or GOOGLE_API_KEY (Vertex Express)")
+        url = GEMINI_URL.format(model=model)
+    r = requests.post(url, headers={
         "x-goog-api-key": key, "Content-Type": "application/json",
     }, json={
         "systemInstruction": {"parts": [{"text": system}]},
@@ -397,8 +403,10 @@ def main():
                            num_ctx=None, temperature=1.0)
         rec_think = args.think  # real: thinking runs at THINK_BUDGET[args.think]
     elif provider == "gemini":
-        # Vertex AI Express. Gemini 3.x reasons by default; no num_ctx analog, temperature left at the API default.
-        prov_fields = dict(provider="vertex-express", family="gemini", execution_route="vertex-express-api",
+        # Gemini 3.x reasons by default; no num_ctx analog, temperature left at the API default.
+        _studio = bool(os.environ.get("GEMINI_API_KEY"))  # AI Studio (GDP credits) vs Vertex Express
+        prov_fields = dict(provider=("google-aistudio" if _studio else "vertex-express"), family="gemini",
+                           execution_route=("aistudio-api" if _studio else "vertex-express-api"),
                            model_params=None, quant=None, cost_usd=None, num_ctx=None, temperature=None)
         rec_think = "default"  # Gemini 3.x thinking is on by default; we don't override the level
     else:
