@@ -60,6 +60,7 @@ _A_UNTIL_CAP = 100         # presses; 15 capped out on Oak's speeches (measured 
 _REOPEN_GRACE_TICKS = 6    # x30 frames = ~3 s of "is the next box coming?" after a close
 _TILEMAP_ROW12 = 0xC3A0 + 12 * 20   # wTileMap row 12 = top edge of the standard text box
 _BOX_CORNER = 0x79                  # top-left border tile; measured 0x79 open / overworld tile closed
+_MENU_CURSOR = 0xED                 # ▶ menu-selection cursor; present only while a menu awaits a choice (verified 2026-09-09)
 
 
 _BUSY_MASK = 0xA1   # 0xD730 bits 0 (scripted NPC movement) + 5 (joypad ignored) + 7 (simulated movement)
@@ -116,7 +117,11 @@ def _menu_open() -> bool:
     # instead of confirming the highlighted choice. Verified on a live boot 2026-09-08: the intro name-select
     # list stopped the helper with 0 presses (stop_reason menu). Yes/No boxes use the same border tile (inferred).
     if S._emulator.read_u8(_red.ADDR_BATTLE_TYPE) != 0:
-        return False
+        # In battle the text-box corner is permanent, so it can't flag a menu. The ▶ selection cursor
+        # (0xED) is drawn only while a battle menu (FIGHT/ITEM/PKMN/RUN or a submenu) awaits a choice,
+        # and is absent while battle text advances — verified 2026-09-09 on the stuck wild-Rattata
+        # state (a_until had mashed A 100x re-selecting OAK's PARCEL because this returned False here).
+        return _MENU_CURSOR in S._emulator.read_range(_TILEMAP, 18 * 20)
     raw = S._emulator.read_range(0xC3A0, 12 * 20)  # wTileMap rows 0-11
     return _BOX_CORNER in raw
 
@@ -206,6 +211,12 @@ async def _a_until_dialog_end() -> dict:
     stop_reason = "capped"
     said = [_box_lines()]  # transcript of what she skipped, so the words reach her turn history
     for _ in range(_A_UNTIL_CAP):
+        if _menu_open():
+            # Recheck BEFORE every press (Codex 2026-09-09): a box reopening during the grace wait
+            # slips past the post-press menu check below, so a menu that appears mid-loop (battle text
+            # ending on the FIGHT/ITEM menu, or a scripted scene opening a choice) would eat one A press.
+            stop_reason = "menu"
+            break
         await S._run_sync(S._emulator.press, "a", 8)  # 8-frame hold = reliable register
         await S._run_sync(S._emulator.tick, 30)
         presses += 1
@@ -477,7 +488,10 @@ _milestones: dict = {}  # key -> turn, for the current game; cleared on /games/n
 async def post_milestone(body: dict):
     """Harness reports a newly hit milestone {key, label, turn}; stored for /stream refreshes and broadcast live."""
     key, turn = body.get("key"), body.get("turn")
-    if key and key not in _milestones:
+    # The harness (milestones.py tracker) is the single source of truth: it posts each key exactly
+    # once, at its real first turn, guarded against the boot state. So TRUST it and overwrite — a
+    # stale value left by a boot false-fire or a prior session must not lock the dashboard to turn 1.
+    if key and _milestones.get(key) != turn:
         _milestones[key] = turn
         await S.broadcast({"type": "milestone", "key": key, "label": body.get("label"), "turn": turn})
     return {"success": True, "hit": _milestones}
