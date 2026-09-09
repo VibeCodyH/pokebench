@@ -8,6 +8,7 @@ Imports make no requests. The game must already exist and /control must be runni
 """
 
 import argparse
+import base64
 import hashlib
 import json
 import math
@@ -31,12 +32,13 @@ from qwen_red import (
     PROMPT_VERSION,
     RUNS_DIR,
     SCHEMA,
-    SYSTEM,
+    render_system,
+    resolve_identity,
     TEMPERATURE,
     build_map,
     compact,
     event,
-    screenshot_b64,
+    shrink_png,
 )
 
 
@@ -194,6 +196,34 @@ def save_game(server, name):
 _IMAGE_TOKENS = 1600
 _OUTPUT_TOKENS = 8192
 _SAFETY_TOKENS = 1024
+# How many milestone spans of history to keep. Anchor the prompt window at the start of the
+# Nth-from-newest milestone reached and drop everything older: stale pre-objective context
+# (Pallet, Route 1) falls away while the CURRENT objective's full trail is retained, so a
+# model's own loop evidence (revisiting the same tile) stays intact. fit_recent still caps
+# the result at num_ctx, bounding cost when a model is stuck at one milestone for many turns.
+MILESTONE_WINDOW = 2
+
+
+def milestone_anchor_turn(tracker, keep):
+    """Turn to start the prompt window at: the first-hit turn of the keep-th milestone from
+    the newest one reached. Fewer than `keep` milestones reached -> 0 (keep all history).
+    furthest_index is monotonic, so regressing off a milestone never moves the anchor back."""
+    recorded = [MILESTONES[i][0] for i in range(len(MILESTONES))
+                if MILESTONES[i][0] in tracker.first_turn]
+    if len(recorded) < keep:
+        return 0
+    return tracker.first_turn[recorded[-keep]]
+
+
+def pose_of(st):
+    sm = st.get("map") or {}
+    sp = (st.get("player") or {}).get("position") or {}
+    return {"map_id": sm.get("map_id"), "map_name": sm.get("map_name"), "pos": [sp.get("x"), sp.get("y")]}
+
+
+def fmt_pose(p):
+    pos = p.get("pos") or [None, None]
+    return f"{p.get('map_name') or 'Unknown'} ({pos[0]},{pos[1]})"
 
 
 def fit_recent(history, num_ctx, static_chars):
@@ -240,6 +270,11 @@ def run(model, provider, server, budget=1000, run_name="run"):
     total_tokens = {"prompt": 0, "completion": 0}
     notes = ""
     history = []
+    history_turns = []  # turn number per history entry (turns can be skipped)
+    name = model.get("display_name")
+    identity = (f"You are {name}, an AI playing Pokémon Red live on stream." if name
+                else resolve_identity(model["api_model_id"], model["provider"]))
+    system_prompt = render_system(identity)
     last_pos, same_pos = None, 0
     turn = 0
     save_name = None
@@ -259,13 +294,16 @@ def run(model, provider, server, budget=1000, run_name="run"):
                 break
 
             try:
-                response = requests.get(f"{server}/state", timeout=15)
-                response.raise_for_status()
-                state = response.json()
-                response = requests.get(f"{server}/map/ascii", timeout=15)
-                response.raise_for_status()
-                amap = build_map(state) or response.text
-                img = screenshot_b64(server)
+                frame = requests.get(f"{server}/frame", timeout=20).json()
+                state = frame["state"]  # one snapshot: state, warps, screen_text, screenshot all agree
+                screen_text = frame.get("screen_text") or "(nothing written on screen)"
+                # Warps render exit/door tiles as D/S (a door shown as a plain . once cost ~95 turns);
+                # a text box overwrites tilemap rows and paints false # walls, so hide the map instead.
+                if frame.get("screen_text"):
+                    amap = "(map hidden: a text box is open. Clear it with a_until_dialog_end, then the map is shown again.)"
+                else:
+                    amap = build_map(state, frame.get("warps") or ()) or frame.get("ascii") or "(no map: in battle or menu)"
+                img = shrink_png(base64.b64decode(frame["screenshot_b64"]))
             except Exception as exc:
                 print(f"[turn {turn}] server not reachable ({exc}); retrying", flush=True)
                 time.sleep(5)
@@ -273,7 +311,8 @@ def run(model, provider, server, budget=1000, run_name="run"):
 
             pos = ((state.get("map") or {}).get("map_id"),
                    json.dumps((state.get("player") or {}).get("position")))
-            same_pos = same_pos + 1 if pos == last_pos else 0
+            ui_now = (frame.get("screen_text") or "") != "" or bool((state.get("battle") or {}).get("in_battle"))
+            same_pos = 0 if ui_now else (same_pos + 1 if pos == last_pos else 0)  # menus/dialog/battle do not move you
             last_pos = pos
             if record_milestones(server, tracker, state, turn):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
@@ -281,14 +320,21 @@ def run(model, provider, server, budget=1000, run_name="run"):
             stuck = (f"\nWARNING: position unchanged for {same_pos} turns. Do something different."
                      if same_pos >= 3 else "")
             head = f"NOTES:\n{notes or '(no notes yet)'}\n\nRECENT TURNS:\n"
-            tail = (f"\n\nSTATE:\n{compact(state)}\n\nWALKABILITY MAP (you are @ at E5):\n"
-                    f"{amap}{stuck}\n\nThe screenshot is attached. Take your turn.")
-            recent = fit_recent(history, model["num_ctx"], len(SYSTEM) + len(head) + len(tail))
+            tail = (f"\n\nSTATE:\n{compact(state)}\n\nSCREEN TEXT (words on screen right now):\n{screen_text}"
+                    f"\n\nWALKABILITY MAP (you are @ at E5):\n{amap}{stuck}"
+                    "\n\nThe screenshot is attached. Take your turn.")
+            anchor = milestone_anchor_turn(tracker, MILESTONE_WINDOW)
+            windowed = [h for h, t in zip(history, history_turns) if t >= anchor]
+            recent = fit_recent(windowed, model["num_ctx"], len(system_prompt) + len(head) + len(tail))
             user = head + "\n".join(recent) + tail
             started = time.time()
             try:
-                plan, thinking, tokens = provider.chat(SYSTEM, user, img, SCHEMA, model["think"])
+                plan, thinking, tokens = provider.chat(system_prompt, user, img, SCHEMA, model["think"])
             except Exception as exc:
+                status = getattr(getattr(exc, "response", None), "status_code", None)
+                if status in (401, 402, 403):  # auth/quota: retrying will not help, abort the run
+                    print(f"[turn {turn}] non-retryable provider error {status}, aborting: {exc}", flush=True)
+                    break
                 print(f"[turn {turn}] model error: {exc}", flush=True)
                 time.sleep(5)
                 continue
@@ -307,23 +353,55 @@ def run(model, provider, server, budget=1000, run_name="run"):
                 event(server, "key_moment", description=str(plan["key_moment"])[:200], category="milestone")
             state_after = None
             steps = []
+            start = end = pose_of(state)
+            tail_parts = []
             try:
                 acted = True
-                response = requests.post(f"{server}/action", json={"actions": actions}, timeout=120)
+                response = requests.post(f"{server}/action/traced", json={"actions": actions}, timeout=120)
                 response.raise_for_status()
                 result_body = response.json()
                 result = f"executed {result_body.get('actions_executed')}"
                 state_after = result_body.get("state_after")
                 steps = result_body.get("steps") or []
+                if steps:
+                    start = steps[0].get("before") or start
+                    end = next((st["after"] for st in reversed(steps) if st.get("after")), start)  # error steps have no pose
+                if start.get("map_id") != end.get("map_id"):
+                    tail_parts.append(f" MAP CHANGED {start.get('map_name')} -> {end.get('map_name')}")
+                elif start.get("pos") == end.get("pos"):
+                    ui_turn = bool(steps) and all(st.get("before", {}).get("ui") for st in steps if st.get("before"))
+                    tail_parts.append(" (menu/dialog input, position unchanged)" if ui_turn else " (no movement)")
+                blocked = {}
+                for st in steps:
+                    b, af = st.get("before"), st.get("after")
+                    if b and (b.get("ui") or (af and af.get("ui"))):
+                        continue  # cursor move inside a menu/dialog/battle
+                    if st.get("action", "").startswith("walk_") and b and af and b.get("map_id") == af.get("map_id") and b.get("pos") == af.get("pos"):
+                        blocked[st["action"]] = blocked.get(st["action"], 0) + 1
+                if blocked:
+                    tail_parts.append(" blocked walks: " + ", ".join(f"{k} x{v}" for k, v in blocked.items()))
+                pages = []  # dialogue the batch skipped past — SYSTEM promises it is quoted back here
+                for st in steps:
+                    if isinstance(st.get("dialog"), dict):
+                        tail_parts.append(f" dialog: {st['dialog'].get('stop_reason')} after {st['dialog'].get('presses')} A")
+                        for line in st["dialog"].get("text") or []:
+                            if line and (not pages or line != pages[-1]):
+                                pages.append(line)
+                    elif st.get("said") and (not pages or st["said"] != pages[-1]):
+                        pages.append(st["said"])
+                    if "error" in st:
+                        tail_parts.append(f" action error: {st['error']}")
+                if pages:
+                    tail_parts.append(' said: "' + " | ".join(pages)[:1500] + '"')
             except Exception as exc:
                 result = f"action error: {exc}"
+                tail_parts.append(f" action error: {exc}")
             if plan.get("notes"):
                 notes = str(plan["notes"])[:600]
                 with open(notes_path, "w") as output:
                     output.write(notes)
-            mp = (state.get("map") or {}).get("map_name")
-            pp = (state.get("player") or {}).get("position")
-            history.append(f"turn {turn}: at {mp} {pp} did [{' '.join(actions)}] -> {result}")
+            history.append(f"turn {turn}: {fmt_pose(start)} did [{' '.join(actions)}] -> {fmt_pose(end)}{''.join(tail_parts)}")
+            history_turns.append(turn)
             with open(log_path, "a") as output:
                 output.write(json.dumps({
                     "turn": turn, "state": compact(state), "thinking": thinking,

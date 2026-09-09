@@ -6,6 +6,7 @@ models:
   - key: "qwen3.8:27b"
     provider: ollama
     api_model_id: "qwen3.8:27b"
+    display_name: "Qwen3.8 27B"
     family: qwen
     params: "27B"
     quant: "Q4_K_M" # Matches the existing harness's recorded local configuration.
@@ -18,6 +19,7 @@ models:
   - key: claude-haiku-4-5
     provider: anthropic
     api_model_id: claude-haiku-4-5-20251001 # verified: the id run in prior smoke tests
+    display_name: "Claude Haiku 4.5"
     family: claude
     params: null
     quant: null
@@ -30,6 +32,7 @@ models:
   - key: gemini-3.8-flash
     provider: google
     api_model_id: gemini-3.8-flash # verified: the id run via the AI Studio route
+    display_name: "Gemini 3.8 Flash"
     family: gemini
     params: null
     quant: null
@@ -52,3 +55,100 @@ models:
     release_date: null
     input_cost_per_mtok: null
     output_cost_per_mtok: null
+
+  # --- OpenRouter (BYOK): one key routes to many providers. Vision-capable only. Costs null
+  # until verified (OpenRouter reports real per-request cost we can capture later). ---
+  - key: or-qwen3.8-27b
+    provider: openrouter
+    api_model_id: qwen/qwen3.8-27b-20260814 # cloud twin of the local qwen3.8:27b — direct compare
+    display_name: "Qwen3.8 27B"
+    family: qwen
+    params: "27B"
+    quant: null
+    context: 1000000
+    think: low
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  - key: or-muse-spark-1.3
+    provider: openrouter
+    api_model_id: meta/muse-spark-1.3-20260902
+    display_name: "Muse Spark 1.3"
+    family: meta
+    params: null
+    quant: null
+    context: 1000000
+    think: low
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  - key: or-glm-5.3-flash
+    provider: openrouter
+    api_model_id: z-ai/glm-5.3-flash-20260826
+    display_name: "GLM 5.3 Flash"
+    family: glm
+    params: null
+    quant: null
+    context: 1000000
+    think: low
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  - key: or-deepseek-v4-vision
+    provider: openrouter
+    api_model_id: deepseek/deepseek-v4-flash-vision-exp-20260821
+    display_name: "DeepSeek V4 Flash"
+    family: deepseek
+    params: null
+    quant: null
+    context: 1000000
+    think: low
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  # GPT via OpenRouter — GATED: fund the OpenAI account + add the OpenAI key to OpenRouter BYOK
+  # (or let it bill OpenRouter credits) before running. Model id verified against OpenRouter.
+  - key: or-gpt-6-astra
+    provider: openrouter
+    api_model_id: openai/gpt-6-astra
+    display_name: "GPT-6 Astra"
+    family: gpt
+    params: null
+    quant: null
+    context: 1050000
+    think: low
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  # Nex AGI N2.5 — FREE on OpenRouter ($0/M, verified vision). Agentic/computer-use pedigree;
+  # prime free-seeding candidates. Free models may be rate-limited/queued on OpenRouter.
+  - key: or-nex-n2.5-mini
+    provider: openrouter
+    api_model_id: nex-agi/nex-n2.5-mini:free
+    display_name: "Nex N2.5 Mini"
+    family: nex
+    params: null
+    quant: null
+    context: 262144
+    think: low
+    release_date: "2026-09-08"
+    input_cost_per_mtok: 0.0
+    output_cost_per_mtok: 0.0
+
+  - key: or-nex-n2.5-pro
+    provider: openrouter
+    api_model_id: nex-agi/nex-n2.5-pro:free
+    display_name: "Nex N2.5 Pro"
+    family: nex
+    params: null
+    quant: null
+    context: 262144
+    think: low
+    release_date: "2026-09-08"
+    input_cost_per_mtok: 0.0
+    output_cost_per_mtok: 0.0

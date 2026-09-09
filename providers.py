@@ -124,7 +124,7 @@ class OllamaProvider(Provider):
                 {"role": "system", "content": system},
                 {"role": "user", "content": user, "images": [image_b64]},
             ],
-            "options": {"num_ctx": self.num_ctx, "temperature": self.temperature},
+            "options": {"num_ctx": self.num_ctx, "temperature": self.temperature, "num_predict": 8192},
         })
         message = body["message"]
         return _plan(message["content"]), message.get("thinking", "") or "", {
@@ -198,6 +198,7 @@ class OpenAIProvider(Provider):
     """Chat Completions with a PNG data URL and strict JSON schema output."""
 
     api_key_env = "OPENAI_API_KEY"
+    base_url = "https://api.openai.com/v1"
 
     def __init__(self, model: str, *, max_tokens: int = 8192, **opts):
         super().__init__(model, **opts)
@@ -225,7 +226,7 @@ class OpenAIProvider(Provider):
         effort = think.strip().lower()
         if effort not in {"", "default"}:
             payload["reasoning_effort"] = "none" if effort == "off" else effort
-        body = self._post("https://api.openai.com/v1/chat/completions", payload, {
+        body = self._post(f"{self.base_url}/chat/completions", payload, {
             "Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json",
         })
         choices = body.get("choices", [])
@@ -233,11 +234,11 @@ class OpenAIProvider(Provider):
             raise ValueError("OpenAI returned no choices")
         choice = choices[0]
         message = choice["message"]
-        if message.get("refusal") or choice.get("finish_reason") in {"length", "content_filter"}:
+        if message.get("refusal") or choice.get("finish_reason") in {"length", "content_filter", "error"}:
             raise ValueError("OpenAI refused or could not finish the JSON plan")
         usage = body.get("usage", {})
-        # Chat Completions does not expose the model's private reasoning text.
-        return _plan(message.get("content")), "", {
+        # Chat Completions omits reasoning; OpenRouter may return message.reasoning, so keep it.
+        return _plan(message.get("content")), message.get("reasoning") or "", {
             "prompt": int(usage.get("prompt_tokens", 0)),
             "completion": int(usage.get("completion_tokens", 0)),
         }
@@ -294,11 +295,22 @@ class GoogleProvider(Provider):
         }
 
 
+class OpenRouterProvider(OpenAIProvider):
+    """One key routes to many providers (BYOK) through OpenRouter's OpenAI-compatible endpoint.
+    Model ids are namespaced, e.g. 'qwen/qwen-2.5-vl-72b-instruct'. Vision and JSON-schema output
+    pass through; a model whose backend ignores strict schema trips _plan's parse guard, which the
+    turn loop already treats as a skipped turn rather than a crash."""
+
+    api_key_env = "OPENROUTER_API_KEY"
+    base_url = "https://openrouter.ai/api/v1"
+
+
 def get_provider(provider_name: str, model: str, **opts) -> Provider:
     """Construct an adapter; opts are constructor settings and registry token rates."""
     providers = {
         "ollama": OllamaProvider, "anthropic": AnthropicProvider,
         "openai": OpenAIProvider, "google": GoogleProvider,
+        "openrouter": OpenRouterProvider,
     }
     try:
         provider = providers[provider_name.strip().lower()]
