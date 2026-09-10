@@ -113,7 +113,7 @@ def harness_fingerprint():
 
 def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
                   turns_used, budget, tokens, wall_s, notes, save_name,
-                  harness_git_sha=None, harness_files_sha=None):
+                  harness_git_sha=None, harness_files_sha=None, blackouts=()):
     """The qwen_red.write_summary JSON keys, with registry/adapter provenance."""
     provider_name = model["provider"]
     summary = {
@@ -149,6 +149,7 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         "cost_usd": provider.cost(tokens),
         "youtube_url": None,
         "timestamp": time.strftime("%Y%m%d_%H%M%S"),
+        "blackouts": list(blackouts),  # turns the party whited out (leaderboard replay drops a skull there)
         **tracker.summary(),
     }
     path = os.path.join(artifact_dir, "summary.json")
@@ -278,6 +279,7 @@ def run(model, provider, server, budget=1000, run_name="run"):
     turn = 0
     save_name = None
     acted = False
+    blackouts = []
     try:
         # Keep qwen_red's polling, retry delays, and attempt-based turn accounting.
         for turn in range(1, budget + 1):
@@ -409,6 +411,15 @@ def run(model, provider, server, budget=1000, run_name="run"):
                 after = step.get("after") if isinstance(step, dict) else None
                 if isinstance(after, dict) and after.get("map_id") is not None:
                     record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn)
+            # A white-out halves the money (floor) and warps to the last Pokémon Center: no purchase does both.
+            if isinstance(state_after, dict):
+                money_before = (state.get("player") or {}).get("money")
+                money_after = (state_after.get("player") or {}).get("money")
+                if (isinstance(money_before, int) and isinstance(money_after, int) and money_before > 0
+                        and money_after == money_before // 2
+                        and (state.get("map") or {}).get("map_id") != (state_after.get("map") or {}).get("map_id")):
+                    blackouts.append(turn)
+                    print(f"💀 BLACKOUT (turn {turn})", flush=True)
             # /action supplies RAM state: credit even a milestone on the last budgeted turn.
             if isinstance(state_after, dict) and record_milestones(server, tracker, state_after, turn):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
@@ -421,7 +432,7 @@ def run(model, provider, server, budget=1000, run_name="run"):
         summary_path = write_summary(
             artifact_dir, run_id, model, provider, run_name, tracker, turn, budget,
             total_tokens, time.time() - run_start, notes, save_name,
-            harness_git_sha, harness_files_sha,
+            harness_git_sha, harness_files_sha, blackouts,
         )
     return summary_path
 
