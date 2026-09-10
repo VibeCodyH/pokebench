@@ -1,6 +1,7 @@
 [
   {
     "run_id": "sample-astra",
+    "blackouts": [540],
     "model": "GPT-6 Astra",
     "provider": "openai",
     "family": "GPT",
@@ -231,6 +232,7 @@
   },
   {
     "run_id": "sample-qwen",
+    "blackouts": [820],
     "model": "qwen3.8:27b",
     "provider": "ollama",
     "family": "Qwen",

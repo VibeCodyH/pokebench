@@ -110,35 +110,258 @@
   function facts(entries) {
     return `<dl class="provenance">${entries.map(([label,value]) => `<dt>${escape(label)}</dt><dd>${escape(textValue(value))}</dd>`).join('')}</dl>`;
   }
-  function runMap(run) {
-    const points = [[24,141],[72,141],[120,141],[168,141],[216,141],[262,141],[290,99],[210,66],[140,66],[78,30]];
-    const pathData = points.map(([x,y],i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' ');
-    const recorded = new Set(run.milestones.filter(m => finite(m.turn)).map(m => m.key));
-    const nodes = points.map(([x,y],i) => `<circle cx="${x}" cy="${y}" r="9" fill="${recorded.has(milestoneList[i].key) ? '#2dd4bf' : '#e5e8cb'}" stroke="#2e513d" stroke-width="2"/><text x="${x}" y="${y+3}" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#173627">${i+1}</text>`).join('');
-    const [x,y] = points[run.furthest_index] || [12,166];
-    const marker = won(run) ? `<g transform="translate(${x-9} ${y-30}) scale(.6)"><use href="#art-trophy"/></g>` : `<path class="furthest-x" data-index="${run.furthest_index}" d="M${x-6} ${y-28}l12 12m0-12l-12 12" stroke="#a52f24" stroke-width="4"/><path d="M${x} ${y-13}v3" stroke="#a52f24" stroke-width="2"/>`;
-    return `<svg class="run-map" viewBox="0 0 320 190" role="img" aria-label="${escape(modelName(run))}: ${escape(milestoneLabel(run))}. Teal dots are recorded milestones; ${won(run) ? 'trophy at Brock' : 'red X at furthest milestone'}."><rect width="320" height="190" fill="#cedfb0"/><path d="M292 0h28v190h-12v-50h-16V85h-10V25h10z" fill="#81c9b1"/>${tile('house',8,77,49,40)}${tile('roundtree',258,9,35,45)}${tile('pine',5,10,30,39)}<path d="${pathData}" fill="none" stroke="#849e6c" stroke-width="14"/><path d="${pathData}" fill="none" stroke="#f2dfac" stroke-width="10"/>${nodes}${marker}<g font-family="monospace" font-size="8" font-weight="bold" fill="#35513c"><text x="13" y="181">PALLET</text><text x="99" y="180">FIRST STEPS</text><text x="213" y="163">VIRIDIAN</text><text x="247" y="127">FOREST</text><text x="162" y="48">PEWTER</text><text x="97" y="20">BROCK</text></g></svg><p class="map-caption">1–10: benchmark ladder · teal = recorded · ${won(run) ? 'trophy = beat Brock' : 'red × = furthest'}</p>`;
+  // Coordinates follow the geography; the Pokédex leg doubles back to Pallet.
+  const mapPoints = [[42,251],[97,251],[162,220],[181,161],[226,161],[125,277],[325,130],[248,61],[104,70],[63,70]];
+  const mapStart = [24,276];
+  const mapLegs = [
+    [mapStart,mapPoints[0]], [mapPoints[0],[72,265],mapPoints[1]],
+    [mapPoints[1],[145,251],mapPoints[2]], [mapPoints[2],[162,177],mapPoints[3]],
+    [mapPoints[3],mapPoints[4]],
+    [mapPoints[4],mapPoints[3],[162,177],mapPoints[2],[145,251],mapPoints[5]],
+    [mapPoints[5],[145,251],mapPoints[2],[162,177],mapPoints[3],mapPoints[4],[275,161],[299,173],[325,173],mapPoints[6]],
+    [mapPoints[6],[325,89],[298,61],mapPoints[7]],
+    [mapPoints[7],[172,61],[141,70],mapPoints[8]], [mapPoints[8],mapPoints[9]]
+  ];
+  const lineLength = points => points.slice(1).reduce((sum,p,i) => sum + Math.hypot(p[0]-points[i][0],p[1]-points[i][1]),0);
+  const linePath = points => points.map(([x,y],i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' ');
+  function linePart(points, fraction) {
+    let remaining = lineLength(points) * Math.max(0,Math.min(1,fraction));
+    const part = [points[0]];
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i-1], b = points[i], length = Math.hypot(b[0]-a[0],b[1]-a[1]);
+      if (remaining < length) { part.push([a[0]+(b[0]-a[0])*remaining/length,a[1]+(b[1]-a[1])*remaining/length]); break; }
+      part.push(b); remaining -= length;
+    }
+    return part;
   }
-  function runDetails(run) {
-    return `<details class="run-details"><summary>Run settings &amp; milestone receipts</summary>${facts([
-      ['Run ID',run.run_id],['Run name',run.run_name],['Think',run.think_level],['Context',finite(run.num_ctx) ? number(run.num_ctx) : null],
-      ['Parameters',run.model_params],['Quant',run.quant],['Token in',number(run.tokens_in)],['Token out',number(run.tokens_out)],['Timestamp',run.timestamp]
-    ])}<ol class="receipt-list">${milestoneList.map(m => {
-      const receipt = run.milestones.find(item => item.key === m.key && finite(item.turn));
-      return `<li class="${receipt ? '' : 'unreached'}"><span>${escape(m.label)}</span><span>${receipt ? 'Turn '+number(receipt.turn) : '—'}</span></li>`;
-    }).join('')}</ol><p>— = not reported in this run’s milestone receipts.</p></details>`;
+  function ladder(run) {
+    const turns = milestoneList.map(m => {
+      const receipts = run.milestones.filter(item => item.key === m.key && finite(item.turn));
+      return receipts.length ? Math.min(...receipts.map(item => item.turn)) : null;
+    });
+    return milestoneList.map((m,i) => {
+      const turn = turns[i], previous = i ? turns[i-1] : 0;
+      return {...m, turn, reached: finite(turn) || i <= run.furthest_index,
+        delta: finite(turn) && finite(previous) && turn >= previous ? turn-previous : null};
+    });
+  }
+  function runMap(run, rungs) {
+    const pins = mapPoints.map(([x,y],i) => {
+      const rung = rungs[i], label = `${rung.label} · ${finite(rung.turn) ? 'turn '+number(rung.turn) : rung.reached ? 'turn ? (receipt unknown)' : 'not reached'}`;
+      return `<button class="map-pin ${rung.reached ? '' : 'unreached'} ${rung.reached && !finite(rung.turn) ? 'unknown' : ''} ${x > 280 ? 'sign-left' : x < 130 ? 'sign-right' : ''}" style="--x:${x/4}%;--y:${y/3}%" data-pin="${i}" aria-label="${escape(label)}"><span aria-hidden="true">${i+1}</span><span class="pin-sign" aria-hidden="true">${escape(label)}</span></button>`;
+    }).join('');
+    const roads = linePath(mapLegs.flat());
+    return `<div class="replay-map" role="group" aria-label="Journey map for ${escape(modelName(run))}">
+      <svg class="run-map" viewBox="0 0 400 300" aria-hidden="true"><rect width="400" height="300" fill="#cedfb0"/>
+      <path d="M362 0h38v300h-40v-30h15V181h-13zM0 288h84v12H0z" fill="#81c9b1"/>
+      <path d="M277 91h78v102h-89v-52h11z" fill="#80a66e"/>
+      ${trees([[280,69,.3],[310,58,.3],[343,61,.32],[268,107,.32],[344,108,.35],[277,135,.28],[342,153,.32],[260,183,.3]])}
+      ${tile('roundtree',8,112,37,41)}${tile('roundtree',53,167,31,34)}${tile('rock',160,19,32,23)}${grass(192,232,2,2)}
+      <path d="${roads}" fill="none" stroke="#849e6c" stroke-width="14" stroke-linejoin="round"/>
+      <path d="${roads}" fill="none" stroke="#f2dfac" stroke-width="9" stroke-linejoin="round"/>
+      ${tile('house',10,212,58,48)}${tile('house',89,226,59,49)}${tile('house',159,116,53,44)}${tile('house',205,116,53,44)}${tile('house',232,12,57,48)}${tile('gym',34,5,86,66)}
+      <g class="map-place-names"><text x="13" y="205">PALLET TOWN</text><text x="139" y="296">LAB</text><text x="172" y="204">ROUTE 1</text><text x="158" y="109">VIRIDIAN CITY</text><text x="296" y="222">ROUTE 2</text><text x="296" y="236">FOREST ↑</text><text x="215" y="85">PEWTER CITY</text><text x="25" y="91">BROCK'S GYM</text></g>
+      <path class="replay-trail" d="M${mapStart.join(' ')}"/>
+      <g class="replay-skulls"></g><g class="replay-trainer" transform="translate(${mapStart.join(' ')})">${tile('trainer',-8,-24,16,24)}</g>
+      <g class="replay-finish" visibility="hidden"></g></svg>${pins}<div class="blackout-overlay" aria-hidden="true"></div></div>
+      <p class="map-caption">1–10: ladder order · teal = recorded · gold = replayed<br>${won(run) ? 'Trophy = beat Brock' : 'Red × = estimated stop toward the next rung'} · skull = faint</p>`;
+  }
+  function runDetails(run, rungs) {
+    const largest = Math.max(-1,...rungs.map(r => r.delta ?? -1));
+    const hardest = largest > 0 ? rungs.findIndex(r => r.delta === largest) : -1;
+    return `<div class="run-details"><div class="ladder-heading"><b>THE LADDER</b><span>FIRST HIT / SEGMENT TURNS</span></div><ol class="receipt-list">${rungs.map((r,i) => `<li data-rung="${i}" class="${r.reached ? 'pending' : 'unreached'} ${r.reached && !finite(r.turn) ? 'unknown' : ''} ${i === hardest ? 'hardest' : ''}"><span class="rung-number">${i+1}</span><span>${escape(r.short)}${i === hardest ? '<em>tripped up here</em>' : ''}</span><span class="receipt-turn">${finite(r.turn) ? number(r.turn) : r.reached ? '?' : '—'}</span><span class="receipt-delta">${finite(r.delta) ? '+'+number(r.delta) : r.reached ? '?' : '—'}</span></li>`).join('')}</ol>
+      <p class="receipt-note">? = unknown receipt or segment · — = unreached. Segment = turns since the previous rung. Missing or out-of-order route timing is estimated; receipts stay as recorded.</p>
+      ${facts([['Run ID',run.run_id],['Run name',run.run_name],['Think',run.think_level],['Context',finite(run.num_ctx) ? number(run.num_ctx) : null],
+        ['Parameters',run.model_params],['Quant',run.quant],['Token in',number(run.tokens_in)],['Token out',number(run.tokens_out)],['Timestamp',run.timestamp],
+        ['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]])}</div>`;
+  }
+  function runReplay(run, rungs) {
+    return `${runMap(run,rungs)}<div class="replay-body"><p class="running-label">RUNNING TOTALS <span>· tokens, cost &amp; time interpolated</span></p>
+      <dl class="stats replay-stats"><div><dt>TURNS</dt><dd><span data-counter="turns">0</span> <small>/ ${number(run.turns_used)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd data-counter="tokens">${finite(tokens(run)) ? '0' : '—'}</dd></div><div><dt>COST</dt><dd data-counter="cost">${price({...run,cost_usd:finite(run.cost_usd) ? 0 : null})}</dd></div><div><dt>TIME</dt><dd data-counter="time">${finite(run.wall_time_s) ? '0s' : '—'}</dd></div></dl>
+      <div class="replay-controls" role="group" aria-label="Journey replay controls"><button data-replay="play" aria-label="Play replay">Play</button><button data-replay="restart">Restart</button><button data-replay="end">Skip to end</button><span class="replay-status">Ready · ~6s</span></div>
+      <progress class="replay-progress" max="${run.turns_used || 1}" value="0" aria-label="Replay progress in turns"></progress>${runDetails(run,rungs)}</div>`;
   }
   function card(run, full = false) {
-    const selected = state.selected.has(run.uid);
-    return `<article class="run-card ${won(run) ? 'is-winner' : ''} ${full ? 'full-card' : 'compact-card'}" data-run="${run.uid}" data-furthest="${run.furthest_index}" aria-label="${escape(modelName(run))}, ${escape(milestoneLabel(run))}">
-      <div class="card-ribbon"><span>${won(run) ? trophy + 'BADGE EARNED' : '<b class="red" aria-hidden="true">×</b> STUCK HERE'} · #${displayRank(run)}</span>${state.sample ? '<span class="sample-badge">ILLUSTRATIVE DATA</span>' : ''}</div>
-      ${run.uid === localHero ? '<div class="hero-ribbon">★ LOCAL HERO · FURTHEST LOCAL RUN</div>' : ''}${full ? runMap(run) : ''}
+    const selected = state.selected.has(run.uid), rungs = ladder(run);
+    const ribbon = `<div class="card-ribbon"><span>${won(run) ? trophy + 'BADGE EARNED' : '<b class="red" aria-hidden="true">×</b> STUCK HERE'} · #${displayRank(run)}</span>${state.sample ? '<span class="sample-badge">ILLUSTRATIVE DATA</span>' : ''}</div>`;
+    return `<article class="run-card ${won(run) ? 'is-winner' : ''} ${full ? 'full-card' : 'compact-card'}" data-run="${run.uid}" data-furthest="${run.furthest_index}" tabindex="0" aria-expanded="false" aria-label="${escape(modelName(run))}, ${escape(milestoneLabel(run))}" aria-describedby="card-flip-help">
+      <div class="card-inner"><div class="card-face card-front" aria-hidden="false">${ribbon}
+      ${run.uid === localHero ? '<div class="hero-ribbon">★ LOCAL HERO · FURTHEST LOCAL RUN</div>' : ''}
       <div class="card-body"><h3 class="model-name">${escape(modelName(run))}</h3><p class="provider">${escape(textValue(run.provider))}${run.run_name ? ' / '+escape(run.run_name) : ''}</p>
       ${run.in_game_name ? `<p class="ingame-name">plays as <b>${escape(run.in_game_name)}</b>${run.rival_name ? ` &middot; rival <b>${escape(run.rival_name)}</b>` : ''}</p>` : ''}
       <div class="card-tags"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="tag">${escape(textValue(run.family))}</span><span class="tag">GEN 1 · RED</span></div>
       <p class="furthest"><b>${run.furthest_index+1}/10</b> ${escape(milestoneLabel(run))}</p>${stats(run)}
-      ${full ? facts([['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]]) + runDetails(run) : ''}
-      <div class="card-actions"><button class="compare-select" data-select="${run.uid}" aria-pressed="${selected}" ${!selected && state.selected.size >= 4 ? 'disabled' : ''} aria-label="${selected ? 'Remove' : 'Select'} ${escape(modelName(run))} for comparison">${selected ? '✓ Selected' : '+ Compare'}</button>${inspect(run)}</div>${videoURL(run) ? '' : '<p class="vod-note">No VOD attached</p>'}</div></article>`;
+      ${full ? facts([['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]]) : ''}
+      <p class="flip-hint">↻ Flip for the journey replay<span>10 rungs. Every recorded turn.</span></p>
+      <div class="card-actions"><button class="compare-select" data-select="${run.uid}" aria-pressed="${selected}" ${!selected && state.selected.size >= 4 ? 'disabled' : ''} aria-label="${selected ? 'Remove' : 'Select'} ${escape(modelName(run))} for comparison">${selected ? '✓ Selected' : '+ Compare'}</button>${inspect(run)}</div>${videoURL(run) ? '' : '<p class="vod-note">No VOD attached</p>'}</div></div>
+      <div class="card-face card-back" aria-hidden="true" inert>${ribbon}<div class="replay-heading"><h3>${escape(modelName(run))} · Journey</h3><button class="text-button" data-replay="flip">Front ↶</button></div>${runReplay(run,rungs)}</div></div></article>`;
+  }
+
+  // One turn playhead drives the sprite, trail, receipts, counters and faint events.
+  // Unknown timing is only an animation estimate and never becomes a receipt.
+  const replays = new WeakMap();
+  let activeReplay = null;
+  function replayTimeline(run, rungs) {
+    const arrivals = [0];
+    let lastKnown = 0;
+    for (let i = 0; i <= run.furthest_index; i++) {
+      const turn = rungs[i].turn;
+      const ordered = finite(turn) && turn >= lastKnown && turn <= run.turns_used;
+      arrivals.push(ordered ? turn : null);
+      if (ordered) lastKnown = turn;
+    }
+    arrivals.push(run.turns_used);
+    for (let left = 0; left < arrivals.length-1;) {
+      let right = left+1;
+      while (arrivals[right] === null) right++;
+      for (let i = left+1; i < right; i++) arrivals[i] = arrivals[left]+(arrivals[right]-arrivals[left])*(i-left)/(right-left);
+      left = right;
+    }
+    const segments = arrivals.slice(1).map((end,i) => {
+      const tail = i > run.furthest_index;
+      const stop = mapPoints[run.furthest_index] || mapStart;
+      const points = tail ? !won(run) && end > arrivals[i] ? linePart(mapLegs[i],.55) : [stop,stop] : mapLegs[i];
+      const known = tail ? run.furthest_index < 0 || finite(rungs[i-1].turn) : finite(rungs[i].delta);
+      return {start:arrivals[i],end,points,weight:known ? end-arrivals[i] : run.turns_used/(arrivals.length-1),duration:0};
+    });
+    // Water-fill the six-second budget, retaining a 250ms floor for short legs.
+    let remaining = 6000, open = segments.filter(s => s.end > s.start);
+    while (open.length) {
+      const weight = open.reduce((sum,s) => sum+s.weight,0);
+      const short = open.filter(s => remaining*s.weight/weight < 250);
+      if (!short.length) { open.forEach(s => { s.duration = remaining*s.weight/weight; }); break; }
+      short.forEach(s => { s.duration = 250; remaining -= 250; });
+      open = open.filter(s => !short.includes(s));
+    }
+    let elapsed = 0;
+    segments.forEach(s => { s.at = elapsed; elapsed += s.duration; });
+    return {segments,duration:elapsed};
+  }
+  function getReplay(card) {
+    if (replays.has(card)) return replays.get(card);
+    const run = state.runs.find(r => r.uid === card.dataset.run), rungs = ladder(run);
+    const timeline = replayTimeline(run,rungs);
+    const faints = (Array.isArray(run.blackouts) ? run.blackouts : []).filter(t => finite(t) && t <= run.turns_used).sort((a,b) => a-b).map(turn => {
+      let pin = rungs.findIndex(r => finite(r.turn) && r.turn > turn);
+      if (pin < 0) pin = Math.min(9,run.furthest_index+1);
+      return {turn,pin,at:null};
+    });
+    const replay = {card,run,rungs,...timeline,faints,turn:-1,elapsed:0,pulseUntil:0,lastFrame:null,frame:0,playing:false,
+      events:[...new Set([...rungs.map(r => r.turn).filter(t => finite(t) && t <= run.turns_used),...faints.map(f => f.turn),run.turns_used])].sort((a,b) => a-b),
+      pins:[...card.querySelectorAll('[data-pin]')],rows:[...card.querySelectorAll('[data-rung]')],
+      counters:Object.fromEntries([...card.querySelectorAll('[data-counter]')].map(el => [el.dataset.counter,el])),
+      sprite:card.querySelector('.replay-trainer'),trail:card.querySelector('.replay-trail'),finish:card.querySelector('.replay-finish'),
+      overlay:card.querySelector('.blackout-overlay'),progress:card.querySelector('.replay-progress'),
+      play:card.querySelector('[data-replay="play"]'),status:card.querySelector('.replay-status')};
+    card.querySelector('.replay-skulls').innerHTML = faints.map((f,i) => {
+      const [x,y] = mapPoints[f.pin];
+      return `<g class="faint-marker" data-faint="${i}" visibility="hidden" transform="translate(${x+13+(i%3)*7} ${y-38-Math.floor(i/3)*11})"><title>Fainted at turn ${number(f.turn)} · heading to ${escape(rungs[f.pin].label)}</title><path d="M3 0h10v2h3v10h-3v5H3v-5H0V2h3z" fill="#f8f7eb" stroke="#101c20" stroke-width="2"/><path d="M3 5h4v4H3zM10 5h4v4h-4zM7 10h3v3H7zM5 14h2v3H5zM10 14h2v3h-2z" fill="#101c20"/></g>`;
+    }).join('');
+    replay.skulls = [...card.querySelectorAll('[data-faint]')];
+    replay.finish.innerHTML = won(run) ? '<g transform="translate(-10 -32) scale(.65)"><use href="#art-trophy"/></g>' : '<path class="furthest-x" d="M-6-13l12 12m0-12L-6-1" stroke="#a52f24" stroke-width="4"/>';
+    replays.set(card,replay);
+    drawReplay(replay,0,true);
+    return replay;
+  }
+  function drawReplay(replay, turn, instant = false) {
+    const {run,rungs,segments,counters} = replay, before = replay.turn;
+    replay.turn = turn;
+    const ratio = run.turns_used ? turn/run.turns_used : 1;
+    let walked = [mapStart];
+    for (const segment of segments) {
+      if (turn < segment.start) break;
+      const fraction = segment.end > segment.start ? (turn-segment.start)/(segment.end-segment.start) : 1;
+      walked = walked.concat(linePart(segment.points,fraction).slice(1));
+      if (fraction < 1) break;
+    }
+    const [x,y] = walked[walked.length-1];
+    replay.sprite.setAttribute('transform',`translate(${x} ${y})`);
+    replay.trail.setAttribute('d',linePath(walked));
+    replay.finish.setAttribute('visibility',turn >= run.turns_used ? 'visible' : 'hidden');
+    replay.finish.setAttribute('transform',`translate(${x} ${y})`);
+    replay.sprite.setAttribute('visibility',turn >= run.turns_used ? 'hidden' : 'visible');
+    rungs.forEach((r,i) => {
+      const hit = finite(r.turn) && r.turn <= turn;
+      replay.pins[i].classList.toggle('is-hit',hit);
+      replay.rows[i].classList.toggle('is-hit',hit);
+      if (hit && r.turn > before && !instant && !reduced.matches) {
+        replay.pulseUntil = replay.elapsed+500;
+        counters.turns.getAnimations().forEach(a => a.cancel());
+        counters.turns.animate([{transform:'scale(1)',color:'var(--ink)'},{transform:'scale(1.22)',color:'#916000',background:'var(--gold)',fontWeight:950,offset:.25},{transform:'scale(1)',color:'var(--ink)'}],{duration:500});
+      }
+    });
+    counters.turns.textContent = number(Math.floor(turn));
+    counters.tokens.textContent = number(finite(tokens(run)) ? Math.round(tokens(run)*ratio) : null);
+    counters.cost.textContent = price({...run,cost_usd:finite(run.cost_usd) ? run.cost_usd*ratio : null});
+    counters.time.textContent = time(finite(run.wall_time_s) ? run.wall_time_s*ratio : null);
+    replay.progress.value = run.turns_used ? turn : 1;
+    let darkness = 0;
+    replay.faints.forEach((f,i) => {
+      if (f.turn <= turn && f.at === null) f.at = instant ? -Infinity : replay.elapsed;
+      const age = f.at === null ? -1 : replay.elapsed-f.at;
+      replay.skulls[i].setAttribute('visibility',age >= 400 ? 'visible' : 'hidden');
+      if (age >= 0 && age < 400) darkness = Math.max(darkness,Math.min(1,age/100,(400-age)/100));
+    });
+    replay.overlay.style.opacity = darkness;
+  }
+  function replayControls(replay) {
+    replay.play.textContent = replay.playing ? 'Pause' : replay.turn >= replay.run.turns_used ? 'Replay' : 'Play';
+    replay.play.setAttribute('aria-label',replay.playing ? 'Pause replay' : 'Play replay');
+    replay.status.textContent = reduced.matches ? 'End · motion reduced' : replay.playing ? 'Playing' : replay.turn >= replay.run.turns_used ? 'Complete' : 'Paused';
+    replay.card.classList.toggle('replay-playing',replay.playing);
+  }
+  function pauseReplay(replay = activeReplay) {
+    if (!replay) return;
+    cancelAnimationFrame(replay.frame);
+    replay.counters.turns.getAnimations().forEach(a => a.cancel());
+    replay.playing = false; replay.lastFrame = null;
+    if (activeReplay === replay) activeReplay = null;
+    replayControls(replay);
+  }
+  function endReplay(replay) {
+    pauseReplay(replay);
+    replay.elapsed = replay.duration+400;
+    replay.faints.forEach(f => { f.at = -Infinity; });
+    drawReplay(replay,replay.run.turns_used,true);
+    replayControls(replay);
+  }
+  function tickReplay(replay, now) {
+    if (!replay.playing) return;
+    if (!replay.card.isConnected || replay.card.closest('[hidden]') || document.hidden) { pauseReplay(replay); return; }
+    if (replay.lastFrame !== null) replay.elapsed += now-replay.lastFrame;
+    replay.lastFrame = now;
+    const segment = replay.segments.find(s => s.duration && replay.elapsed < s.at+s.duration);
+    const target = segment ? segment.start+(segment.end-segment.start)*Math.max(0,(replay.elapsed-segment.at)/segment.duration) : replay.run.turns_used;
+    // Land exactly on each receipt/faint for a frame, including after a slow frame.
+    const crossing = replay.events.find(t => t > replay.turn && t <= target);
+    drawReplay(replay,crossing ?? target);
+    if (replay.turn >= replay.run.turns_used && replay.elapsed >= replay.pulseUntil && replay.faints.every(f => f.at !== null && replay.elapsed-f.at >= 400)) { pauseReplay(replay); return; }
+    replay.frame = requestAnimationFrame(now => tickReplay(replay,now));
+  }
+  function playReplay(replay, restart = false) {
+    pauseReplay();
+    if (reduced.matches) { endReplay(replay); return; }
+    if (restart || replay.turn >= replay.run.turns_used) {
+      replay.elapsed = 0; replay.turn = -1; replay.pulseUntil = 0;
+      replay.faints.forEach(f => { f.at = null; });
+      drawReplay(replay,0,true);
+    }
+    // Turn-zero faints still get their fade when playback starts.
+    replay.faints.filter(f => f.turn === 0 && f.at === -Infinity).forEach(f => { f.at = 0; });
+    activeReplay = replay; replay.playing = true; replay.lastFrame = null;
+    replayControls(replay);
+    replay.frame = requestAnimationFrame(now => tickReplay(replay,now));
+  }
+  function flipCard(card) {
+    const back = card.getAttribute('aria-expanded') !== 'true';
+    card.classList.toggle('is-flipped',back);
+    card.setAttribute('aria-expanded',String(back));
+    card.focus({preventScroll:true});
+    ['front','back'].forEach(face => {
+      const el = card.querySelector('.card-'+face), visible = (face === 'back') === back;
+      el.inert = !visible; el.setAttribute('aria-hidden',String(!visible));
+    });
+    if (back) playReplay(getReplay(card)); else pauseReplay(replays.get(card));
   }
   function scene(station) {
     return `<div class="scene" aria-hidden="true">${['far','ground','near'].map(layer => `<svg class="${layer}" viewBox="0 0 1200 550" preserveAspectRatio="xMidYMin slice">${art[station.art+'-'+layer] || ''}</svg>`).join('')}</div>`;
@@ -160,6 +383,7 @@
     observeJourney();
   }
   function renderTable() {
+    if (activeReplay?.card.closest('#table-cards')) pauseReplay();
     const provider = $('provider-filter').value, family = $('family-filter').value, sort = $('sort').value;
     const filtered = state.runs.filter(run => (provider === 'all' || provider === (local(run) ? 'local' : 'api')) && (family === 'all' || String(run.family || 'Unknown') === family));
     filtered.sort((a,b) => {
@@ -213,6 +437,7 @@
   }
   function setView(view, restore = true) {
     if (state.activeView === view) return;
+    pauseReplay();
     if (state.activeView === 'journey') state.journeyY = window.scrollY;
     state.activeView = view;
     const journey = view === 'journey';
@@ -281,6 +506,7 @@
     $('depth-toggle').disabled = reduced.matches;
     $('depth-toggle').textContent = reduced.matches ? 'MOTION REDUCED' : enabled ? 'DEPTH ON' : 'DEPTH OFF';
     $('depth-toggle').setAttribute('aria-pressed',String(enabled));
+    if (reduced.matches) document.querySelectorAll('.run-card.is-flipped').forEach(card => endReplay(getReplay(card)));
   }
   function renderDataState(message, error = false) {
     $('data-state').hidden = false;
@@ -326,6 +552,7 @@
     }
   }
   function finishLoad() {
+    pauseReplay();
     state.selected.clear();
     if ($('compare-dialog').open) $('compare-dialog').close();
     document.body.classList.toggle('sample-mode',state.sample);
@@ -376,6 +603,17 @@
       $('announcer').textContent = `${state.selected.size} of 4 runs selected.${state.selected.size === 4 ? ' Limit reached; remove a run to select another.' : ''}`;
       return;
     }
+    const control = event.target.closest('[data-replay]');
+    if (control) {
+      const card = control.closest('.run-card'), replay = getReplay(card);
+      if (control.dataset.replay === 'flip') flipCard(card);
+      else if (control.dataset.replay === 'end') endReplay(replay);
+      else if (control.dataset.replay === 'restart') playReplay(replay,true);
+      else if (replay.playing) pauseReplay(replay); else playReplay(replay);
+      return;
+    }
+    const card = event.target.closest('.run-card');
+    if (card && !event.target.closest('button,a,input,select,textarea,progress,meter,output,label,summary,[role="button"],[contenteditable],[data-no-flip]')) { flipCard(card); return; }
     const link = event.target.closest('a[href^="#"]');
     if (!link || link.classList.contains('skip')) return;
     const target = $(link.hash.slice(1));
@@ -393,6 +631,13 @@
       if (heading) { heading.tabIndex = -1; heading.focus({preventScroll:true}); }
     }
   });
+  document.addEventListener('keydown',event => {
+    if (event.target.matches('.run-card') && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      if (!event.repeat) flipCard(event.target);
+    }
+  });
+  document.addEventListener('visibilitychange',() => { if (document.hidden) pauseReplay(); });
   syncMotion(); activeRail(9);
   loadRuns().then(() => {
     const target = $(location.hash.slice(1));
