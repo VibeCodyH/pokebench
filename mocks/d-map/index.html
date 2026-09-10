@@ -58,7 +58,7 @@ img { max-width: 100%; }
 .map-col img { display: block; width: 100%; height: auto; image-rendering: pixelated; border: 3px solid var(--ink); box-shadow: 6px 6px 0 #101c2022; }
 .band-sentinel { position: absolute; left: 0; width: 1px; pointer-events: none; }
 .gutter { position: relative; display: flex; flex-direction: column; }
-.band-stack { position: relative; display: flex; flex-direction: column; gap: 14px; padding: 4px 0 22px; }
+.band-stack { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 4px 0 22px; }
 .band-stack::before { content: ""; position: absolute; top: 16px; width: 26px; height: 0; border-top: 2px dashed #7c8a72; }
 .gutter.left .band-stack::before { right: -26px; }
 .gutter.right .band-stack::before { left: -26px; }
@@ -67,73 +67,156 @@ img { max-width: 100%; }
 .band-stack:not(.is-empty) .band-flag { display: inline-flex; align-items: center; gap: 5px; font: 800 8px/1.5 var(--mono); color: #46583e; margin-bottom: 2px; }
 .band-flag svg { width: 11px; height: 11px; }
 
-/* compact card — the always-visible unit */
-.compact-card { position: relative; width: 100%; max-width: 240px; text-align: left; background: var(--paper); border: 2px solid var(--ink); border-radius: 7px; box-shadow: 3px 3px 0 var(--ink); padding: 10px 11px; display: flex; flex-direction: column; gap: 5px; transition: transform .1s ease, box-shadow .1s ease; }
+/* compact on-map card — the always-visible unit; ~2 lines, target <=52px tall */
+.compact-card { position: relative; width: 100%; max-width: 240px; text-align: left; background: var(--paper); border: 2px solid var(--ink); border-radius: 7px; box-shadow: 3px 3px 0 var(--ink); padding: 6px 9px; display: flex; flex-direction: column; justify-content: center; gap: 3px; transition: transform .1s ease, box-shadow .1s ease; }
 .compact-card:hover, .compact-card:focus-visible { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 var(--ink); }
 .compact-card.is-winner { border-color: #7a5f14; box-shadow: 0 0 0 2px var(--gold), 3px 3px 0 var(--ink); }
 .compact-card.is-winner:hover, .compact-card.is-winner:focus-visible { box-shadow: 0 0 0 2px var(--gold), 5px 5px 0 var(--ink); }
-.rank-badge { position: absolute; top: -10px; left: -10px; width: 26px; height: 26px; display: grid; place-items: center; background: var(--gold); border: 2px solid var(--ink); border-radius: 50%; font: 900 10px/1 var(--mono); box-shadow: 2px 2px 0 var(--ink); }
-.cc-model { font: 850 13px/1.3 var(--mono); letter-spacing: -.2px; overflow-wrap: anywhere; }
-.cc-provider { font: 700 9px/1.4 var(--mono); color: var(--muted); }
-.cc-status { font: 750 10px/1.4 var(--mono); }
-.cc-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.rank-badge { position: absolute; top: -8px; left: -8px; width: 20px; height: 20px; display: grid; place-items: center; background: var(--gold); border: 2px solid var(--ink); border-radius: 50%; font: 900 9px/1 var(--mono); box-shadow: 2px 2px 0 var(--ink); }
+.cc-model { display: block; font: 800 11px/1.25 var(--mono); letter-spacing: -.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-line2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 700 9px/1.3 var(--mono); color: var(--muted); }
+.cc-turn { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-foot { display: flex; align-items: center; gap: 6px; flex: none; }
 .tag { display: inline-flex; padding: 2px 5px; border: 1px solid #748379; border-radius: 3px; font: 800 8px/1.5 var(--mono); }
 .tag.local { background: #d9edbf; }
 .tag.api { background: #cceef7; }
-.cc-cost { font: 800 10px/1.5 var(--mono); }
+.cc-cost { font: 800 9px/1.4 var(--mono); }
 .cc-cost.free { color: #096b52; }
 
 /* phone: sliced band blocks */
 .stage-phone { display: none; }
 .phone-band { border-bottom: 3px solid var(--ink); }
 .phone-band-img { width: 100%; image-rendering: pixelated; background-repeat: no-repeat; border-bottom: 2px solid var(--ink); }
-.phone-band-cards { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 20px; }
+.phone-band-cards { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 20px; }
 .phone-band-heading { font: 850 10px/1.5 var(--mono); letter-spacing: .05em; padding: 10px 16px 0; color: #34492f; }
 .phone-band-cards .compact-card { max-width: none; }
 .phone-band-empty { padding: 4px 16px 16px; font: 700 10px/1.6 var(--mono); color: var(--muted); }
 
-/* modal */
-dialog#run-modal { width: min(480px, calc(100% - 32px)); max-height: 88dvh; overflow: auto; background: var(--paper); color: var(--ink); padding: 0; border: 3px solid var(--ink); border-radius: 9px; box-shadow: 7px 7px 0 var(--teal); }
+/* modal chrome */
+dialog#run-modal { width: min(560px, calc(100% - 32px)); max-height: 88dvh; overflow: auto; background: var(--paper); color: var(--ink); padding: 0; border: 3px solid var(--ink); border-radius: 9px; box-shadow: 7px 7px 0 var(--teal); }
 dialog#run-modal::backdrop { background: #101c20c9; }
-.card-ribbon { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 38px; padding: 7px 44px 7px 14px; background: var(--ink); color: #ffa48f; font: 850 9px/1.5 var(--mono); }
-.card-ribbon.is-winner { background: var(--gold); color: var(--ink); }
 .modal-close { position: absolute; top: 6px; right: 6px; z-index: 2; width: 30px; height: 30px; border: 2px solid var(--paper); border-radius: 5px; background: var(--ink); color: var(--paper); font: 800 15px var(--mono); }
-.modal-body, .replay-body { padding: 16px 18px 20px; position: relative; }
-.model-name { font: 900 21px/1.25 var(--mono); letter-spacing: -.8px; }
-.provider { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* the modal's content = the live site's run card, copied verbatim from site/styles.css */
+.sprite-defs { position: absolute; overflow: hidden; }
+.run-card { color: var(--ink); min-width: 0; text-align: left; overflow-wrap: anywhere; perspective: 1500px; cursor: pointer; touch-action: manipulation; border-radius: 9px; }
+.card-inner { display: grid; position: relative; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.2,.7,.2,1); }
+.run-card:not(.is-flipped) .card-back, .run-card.is-flipped .card-front { position: absolute; inset: 0; overflow: hidden; }
+.run-card.is-flipped .card-inner { transform: rotateY(180deg); }
+.card-face { grid-area: 1 / 1; min-width: 0; display: flex; flex-direction: column; background: var(--paper); border: 3px solid var(--ink); border-radius: 9px; box-shadow: 5px 6px 0 var(--ink); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.card-front { transform: rotateY(0deg); }
+.card-back { transform: rotateY(180deg); }
+.card-face[inert] { pointer-events: none; }
+.card-front .card-body { display: flex; flex-direction: column; flex: 1; }
+.flip-hint { margin-block: auto; padding: 30px 0; color: #35654f; font: 800 12px/1.7 var(--mono); text-align: center; }
+.flip-hint span { display: block; font-size: 9px; font-weight: 650; }
+.run-card:focus-visible { outline-offset: 9px; }
+.card-ribbon { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 39px; padding: 7px 13px; background: var(--ink); color: #ffa48f; font: 850 9px/1.5 var(--mono); border-radius: 5px 5px 0 0; }
+.card-ribbon > span { display: inline-flex; align-items: center; gap: 7px; }
+.card-ribbon .sample-badge { color: var(--paper); font-size: 7px; }
+.is-winner .card-face { border-color: #202b21; box-shadow: 0 0 0 2px #ffe597, 6px 8px 0 #15221d; }
+.is-winner .card-ribbon { background: var(--gold); color: var(--ink); border-bottom: 2px solid var(--ink); }
+.is-winner .card-ribbon .sample-badge { color: var(--ink); }
+.hero-ribbon { padding: 6px 13px; background: var(--teal); border-bottom: 2px solid var(--ink); font: 850 9px/1.5 var(--mono); }
+.card-body { padding: 17px; }
+.model-name { font: 900 21px/1.25 var(--mono); letter-spacing: -.9px; }
+.provider { font-size: 11px; color: var(--muted); margin-top: 5px; }
+.ingame-name { font: 700 11px/1.4 var(--mono); color: var(--muted); margin-top: 4px; }
+.ingame-name .player-name { color: #b3261e; }
+.ingame-name .rival-name { color: #1d4ed8; }
+.card-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .furthest { margin-top: 12px; font: 800 11px/1.6 var(--mono); }
-.furthest b { background: #dde8cc; padding: 3px 5px; margin-right: 4px; }
-.is-winner-modal .furthest b { background: #f9df8b; }
+.furthest b { background: #dde8cc; padding: 3px 5px; margin-right: 4px; white-space: nowrap; }
+.is-winner .furthest b { background: #f9df8b; }
 .stats { display: grid; grid-template-columns: 1fr 1fr; margin: 13px 0; border-block: 1px solid #bdc9b9; }
 .stats > div { padding: 9px 0; }
-.stats > div:nth-child(even) { padding-left: 12px; border-left: 1px solid #bdc9b9; }
+.stats > div:nth-child(even) { padding-left: 13px; border-left: 1px solid #bdc9b9; }
 .stats > div:nth-child(n+3) { border-top: 1px solid #bdc9b9; }
 .stats dt { font: 750 8px/1.5 var(--mono); color: var(--muted); }
-.stats dd { font: 850 14px/1.5 var(--mono); }
+.stats dd { font: 850 15px/1.5 var(--mono); }
 .stats small { font-size: 9px; font-weight: 600; color: #506157; }
 .free { color: #096b52; }
-.run-date { font: 700 10px/1.6 var(--mono); color: var(--muted); margin-top: 4px; }
-.flip-btn { display: inline-flex; gap: 8px; align-items: center; justify-content: center; min-height: 38px; width: 100%; margin-top: 14px; border: 2px solid var(--ink); border-radius: 5px; padding: 7px 11px; color: var(--paper); background: var(--ink); font: 800 10px/1.5 var(--mono); }
-.flip-btn:hover { background: #294238; }
-.replay-heading-row { display: flex; justify-content: space-between; align-items: center; font: 850 11px/1.5 var(--mono); }
-.replay-turns { font: 800 13px/1.5 var(--mono); background: #e3ecd5; border: 1px solid #9db08d; border-radius: 4px; padding: 6px 8px; margin: 10px 0 12px; text-align: center; }
-.replay-turns b { font-size: 17px; }
-.ladder-track { position: relative; display: flex; flex-direction: column-reverse; gap: 3px; padding-left: 30px; }
-.ladder-rung { position: relative; display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 4px 6px; border-radius: 4px; font: 750 10px/1.3 var(--mono); color: #798170; }
-.ladder-rung .rung-num { width: 20px; height: 20px; flex: none; display: grid; place-items: center; border: 1px solid #86927e; background: var(--paper); font: 800 9px var(--mono); border-radius: 3px; }
-.ladder-rung.is-reached { color: var(--ink); background: #d8ebd0; }
-.ladder-rung.is-reached .rung-num { background: var(--teal); border-color: var(--teal); }
-.ladder-rung.is-furthest { background: #f5e3aa; }
-.ladder-rung .rung-turn { margin-left: auto; font-size: 9px; color: var(--muted); }
-.ladder-sprite { position: absolute; left: -30px; width: 22px; height: 22px; display: grid; place-items: center; transition: bottom .32s ease; }
-.ladder-sprite svg { width: 18px; height: 18px; }
-.replay-actions { display: flex; gap: 8px; margin-top: 14px; }
-.replay-actions button { flex: 1; min-height: 36px; border: 2px solid var(--ink); border-radius: 5px; background: var(--paper); font: 800 9px/1.5 var(--mono); }
-.replay-actions [data-flip="front"] { background: var(--ink); color: var(--paper); }
+.card-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.compare-select { padding: 7px 9px; background: transparent; border: 1px solid #596d5d; border-radius: 4px; min-height: 36px; font: 800 10px/1.5 var(--mono); }
+.compare-select[aria-pressed=true] { background: var(--teal); border-color: var(--ink); }
+.compare-select:disabled { opacity: .5; }
+.inspect, .button { display: inline-flex; gap: 10px; align-items: center; justify-content: center; min-height: 38px; border: 2px solid var(--ink); border-radius: 5px; padding: 7px 11px; color: var(--paper); background: var(--ink); font: 800 10px/1.5 var(--mono); text-decoration: none; }
+.inspect > span { color: var(--cyan); font-size: 17px; line-height: 1; }
+.inspect:hover, .button:hover { background: #294238; }
+.inspect:disabled, .button:disabled { background: #dfe3d9; color: #606a60; border-color: #a3afa0; }
+.vod-note { font: 650 9px/1.5 var(--mono); color: var(--muted); text-align: right; margin-top: 7px; }
+.full-card .card-actions { padding-top: 14px; }
+.full-card .stats dd { font-size: 17px; }
+.replay-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; border-bottom: 2px solid var(--ink); }
+.replay-heading h3 { font: 850 11px/1.5 var(--mono); }
+.replay-heading .text-button { flex: none; font-size: 9px; }
+.text-button { border: 0; padding: 6px 0; text-decoration: underline; text-underline-offset: 4px; background: transparent; font: 800 11px/1.6 var(--mono); }
+.replay-map { position: relative; isolation: isolate; }
+.run-map { display: block; width: 100%; height: auto; shape-rendering: crispEdges; }
+.map-place-names { font: 800 9px var(--mono); fill: #35513c; }
+.replay-trail { fill: none; stroke: var(--gold); stroke-width: 4; stroke-linejoin: round; }
+.replay-trainer, .replay-finish, .replay-skulls { pointer-events: none; }
+.map-pin { --pin-color: #e5e8cb; position: absolute; left: var(--x); top: var(--y); transform: translate(-50%,-50%); width: 24px; height: 24px; padding: 0; display: grid; place-items: center; border: 2px solid #2e513d; border-radius: 50% 50% 50% 2px; color: #173627; background: var(--pin-color); font: 850 10px/1 var(--mono); z-index: 1; }
+.map-pin.unreached { background: #c1cba8; color: #65715a; border-color: #819074; }
+.map-pin.unknown { border-style: dashed; }
+.map-pin.is-hit { --pin-color: var(--teal); box-shadow: 0 0 0 3px var(--gold); }
+.map-pin.is-hit:after { content: ""; position: absolute; inset: -5px; border: 2px solid var(--gold); border-radius: 50%; animation: pin-arrival .5s ease-out both; pointer-events: none; }
+.run-card:not(.replay-playing) .map-pin.is-hit:after { animation-play-state: paused; }
+@keyframes pin-arrival { from { transform: scale(.8); opacity: 1; } to { transform: scale(1.9); opacity: 0; } }
+.pin-sign { position: absolute; bottom: calc(100% + 9px); left: 50%; transform: translateX(-50%); width: max-content; max-width: 180px; padding: 7px 8px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); box-shadow: 3px 3px 0 #101c2066; font: 750 10px/1.5 var(--mono); text-align: left; visibility: hidden; opacity: 0; pointer-events: none; }
+.map-pin.sign-left .pin-sign { left: auto; right: -8px; transform: none; }
+.map-pin.sign-right .pin-sign { left: -8px; transform: none; }
+.map-pin:hover, .map-pin:focus { z-index: 4; }
+.map-pin:hover .pin-sign, .map-pin:focus .pin-sign { visibility: visible; opacity: 1; }
+.blackout-overlay { position: absolute; inset: 0; background: #000; opacity: 0; z-index: 5; pointer-events: none; }
+.map-caption { font: 650 8px/1.6 var(--mono); color: #3b5545; padding: 6px 12px; background: #e3ecd5; border-block: 1px solid #bac7af; }
+.replay-body { padding: 11px 12px 5px; }
+.running-label { font: 850 9px/1.5 var(--mono); }
+.running-label span { font-size: 8px; font-weight: 650; color: var(--muted); }
+.replay-stats { margin: 7px 0; }
+.replay-stats > div { padding-block: 5px; }
+.replay-stats dd { font-variant-numeric: tabular-nums; }
+.counter-stage { position: relative; display: inline-block; }
+[data-counter="turns"] { display: inline-block; transform-origin: left center; }
+.sparkles { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.spark { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; background: var(--gold); box-shadow: 0 0 5px #ffdf7a; z-index: 2; }
+.spark:nth-child(3n+1) { background: #ffe9a3; width: 6px; height: 6px; }
+.spark:nth-child(3n+2) { background: #d99a00; width: 7px; height: 7px; }
+.replay-toolbar { padding: 8px 12px 0; border-bottom: 2px solid var(--ink); background: #f3f1e4; }
+.replay-controls { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.replay-controls button { min-height: 36px; padding: 6px 8px; border: 1px solid #596d5d; background: #e3ecd5; border-radius: 3px; font: 800 9px/1.5 var(--mono); }
+.replay-controls [data-replay="play"] { background: var(--ink); color: var(--paper); min-width: 54px; }
+.replay-status { margin-left: auto; color: var(--muted); font: 650 8px/1.5 var(--mono); }
+.replay-progress { display: block; width: 100%; height: 6px; appearance: none; border: 0; background: #d7dfcc; accent-color: #008577; margin: 8px 0 10px; }
+.replay-progress::-webkit-progress-bar { background: #d7dfcc; }
+.replay-progress::-webkit-progress-value { background: #008577; }
+.replay-progress::-moz-progress-bar { background: #008577; }
+.provenance { display: grid; grid-template-columns: 70px minmax(0,1fr); gap: 5px 8px; font: 650 10px/1.5 var(--mono); padding: 3px 0 13px; }
+.provenance dt { color: var(--muted); }
+.run-details { border-top: 1px solid #bdc9b9; padding-top: 9px; }
+.ladder-heading { display: flex; justify-content: space-between; gap: 6px; font: 750 8px/1.5 var(--mono); }
+.ladder-heading span { color: var(--muted); font-size: 7px; }
+.receipt-list { list-style: none; padding: 0; margin: 7px 0; font: 650 10px/1.5 var(--mono); }
+.receipt-list li { display: grid; grid-template-columns: 19px minmax(0,1fr) 40px 42px; align-items: center; gap: 4px; padding: 4px 3px; border-top: 1px dotted #b3c1a8; }
+.receipt-list .rung-number { font-size: 8px; color: var(--muted); }
+.receipt-turn, .receipt-delta { text-align: right; font-variant-numeric: tabular-nums; }
+.receipt-list .pending { color: #53674d; }
+.receipt-list .is-hit { background: #d8ebd0; color: var(--ink); }
+.receipt-list .is-hit .rung-number { background: var(--teal); color: var(--ink); text-align: center; }
+.receipt-list .hardest { border-left: 3px solid #aa791c; }
+.receipt-list .hardest.is-hit { background: #f5e3aa; }
+.receipt-list em { display: block; font-style: normal; color: #795110; font-size: 8px; }
+.receipt-list .unreached { color: #798170; }
+.receipt-note { font: 650 8px/1.6 var(--mono); color: var(--muted); margin: 8px 0 10px; }
+.run-details .provenance { grid-template-columns: 58px minmax(0,1fr) 47px minmax(0,1fr); gap: 4px 8px; font-size: 9px; border-top: 1px solid #bdc9b9; padding-top: 8px; }
+.trophy { width: 25px; height: 28px; display: inline-block; flex: none; shape-rendering: crispEdges; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .001ms !important; animation: none !important; }
   html { scroll-behavior: auto; }
+  .run-card .card-inner, .run-card.is-flipped .card-inner, .run-card .card-face { transform: none; }
+  .card-face[inert] { visibility: hidden; }
+  .map-pin.is-hit:after { display: none; }
 }
 
 @media (min-width: 1000px) {
@@ -176,7 +259,7 @@ dialog#run-modal::backdrop { background: #101c20c9; }
   <span class="rail-label">YOU ARE HERE</span>
   <ol class="rail-dots" id="rail-dots"></ol>
 </div>
-<p id="card-flip-help" class="sr-only">Press the flip button to toggle between run results and the journey replay. Escape closes the dialog.</p>
+<p id="card-flip-help" class="sr-only">Click the card or press Enter or Space to flip between results and the journey replay. Escape closes the dialog.</p>
 
 <main id="main" tabindex="-1">
   <div id="data-state" role="status" aria-live="polite">Loading the field…</div>
@@ -199,10 +282,18 @@ dialog#run-modal::backdrop { background: #101c20c9; }
   <div id="modal-content"></div>
 </dialog>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <symbol id="art-trainer" viewBox="0 0 32 48"><path d="M8 4h16v4h5v9H4V9h4z" fill="#e9765d"/><path d="M9 5h11v4H9z" fill="#ffd2a0"/><path d="M9 17h17v12H9z" fill="#edc18e"/><path d="M7 18h6v9H7z" fill="#334b47"/><path d="M7 29h18v11H7z" fill="#d7d9b4"/></symbol>
+<svg class="sprite-defs" width="0" height="0" aria-hidden="true"><defs>
+    <symbol id="art-badge" viewBox="0 0 32 32"><path d="M9 2h14v4h5v7h3v10h-6v6H8v-5H2V12h4V6h3z" fill="#759b96"/><path d="M10 4h11v4h5v13h-5v6H9v-6H5v-8h5z" fill="#d6e7ce"/><path d="M12 9h8v3h4v9h-7v5H9V15h3z" fill="#a8c9b7"/><path d="M11 5h10v3H11zM6 13h4v7H6z" fill="#fff5ce"/></symbol>
+    <symbol id="art-pine" viewBox="0 0 100 130"><path d="M20 113h66v9H20z" fill="#143c3b" opacity=".3"/><path d="M44 79h16v41H44z" fill="#645c3b"/><path d="M51 79h9v41h-9z" fill="#2e4738"/><path d="M38 3h24v13h12v14h10v16H73v7h17v18h10v27H0V77h10V60h14V46H13V30h13V17h12z" fill="#245348"/><path d="M38 3h14v17h12v14H52v13h19v13H49v15h26v13H9V77h10V60h14V43H23V30h13V17h2z" fill="#3c7960"/><path d="M38 17h12v8H38zM22 62h13v8H22zM11 80h16v8H11z" fill="#78a677"/></symbol>
+    <symbol id="art-roundtree" viewBox="0 0 100 110"><path d="M23 94h70v9H23z" fill="#163f3c" opacity=".25"/><path d="M42 55h17v45H42z" fill="#716244"/><path d="M51 62h8v38h-8z" fill="#3e5140"/><path d="M28 5h40v10h15v14h11v36H81v14H65v8H30V76H14V64H5V32h13V17h10z" fill="#335f4a"/><path d="M28 5h34v10h16v17H66v14H52v17H25V53H13V32h12V18h3z" fill="#60885c"/><path d="M28 15h26v8H28zM17 30h15v10H17z" fill="#a2b67c"/></symbol>
+    <symbol id="art-rock" viewBox="0 0 100 70"><path d="M6 53h92v12H6z" fill="#53655a" opacity=".3"/><path d="M0 28h10V14h15V4h43v9h17v16h12v29H0z" fill="#668379"/><path d="M10 28h10V17h19V8h25v15H50v16H32v14H5V32h5z" fill="#a7bba0"/><path d="M55 27h22v8H55zM38 44h15v8H38z" fill="#4b6a66"/></symbol>
+    <symbol id="art-house" viewBox="0 0 180 150"><path d="M31 129h145v17H31z" fill="#233f4038"/><path d="M18 59h107v72H18z" fill="#ebdca9"/><path d="M125 59h39v61l-39 11z" fill="#bda67b"/><path d="M4 48h10V36h12V24h13V12h99v12h12v12h14v12h11v20H4z" fill="#a4584b"/><path d="M4 49h11V37h12V25h13V13h70v12H99v12H88v13H76v12H4z" fill="#dc8b64"/><path d="M21 44h62v5H21zM34 30h62v5H34zM6 58h70v6H6z" fill="#f1b181"/><path d="M35 79h23v25H35zM83 79h24v25H83z" fill="#335b59"/><path d="M39 83h7v9h-7zM87 83h7v9h-7z" fill="#9dbdaa"/><path d="M63 90h20v41H63z" fill="#574f42"/><path d="M76 110h3v4h-3z" fill="#f7dda2"/><path d="M17 122h44v9H17zM86 122h39v9H86z" fill="#c4b78d"/></symbol>
+    <symbol id="art-gym" viewBox="0 0 240 185"><path d="M29 163h208v16H29z" fill="#3f605244"/><path d="M13 57h181v107H13z" fill="#a1b297"/><path d="M194 57h36v95l-36 12z" fill="#667d70"/><path d="M0 47h14V31h15V17h164v14h18v16h25v26H0z" fill="#43655f"/><path d="M13 47h15V34h18V22h127v15h-16v14H13z" fill="#658c79"/><path d="M15 68h176v10H15z" fill="#d1d7ae"/><path d="M24 89h26v65H24zM150 89h27v65h-27z" fill="#d6d9ae"/><path d="M36 90h7v65h-7zM162 90h7v65h-7z" fill="#879e88"/><path d="M73 91h58v73H73z" fill="#2a4845"/><path d="M79 96h23v59H79z" fill="#496a60"/><path d="M108 96h17v59h-17z" fill="#38594f"/><path d="M62 159h80v9H62zM50 168h104v8H50z" fill="#bfcaaa"/><path d="M85 41h38v21H85z" fill="#193d3e"/><path d="M91 47h25v9H91z" fill="#bed9b8"/></symbol>
+    <symbol id="art-grass" viewBox="0 0 50 30"><path d="M4 14h5v7h7V9h6v12h7v-7h5v13H4zM33 4h5v7h7V0h5v18H33z" fill="currentColor"/></symbol>
+    <symbol id="art-trainer" viewBox="0 0 32 48"><path d="M5 41h25v5H5z" fill="#122b3c55"/><path d="M8 4h16v4h5v9H4V9h4z" fill="#e9765d"/><path d="M9 5h11v4H9z" fill="#ffd2a0"/><path d="M9 17h17v12H9z" fill="#edc18e"/><path d="M7 18h6v9H7z" fill="#334b47"/><path d="M7 29h18v11H7z" fill="#d7d9b4"/><path d="M5 30h6v9H5zM23 30h5v9h-5z" fill="#de795b"/><path d="M9 40h6v6H9zM20 40h6v6h-6z" fill="#243e50"/></symbol>
+    <symbol id="art-lamp" viewBox="0 0 35 100"><path d="M16 20h5v75h-5zM9 95h19v5H9z" fill="#334746"/><path d="M7 5h25v23H7z" fill="#3a5350"/><path d="M11 10h17v13H11z" fill="#fbe6a0"/><path d="M13 0h14v5H13z" fill="#334746"/></symbol>
+  <g id="art-trophy"><path d="M7 3h18v4h6v12h-5v5h-8v6h7v5H7v-5h7v-6H6v-5H1V7h6z" fill="#172a24"/><path d="M9 5h14v13l-4 4h-6l-4-4z" fill="#fff0a4"/><path d="M16 5h7v13l-4 4h-3z" fill="#d89125"/><path d="M4 10h3v7H4m21-7h3v7h-3M15 23h2v8h-2M9 32h14v1H9" fill="#ffdc69"/></g><pattern id="brick" width="100" height="48" patternUnits="userSpaceOnUse"><path d="M0 0h100M0 24h100M0 48h100M50 0v24M0 24v24M100 24v24" fill="none" stroke="#182f2b" stroke-width="3"/><path d="M4 4h40M54 28h40" stroke="#76816a" stroke-width="2" opacity=".24"/></pattern>
   <symbol id="art-flag" viewBox="0 0 24 24"><path d="M5 2h2v20H5z" fill="#334746"/><path d="M7 3h13l-4 5 4 5H7z" fill="#ff7661"/></symbol>
-  <symbol id="art-trophy" viewBox="0 0 32 37"><path d="M7 3h18v4h6v12h-5v5h-8v6h7v5H7v-5h7v-6H6v-5H1V7h6z" fill="#172a24"/><path d="M9 5h14v13l-4 4h-6l-4-4z" fill="#fff0a4"/><path d="M16 5h7v13l-4 4h-3z" fill="#d89125"/></symbol>
   <symbol id="art-pin" viewBox="0 0 24 24"><path d="M12 2c-4 0-7 3-7 7 0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z" fill="#e9765d"/><circle cx="12" cy="9" r="3" fill="#f8f7eb"/></symbol>
 </defs></svg>
 
@@ -210,13 +301,15 @@ dialog#run-modal::backdrop { background: #101c20c9; }
 (() => {
 'use strict';
 const $ = id => document.getElementById(id);
-const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const finite = v => typeof v === 'number' && Number.isFinite(v) && v >= 0;
-const number = v => finite(v) ? v.toLocaleString('en-US') : '—';
+const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const finite = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+const number = value => finite(value) ? value.toLocaleString('en-US') : '—';
+const textValue = value => value == null || value === '' ? '—' : typeof value === 'object' ? JSON.stringify(value) : String(value);
 const local = run => String(run.provider || '').toLowerCase().includes('ollama');
 const won = run => run.furthest_index === 9;
 const price = run => local(run) ? 'FREE' : finite(run.cost_usd) ? '$' + run.cost_usd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: run.cost_usd > 0 && run.cost_usd < .01 ? 6 : 2}) : '—';
-const timeFmt = seconds => {
+const tokens = run => finite(run.tokens_in) && finite(run.tokens_out) ? run.tokens_in + run.tokens_out : null;
+const time = seconds => {
   if (!finite(seconds)) return '—';
   const s = Math.round(seconds), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
   return h ? `${h}h ${m}m` : m ? `${m}m ${s % 60}s` : `${s}s`;
@@ -236,144 +329,424 @@ const milestoneList = [
   {key:'pewter_gym', label:"Entered Brock's Gym", short:'Entered gym'},
   {key:'beat_brock', label:'Beat Brock (Boulder Badge)', short:'Beat Brock'}
 ];
+const modelName = run => textValue(run.model);
+const milestoneLabel = run => milestoneList[run.furthest_index]?.label || 'No milestone reached';
+const trophy = '<svg class="trophy" viewBox="0 0 32 37" aria-hidden="true"><use href="#art-trophy"/></svg>';
 
 // Six places, top (Hall of Fame / Brock's Gym) to bottom (Pallet Town), with the measured
-// signpost y-fractions from mocks/map-base.png (667x2000): PEWTER CITY ~.25, VIRIDIAN FOREST
-// ~.42, VIRIDIAN CITY ~.615, ROUTE 1 ~.765, PALLET TOWN ~.895.
+// signpost y-fractions from mocks/map-base.png (1184x3552, single image): gym 0-.248,
+// PEWTER CITY .248-.434, VIRIDIAN FOREST .434-.622, VIRIDIAN CITY .622-.774,
+// ROUTE 1 .774-.890, PALLET TOWN .890-1.
 const places = [
-  {id:'gym', name:"Brock's Gym & Hall of Fame", rungs:[9,8], top:0,     bottom:0.25},
-  {id:'pewter', name:'Pewter City', rungs:[7], top:0.25,  bottom:0.42},
-  {id:'forest', name:'Viridian Forest', rungs:[6], top:0.42,  bottom:0.615},
-  {id:'viridian', name:'Viridian City', rungs:[4,3], top:0.615, bottom:0.765},
-  {id:'route1', name:'Route 1', rungs:[2], top:0.765, bottom:0.895},
-  {id:'pallet', name:'Pallet Town', rungs:[5,1,0], top:0.895, bottom:1}
+  {id:'gym', name:"Brock's Gym & Hall of Fame", rungs:[9,8], top:0,     bottom:0.248},
+  {id:'pewter', name:'Pewter City', rungs:[7], top:0.248,  bottom:0.434},
+  {id:'forest', name:'Viridian Forest', rungs:[6], top:0.434,  bottom:0.622},
+  {id:'viridian', name:'Viridian City', rungs:[4,3], top:0.622, bottom:0.774},
+  {id:'route1', name:'Route 1', rungs:[2], top:0.774, bottom:0.890},
+  {id:'pallet', name:'Pallet Town', rungs:[5,1,0], top:0.890, bottom:1}
 ];
-const MAP_NAT_W = 667, MAP_NAT_H = 2000;
+const MAP_NAT_W = 1184, MAP_NAT_H = 3552;
 const placeForRun = run => places.find(p => p.rungs.includes(run.furthest_index)) || places[places.length - 1];
 const rankSort = (a, b) => b.furthest_index - a.furthest_index || (a.turns_used - b.turns_used) || String(a.model).localeCompare(String(b.model));
 
 let RUNS = [];
 let lastFocused = null;
-
-function statsBlock(run) {
-  return `<dl class="stats"><div><dt>TURNS</dt><dd>${number(run.turns_used)} <small>/ ${number(run.budget_turns)}</small></dd></div>
-    <div><dt>TOKENS IN / OUT</dt><dd>${number(run.tokens_in)} <small>/ ${number(run.tokens_out)}</small></dd></div>
-    <div><dt>COST</dt><dd class="${local(run) ? 'free' : ''}">${price(run)}</dd></div>
-    <div><dt>TIME</dt><dd>${timeFmt(run.wall_time_s)}</dd></div></dl>`;
-}
+let localHero = null;
+const state = {runs: RUNS, sample: true, selected: new Set()};
 
 function compactCard(run, rank) {
   const idx = run.furthest_index;
-  const label = milestoneList[idx]?.label || 'No milestone reached';
-  const status = won(run) ? `Boulder Badge · turn ${number(run.turns_used)}` : `stopped turn ${number(run.turns_used)} · ${idx + 1}/10 ${escapeHtml(label)}`;
+  const shortLabel = milestoneList[idx]?.short || milestoneList[idx]?.label || '—';
+  const statusText = won(run) ? `Boulder Badge · turn ${number(run.turns_used)}` : `stopped turn ${number(run.turns_used)} · ${idx + 1}/10 ${escape(milestoneList[idx]?.label || 'No milestone reached')}`;
   const badge = rank ? `<span class="rank-badge" aria-hidden="true">#${rank}</span>` : '';
-  return `<button type="button" class="compact-card ${won(run) ? 'is-winner' : ''}" data-uid="${run.uid}" aria-label="${escapeHtml(run.model)}, ${won(run) ? 'beat Brock' : status}, open run details">
+  return `<button type="button" class="compact-card ${won(run) ? 'is-winner' : ''}" data-uid="${run.uid}" aria-label="${escape(run.model)}, ${statusText}, open run details">
     ${badge}
-    <span class="cc-model">${escapeHtml(run.model)}</span>
-    <span class="cc-provider">${escapeHtml(run.provider)} · ${escapeHtml(run.family)}</span>
-    <span class="cc-status">${status}</span>
-    <span class="cc-foot"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="cc-cost ${local(run) ? 'free' : ''}">${price(run)}</span></span>
+    <span class="cc-model">${escape(run.model)}</span>
+    <span class="cc-line2"><span class="cc-turn">turn ${number(run.turns_used)} · ${escape(shortLabel)}</span><span class="cc-foot"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="cc-cost ${local(run) ? 'free' : ''}">${price(run)}</span></span></span>
   </button>`;
 }
 
-function modalFront(run) {
-  const label = milestoneList[run.furthest_index]?.label || 'No milestone reached';
-  return `<div class="card-ribbon ${won(run) ? 'is-winner' : ''}"><span>${won(run) ? '🏆 BADGE EARNED' : '× STUCK HERE'}</span><span class="sample-badge">ILLUSTRATIVE</span></div>
-    <div class="modal-body ${won(run) ? 'is-winner-modal' : ''}">
-      <h3 id="modal-title" class="model-name">${escapeHtml(run.model)}</h3>
-      <p class="provider">${escapeHtml(run.provider)} · ${escapeHtml(run.family)}</p>
-      <p class="furthest"><b>${run.furthest_index + 1}/10</b> ${escapeHtml(label)}</p>
-      ${statsBlock(run)}
-      <p class="run-date">Run date ${escapeHtml(run.run_date || '—')} · illustrative sample, not a real result</p>
-      <button class="flip-btn" data-flip="back" aria-label="Flip to journey replay">↻ Flip for the journey replay</button>
-    </div>`;
+// ---- everything below to "end copied block" is copied verbatim from site/app.js, adapted
+// only to drop fetch/rail/compare wiring (the mock loads RUNS itself and has no rail/table). ----
+function runTimestamp(run) {
+  const raw = run.timestamp;
+  if (typeof raw === 'string' && /^\d{8}_\d{6}$/.test(raw)) {
+    return Date.UTC(+raw.slice(0,4), +raw.slice(4,6)-1, +raw.slice(6,8), +raw.slice(9,11), +raw.slice(11,13), +raw.slice(13,15));
+  }
+  if (finite(raw)) return raw < 1e12 ? raw * 1000 : raw;
+  const parsed = Date.parse(raw || run.run_date || '');
+  return Number.isFinite(parsed) ? parsed : -Infinity;
 }
-
-function ladderRows(run) {
-  return milestoneList.map((m, i) => {
-    const rec = run.milestones.find(x => x.key === m.key);
-    return {...m, idx: i, reached: i <= run.furthest_index, turn: rec ? rec.turn : null};
+function runDay(run) {
+  const date = String(run.run_date || '');
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(Date.parse(date))) return date;
+  const timestamp = runTimestamp(run);
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString().slice(0,10) : '';
+}
+const formatDay = day => day ? new Date(day + 'T12:00:00Z').toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'}) : 'Date not reported';
+// Spec tiebreaker: same furthest milestone -> fewer turns to REACH it. turns_used ties every
+// non-winner at budget, so rank on the furthest milestone's first-hit turn instead.
+const furthestTurn = run => { const m = (run.milestones || []).find(x => x && x.key === run.furthest_key); return m && finite(m.turn) ? m.turn : (finite(run.turns_used) ? run.turns_used : Infinity); };
+const displayRank = run => 1 + state.runs.filter(other => other.furthest_index > run.furthest_index || other.furthest_index === run.furthest_index && furthestTurn(other) < furthestTurn(run)).length;
+function videoURL(run) {
+  if (typeof run.youtube_url !== 'string' || !run.youtube_url.trim()) return null;
+  try { const url = new URL(run.youtube_url); return ['https:', 'http:'].includes(url.protocol) ? url.href : null; } catch { return null; }
+}
+function inspect(run, compact = false) {
+  const url = videoURL(run);
+  if (url) return `<a class="inspect" href="${escape(url)}" target="_blank" rel="noopener noreferrer" aria-label="Inspect run: ${escape(modelName(run))} (opens video in a new tab)">inspect run <span aria-hidden="true">↗</span></a>`;
+  return compact ? '<span class="vod-unavailable tag">VOD unavailable</span>' : `<button class="inspect" disabled title="No VOD attached" aria-label="Inspect run: ${escape(modelName(run))}, no VOD attached">inspect run ↗</button>`;
+}
+function stats(run) {
+  return `<dl class="stats"><div><dt>TURNS</dt><dd>${number(run.turns_used)} <small>/ ${number(run.budget_turns)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd>${number(tokens(run))}</dd></div><div><dt>COST</dt><dd class="${local(run) ? 'free' : ''}">${price(run)}</dd></div><div><dt>TIME</dt><dd>${time(run.wall_time_s)}</dd></div></dl>`;
+}
+function facts(entries) {
+  return `<dl class="provenance">${entries.map(([label,value]) => `<dt>${escape(label)}</dt><dd>${escape(textValue(value))}</dd>`).join('')}</dl>`;
+}
+// Coordinates follow the geography; the Pokédex leg doubles back to Pallet.
+const tile=(id,x,y,w,h,extra='')=>`<use href="#art-${id}" x="${x}" y="${y}" width="${w}" height="${h}" ${extra}/>`;
+const trees=(list,id='pine')=>list.map(([x,y,s=1])=>tile(id,x,y,100*s,130*s)).join('');
+const grass=(x,y,cols,rows,color='#577955')=>`<g color="${color}">${Array.from({length:cols*rows},(_,i)=>tile('grass',x+(i%cols)*41,y+Math.floor(i/cols)*29,38,23)).join('')}</g>`;
+const mapPoints = [[42,251],[97,251],[162,220],[181,161],[226,161],[125,277],[325,130],[248,61],[104,70],[63,70]];
+const mapStart = [24,276];
+const mapLegs = [
+  [mapStart,mapPoints[0]], [mapPoints[0],[72,265],mapPoints[1]],
+  [mapPoints[1],[145,251],mapPoints[2]], [mapPoints[2],[162,177],mapPoints[3]],
+  [mapPoints[3],mapPoints[4]],
+  [mapPoints[4],mapPoints[3],[162,177],mapPoints[2],[145,251],mapPoints[5]],
+  [mapPoints[5],[145,251],mapPoints[2],[162,177],mapPoints[3],mapPoints[4],[275,161],[299,173],[325,173],mapPoints[6]],
+  [mapPoints[6],[325,89],[298,61],mapPoints[7]],
+  [mapPoints[7],[172,61],[141,70],mapPoints[8]], [mapPoints[8],mapPoints[9]]
+];
+const lineLength = points => points.slice(1).reduce((sum,p,i) => sum + Math.hypot(p[0]-points[i][0],p[1]-points[i][1]),0);
+const linePath = points => points.map(([x,y],i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' ');
+function linePart(points, fraction) {
+  let remaining = lineLength(points) * Math.max(0,Math.min(1,fraction));
+  const part = [points[0]];
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i-1], b = points[i], length = Math.hypot(b[0]-a[0],b[1]-a[1]);
+    if (remaining < length) { part.push([a[0]+(b[0]-a[0])*remaining/length,a[1]+(b[1]-a[1])*remaining/length]); break; }
+    part.push(b); remaining -= length;
+  }
+  return part;
+}
+function ladder(run) {
+  const turns = milestoneList.map(m => {
+    const receipts = run.milestones.filter(item => item.key === m.key && finite(item.turn));
+    return receipts.length ? Math.min(...receipts.map(item => item.turn)) : null;
+  });
+  return milestoneList.map((m,i) => {
+    const turn = turns[i], previous = i ? turns[i-1] : 0;
+    return {...m, turn, reached: finite(turn) || i <= run.furthest_index,
+      delta: finite(turn) && finite(previous) && turn >= previous ? turn-previous : null};
   });
 }
-
-function modalBack(run) {
-  const rungs = ladderRows(run);
-  const rows = rungs.slice().reverse().map(r => `<li class="ladder-rung ${r.reached ? 'is-reached' : ''} ${r.idx === run.furthest_index ? 'is-furthest' : ''}" data-rung="${r.idx}">
-      <span class="rung-num">${r.idx + 1}</span><span>${escapeHtml(r.short)}</span>
-      <span class="rung-turn">${r.reached && finite(r.turn) ? 'T' + number(r.turn) : r.reached ? 'T?' : '—'}</span></li>`).join('');
-  return `<div class="card-ribbon ${won(run) ? 'is-winner' : ''}"><span>${escapeHtml(run.model)} · Journey</span></div>
-    <div class="replay-body">
-      <div class="replay-heading-row"><span>THE LADDER</span><span style="color:var(--muted);font-size:9px">RUNGS 1–10</span></div>
-      <div class="replay-turns">Turn <b id="replay-turn-counter">0</b> / ${number(run.turns_used)}</div>
-      <div class="ladder-track" id="ladder-track" style="height:${rungs.length * 33}px">
-        <div class="ladder-sprite" id="ladder-sprite" style="bottom:0" aria-hidden="true"><svg viewBox="0 0 32 48"><use href="#art-trainer"/></svg></div>
-        <ol style="list-style:none;padding:0;margin:0;display:contents">${rows}</ol>
-      </div>
-      <div class="replay-actions">
-        <button data-flip="front" aria-label="Flip back to results">Front ↶</button>
-        <button id="replay-again" type="button">▶ Replay</button>
-      </div>
-    </div>`;
+function runMap(run, rungs) {
+  const pins = mapPoints.map(([x,y],i) => {
+    const rung = rungs[i], label = `${rung.label} · ${finite(rung.turn) ? 'turn '+number(rung.turn) : rung.reached ? 'turn ? (receipt unknown)' : 'not reached'}`;
+    return `<button class="map-pin ${rung.reached ? '' : 'unreached'} ${rung.reached && !finite(rung.turn) ? 'unknown' : ''} ${x > 280 ? 'sign-left' : x < 130 ? 'sign-right' : ''}" style="--x:${x/4}%;--y:${y/3}%" data-pin="${i}" aria-label="${escape(label)}"><span aria-hidden="true">${i+1}</span><span class="pin-sign" aria-hidden="true">${escape(label)}</span></button>`;
+  }).join('');
+  const roads = linePath(mapLegs.flat());
+  return `<div class="replay-map" role="group" aria-label="Journey map for ${escape(modelName(run))}">
+    <svg class="run-map" viewBox="0 0 400 300" aria-hidden="true"><rect width="400" height="300" fill="#cedfb0"/>
+    <path d="M362 0h38v300h-40v-30h15V181h-13zM0 288h84v12H0z" fill="#81c9b1"/>
+    <path d="M277 91h78v102h-89v-52h11z" fill="#80a66e"/>
+    ${trees([[280,69,.3],[310,58,.3],[343,61,.32],[268,107,.32],[344,108,.35],[277,135,.28],[342,153,.32],[260,183,.3]])}
+    ${tile('roundtree',8,112,37,41)}${tile('roundtree',53,167,31,34)}${tile('rock',160,19,32,23)}${grass(192,232,2,2)}
+    <path d="${roads}" fill="none" stroke="#849e6c" stroke-width="14" stroke-linejoin="round"/>
+    <path d="${roads}" fill="none" stroke="#f2dfac" stroke-width="9" stroke-linejoin="round"/>
+    ${tile('house',10,212,58,48)}${tile('house',89,226,59,49)}${tile('house',159,116,53,44)}${tile('house',205,116,53,44)}${tile('house',232,12,57,48)}${tile('gym',34,5,86,66)}
+    <g class="map-place-names"><text x="13" y="205">PALLET TOWN</text><text x="139" y="296">LAB</text><text x="172" y="204">ROUTE 1</text><text x="158" y="109">VIRIDIAN CITY</text><text x="296" y="222">ROUTE 2</text><text x="296" y="236">FOREST ↑</text><text x="215" y="85">PEWTER CITY</text><text x="25" y="91">BROCK'S GYM</text></g>
+    <path class="replay-trail" d="M${mapStart.join(' ')}"/>
+    <g class="replay-skulls"></g><g class="replay-trainer" transform="translate(${mapStart.join(' ')})">${tile('trainer',-8,-24,16,24)}</g>
+    <g class="replay-finish" visibility="hidden"></g></svg>${pins}<div class="blackout-overlay" aria-hidden="true"></div></div>
+    <p class="map-caption">1–10: ladder order · teal = recorded · gold = replayed<br>${won(run) ? 'Trophy = beat Brock' : 'Red × = estimated stop toward the next rung'} · skull = faint</p>`;
+}
+function runDetails(run, rungs) {
+  const largest = Math.max(-1,...rungs.map(r => r.delta ?? -1));
+  const hardest = largest > 0 ? rungs.findIndex(r => r.delta === largest) : -1;
+  return `<div class="run-details"><div class="ladder-heading"><b>THE LADDER</b><span>FIRST HIT / SEGMENT TURNS</span></div><ol class="receipt-list">${rungs.map((r,i) => `<li data-rung="${i}" class="${r.reached ? 'pending' : 'unreached'} ${r.reached && !finite(r.turn) ? 'unknown' : ''} ${i === hardest ? 'hardest' : ''}"><span class="rung-number">${i+1}</span><span>${escape(r.short)}${i === hardest ? '<em>tripped up here</em>' : ''}</span><span class="receipt-turn">${finite(r.turn) ? number(r.turn) : r.reached ? '?' : '—'}</span><span class="receipt-delta">${finite(r.delta) ? '+'+number(r.delta) : r.reached ? '?' : '—'}</span></li>`).join('')}</ol>
+    <p class="receipt-note">? = unknown receipt or segment · — = unreached. Segment = turns since the previous rung. Missing or out-of-order route timing is estimated; receipts stay as recorded.</p>
+    ${facts([['Run ID',run.run_id],['Run name',run.run_name],['Think',run.think_level],['Context',finite(run.num_ctx) ? number(run.num_ctx) : null],
+      ['Parameters',run.model_params],['Quant',run.quant],['Token in',number(run.tokens_in)],['Token out',number(run.tokens_out)],['Timestamp',run.timestamp],
+      ['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]])}</div>`;
+}
+function runReplay(run, rungs) {
+  const hits = rungs.filter(r => finite(r.turn) && r.turn <= run.turns_used).length;
+  return `<div class="replay-toolbar"><div class="replay-controls" role="group" aria-label="Journey replay controls"><button data-replay="play" aria-label="Play replay">Play</button><button data-replay="restart">Restart</button><button data-replay="end">Skip to end</button><span class="replay-status">Ready · ~${Math.round(6+hits*PULSE_MS/1000)}s</span></div>
+    <progress class="replay-progress" max="${run.turns_used || 1}" value="0" aria-label="Replay progress in turns"></progress></div>
+    ${runMap(run,rungs)}<div class="replay-body"><p class="running-label">RUNNING TOTALS <span>· tokens, cost &amp; time interpolated</span></p>
+    <dl class="stats replay-stats"><div><dt>TURNS</dt><dd><span class="counter-stage"><span data-counter="turns">0</span><span class="sparkles" aria-hidden="true"></span></span> <small>/ ${number(run.turns_used)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd data-counter="tokens">${finite(tokens(run)) ? '0' : '—'}</dd></div><div><dt>COST</dt><dd data-counter="cost">${price({...run,cost_usd:finite(run.cost_usd) ? 0 : null})}</dd></div><div><dt>TIME</dt><dd data-counter="time">${finite(run.wall_time_s) ? '0s' : '—'}</dd></div></dl>
+    ${runDetails(run,rungs)}</div>`;
+}
+function card(run, full = false) {
+  const selected = state.selected.has(run.uid), rungs = ladder(run);
+  const ribbon = `<div class="card-ribbon"><span>${won(run) ? trophy + 'BADGE EARNED' : '<b class="red" aria-hidden="true">×</b> STUCK HERE'} · #${displayRank(run)}</span>${state.sample ? '<span class="sample-badge">ILLUSTRATIVE DATA</span>' : ''}</div>`;
+  return `<article class="run-card ${won(run) ? 'is-winner' : ''} ${full ? 'full-card' : 'compact-card'}" data-run="${run.uid}" data-furthest="${run.furthest_index}" tabindex="0" aria-expanded="false" aria-label="${escape(modelName(run))}, ${escape(milestoneLabel(run))}" aria-describedby="card-flip-help">
+    <div class="card-inner"><div class="card-face card-front" aria-hidden="false">${ribbon}
+    ${run.uid === localHero ? '<div class="hero-ribbon">★ LOCAL HERO · FURTHEST LOCAL RUN</div>' : ''}
+    <div class="card-body"><h3 class="model-name">${escape(modelName(run))}</h3><p class="provider">${escape(textValue(run.provider))}${run.run_name ? ' / '+escape(run.run_name) : ''}</p>
+    ${run.in_game_name ? `<p class="ingame-name">plays as <b class="player-name">${escape(run.in_game_name)}</b>${run.rival_name ? ` &middot; rival <b class="rival-name">${escape(run.rival_name)}</b>` : ''}</p>` : ''}
+    <div class="card-tags"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="tag">${escape(textValue(run.family))}</span><span class="tag">GEN 1 · RED</span></div>
+    <p class="furthest"><b>${run.furthest_index+1}/10</b> ${escape(milestoneLabel(run))}</p>${stats(run)}
+    ${full ? facts([['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]]) : ''}
+    <p class="flip-hint">↻ Flip for the journey replay<span>10 rungs. Every recorded turn.</span></p>
+    <div class="card-actions"><button class="compare-select" data-select="${run.uid}" aria-pressed="${selected}" ${!selected && state.selected.size >= 4 ? 'disabled' : ''} aria-label="${selected ? 'Remove' : 'Select'} ${escape(modelName(run))} for comparison">${selected ? '✓ Selected' : '+ Compare'}</button>${inspect(run)}</div>${videoURL(run) ? '' : '<p class="vod-note">No VOD attached</p>'}</div></div>
+    <div class="card-face card-back" aria-hidden="true" inert>${ribbon}<div class="replay-heading"><h3>${escape(modelName(run))} · Journey</h3><button class="text-button" data-replay="flip">Front ↶</button></div>${runReplay(run,rungs)}</div></div></article>`;
 }
 
-function runReplay(run, root) {
-  const sprite = root.querySelector('#ladder-sprite');
-  const counter = root.querySelector('#replay-turn-counter');
-  const rows = [...root.querySelectorAll('.ladder-rung')];
-  const rungHeight = 33;
-  const finish = () => {
-    counter.textContent = number(run.turns_used);
-    sprite.style.bottom = (run.furthest_index * rungHeight) + 'px';
-    sprite.innerHTML = won(run) ? '<svg viewBox="0 0 32 37"><use href="#art-trophy"/></svg>' : '<svg viewBox="0 0 24 24"><use href="#art-flag"/></svg>';
-  };
-  if (reduced.matches) { finish(); return; }
-  let i = 0;
-  sprite.style.bottom = '0px';
-  sprite.innerHTML = '<svg viewBox="0 0 32 48"><use href="#art-trainer"/></svg>';
-  counter.textContent = '0';
-  const step = () => {
-    if (i > run.furthest_index) { finish(); return; }
-    const row = rows.find(r => Number(r.dataset.rung) === i);
-    const turn = row ? row.querySelector('.rung-turn').textContent.replace('T', '') : run.turns_used;
-    sprite.style.bottom = (i * rungHeight) + 'px';
-    counter.textContent = /^\d/.test(turn) ? turn : number(run.turns_used);
-    i += 1;
-    setTimeout(step, 380);
-  };
-  step();
+// One turn playhead drives the sprite, trail, receipts, counters and faint events.
+// Unknown timing is only an animation estimate and never becomes a receipt.
+const replays = new WeakMap();
+let activeReplay = null;
+// Milestone celebration: the turn clock holds for PULSE_MS while the counter grows gold,
+// bursts sparkles at full size, sits, then shrinks back and the count resumes.
+const PULSE_MS = 1100, BURST_AT = .25;
+function replayTimeline(run, rungs) {
+  const arrivals = [0];
+  let lastKnown = 0;
+  for (let i = 0; i <= run.furthest_index; i++) {
+    const turn = rungs[i].turn;
+    const ordered = finite(turn) && turn >= lastKnown && turn <= run.turns_used;
+    arrivals.push(ordered ? turn : null);
+    if (ordered) lastKnown = turn;
+  }
+  arrivals.push(run.turns_used);
+  for (let left = 0; left < arrivals.length-1;) {
+    let right = left+1;
+    while (arrivals[right] === null) right++;
+    for (let i = left+1; i < right; i++) arrivals[i] = arrivals[left]+(arrivals[right]-arrivals[left])*(i-left)/(right-left);
+    left = right;
+  }
+  const segments = arrivals.slice(1).map((end,i) => {
+    const tail = i > run.furthest_index;
+    const stop = mapPoints[run.furthest_index] || mapStart;
+    const points = tail ? !won(run) && end > arrivals[i] ? linePart(mapLegs[i],.55) : [stop,stop] : mapLegs[i];
+    const known = tail ? run.furthest_index < 0 || finite(rungs[i-1].turn) : finite(rungs[i].delta);
+    return {start:arrivals[i],end,points,weight:known ? end-arrivals[i] : run.turns_used/(arrivals.length-1),duration:0};
+  });
+  // Water-fill the six-second budget, retaining a 250ms floor for short legs.
+  let remaining = 6000, open = segments.filter(s => s.end > s.start);
+  while (open.length) {
+    const weight = open.reduce((sum,s) => sum+s.weight,0);
+    const short = open.filter(s => remaining*s.weight/weight < 250);
+    if (!short.length) { open.forEach(s => { s.duration = remaining*s.weight/weight; }); break; }
+    short.forEach(s => { s.duration = 250; remaining -= 250; });
+    open = open.filter(s => !short.includes(s));
+  }
+  let elapsed = 0;
+  segments.forEach(s => { s.at = elapsed; elapsed += s.duration; });
+  return {segments,duration:elapsed};
 }
+function getReplay(card) {
+  if (replays.has(card)) return replays.get(card);
+  const run = state.runs.find(r => r.uid === card.dataset.run), rungs = ladder(run);
+  const timeline = replayTimeline(run,rungs);
+  const faints = (Array.isArray(run.blackouts) ? run.blackouts : []).filter(t => finite(t) && t <= run.turns_used).sort((a,b) => a-b).map(turn => {
+    let pin = rungs.findIndex(r => finite(r.turn) && r.turn > turn);
+    if (pin < 0) pin = Math.min(9,run.furthest_index+1);
+    return {turn,pin,at:null};
+  });
+  const replay = {card,run,rungs,...timeline,faints,turn:-1,elapsed:0,hold:0,burstTimer:0,lastFrame:null,frame:0,playing:false,
+    events:[...new Set([...rungs.map(r => r.turn).filter(t => finite(t) && t <= run.turns_used),...faints.map(f => f.turn),run.turns_used])].sort((a,b) => a-b),
+    pins:[...card.querySelectorAll('[data-pin]')],rows:[...card.querySelectorAll('[data-rung]')],
+    counters:Object.fromEntries([...card.querySelectorAll('[data-counter]')].map(el => [el.dataset.counter,el])),sparks:card.querySelector('.sparkles'),total:card.querySelector('.replay-stats small'),
+    sprite:card.querySelector('.replay-trainer'),trail:card.querySelector('.replay-trail'),finish:card.querySelector('.replay-finish'),
+    overlay:card.querySelector('.blackout-overlay'),progress:card.querySelector('.replay-progress'),
+    play:card.querySelector('[data-replay="play"]'),status:card.querySelector('.replay-status')};
+  card.querySelector('.replay-skulls').innerHTML = faints.map((f,i) => {
+    const [x,y] = mapPoints[f.pin];
+    return `<g class="faint-marker" data-faint="${i}" visibility="hidden" transform="translate(${x+13+(i%3)*7} ${y-38-Math.floor(i/3)*11})"><title>Fainted at turn ${number(f.turn)} · heading to ${escape(rungs[f.pin].label)}</title><path d="M3 0h10v2h3v10h-3v5H3v-5H0V2h3z" fill="#f8f7eb" stroke="#101c20" stroke-width="2"/><path d="M3 5h4v4H3zM10 5h4v4h-4zM7 10h3v3H7zM5 14h2v3H5zM10 14h2v3h-2z" fill="#101c20"/></g>`;
+  }).join('');
+  replay.skulls = [...card.querySelectorAll('[data-faint]')];
+  replay.finish.innerHTML = won(run) ? '<g transform="translate(-10 -32) scale(.65)"><use href="#art-trophy"/></g>' : '<path class="furthest-x" d="M-6-13l12 12m0-12L-6-1" stroke="#a52f24" stroke-width="4"/>';
+  replays.set(card,replay);
+  drawReplay(replay,0,true);
+  return replay;
+}
+function drawReplay(replay, turn, instant = false) {
+  const {run,rungs,segments,counters} = replay, before = replay.turn;
+  replay.turn = turn;
+  const ratio = run.turns_used ? turn/run.turns_used : 1;
+  let walked = [mapStart];
+  for (const segment of segments) {
+    if (turn < segment.start) break;
+    const fraction = segment.end > segment.start ? (turn-segment.start)/(segment.end-segment.start) : 1;
+    walked = walked.concat(linePart(segment.points,fraction).slice(1));
+    if (fraction < 1) break;
+  }
+  const [x,y] = walked[walked.length-1];
+  replay.sprite.setAttribute('transform',`translate(${x} ${y})`);
+  replay.trail.setAttribute('d',linePath(walked));
+  replay.finish.setAttribute('visibility',turn >= run.turns_used ? 'visible' : 'hidden');
+  replay.finish.setAttribute('transform',`translate(${x} ${y})`);
+  replay.sprite.setAttribute('visibility',turn >= run.turns_used ? 'hidden' : 'visible');
+  let celebrate = false;
+  rungs.forEach((r,i) => {
+    const hit = finite(r.turn) && r.turn <= turn;
+    replay.pins[i].classList.toggle('is-hit',hit);
+    replay.rows[i].classList.toggle('is-hit',hit);
+    if (hit && r.turn > before && !instant && !reduced.matches) celebrate = true;
+  });
+  counters.turns.textContent = number(Math.floor(turn));
+  if (celebrate) pulseTurns(replay);
+  counters.tokens.textContent = number(finite(tokens(run)) ? Math.round(tokens(run)*ratio) : null);
+  counters.cost.textContent = price({...run,cost_usd:finite(run.cost_usd) ? run.cost_usd*ratio : null});
+  counters.time.textContent = time(finite(run.wall_time_s) ? run.wall_time_s*ratio : null);
+  replay.progress.value = run.turns_used ? turn : 1;
+  let darkness = 0;
+  replay.faints.forEach((f,i) => {
+    if (f.turn <= turn && f.at === null) f.at = instant ? -Infinity : replay.elapsed;
+    const age = f.at === null ? -1 : replay.elapsed-f.at;
+    replay.skulls[i].setAttribute('visibility',age >= 400 ? 'visible' : 'hidden');
+    if (age >= 0 && age < 400) darkness = Math.max(darkness,Math.min(1,age/100,(400-age)/100));
+  });
+  replay.overlay.style.opacity = darkness;
+}
+function pulseTurns(replay) {
+  const el = replay.counters.turns;
+  replay.hold = PULSE_MS;
+  el.getAnimations().forEach(a => a.cancel());
+  el.animate([
+    {transform:'scale(1)',color:'var(--ink)',textShadow:'0 0 0 transparent'},
+    {transform:'scale(1.5)',color:'#c98a00',textShadow:'0 0 14px var(--gold)',offset:BURST_AT,easing:'ease-out'},
+    {transform:'scale(1.5)',color:'#c98a00',textShadow:'0 0 8px var(--gold)',offset:.75},
+    {transform:'scale(1)',color:'var(--ink)',textShadow:'0 0 0 transparent'},
+  ],{duration:PULSE_MS,easing:'ease-in-out'});
+  // The "/ total" steps back so the grown count has room.
+  replay.total.getAnimations().forEach(a => a.cancel());
+  replay.total.animate([{opacity:1},{opacity:.12,offset:BURST_AT},{opacity:.12,offset:.75},{opacity:1}],{duration:PULSE_MS});
+  clearTimeout(replay.burstTimer);
+  replay.burstTimer = setTimeout(() => burstSparkles(replay),PULSE_MS*BURST_AT);
+}
+function burstSparkles(replay) {
+  if (!replay.sparks || !replay.card.isConnected) return;
+  const count = 18;
+  for (let i = 0; i < count; i++) {
+    const spark = document.createElement('i');
+    spark.className = 'spark';
+    replay.sparks.appendChild(spark);
+    const angle = (i/count)*Math.PI*2+(Math.random()-.5)*.6, dist = 30+Math.random()*40;
+    spark.animate([
+      {transform:'translate(-50%,-50%) rotate(0deg) scale(1)',opacity:1},
+      {opacity:1,offset:.55},
+      {transform:`translate(calc(-50% + ${(Math.cos(angle)*dist).toFixed(1)}px),calc(-50% + ${(Math.sin(angle)*dist-8).toFixed(1)}px)) rotate(${Math.round(180+Math.random()*270)}deg) scale(.4)`,opacity:0},
+    ],{duration:650+Math.random()*350,easing:'cubic-bezier(.1,.8,.3,1)'}).finished.then(() => spark.remove(),() => spark.remove());
+  }
+}
+function clearCelebration(replay) {
+  clearTimeout(replay.burstTimer);
+  replay.hold = 0;
+  [replay.counters.turns,replay.total].forEach(el => el.getAnimations().forEach(a => a.cancel()));
+  if (replay.sparks) replay.sparks.replaceChildren();
+}
+function replayControls(replay) {
+  replay.play.textContent = replay.playing ? 'Pause' : replay.turn >= replay.run.turns_used ? 'Replay' : 'Play';
+  replay.play.setAttribute('aria-label',replay.playing ? 'Pause replay' : 'Play replay');
+  replay.status.textContent = reduced.matches ? 'End · motion reduced' : replay.playing ? 'Playing' : replay.turn >= replay.run.turns_used ? 'Complete' : 'Paused';
+  replay.card.classList.toggle('replay-playing',replay.playing);
+}
+function pauseReplay(replay = activeReplay) {
+  if (!replay) return;
+  cancelAnimationFrame(replay.frame);
+  replay.playing = false; replay.lastFrame = null;
+  if (activeReplay === replay) activeReplay = null;
+  replayControls(replay);
+}
+function endReplay(replay) {
+  pauseReplay(replay);
+  clearCelebration(replay);
+  replay.elapsed = replay.duration+400;
+  replay.faints.forEach(f => { f.at = -Infinity; });
+  drawReplay(replay,replay.run.turns_used,true);
+  replayControls(replay);
+}
+function tickReplay(replay, now) {
+  if (!replay.playing) return;
+  if (!replay.card.isConnected || replay.card.closest('[hidden]') || document.hidden) { pauseReplay(replay); return; }
+  const dt = replay.lastFrame === null ? 0 : now-replay.lastFrame;
+  replay.lastFrame = now;
+  // The clock stands still while a milestone celebrates; only the hold timer runs down.
+  if (replay.hold > 0) {
+    replay.hold = Math.max(0,replay.hold-dt);
+    replay.frame = requestAnimationFrame(now => tickReplay(replay,now));
+    return;
+  }
+  replay.elapsed += dt;
+  const segment = replay.segments.find(s => s.duration && replay.elapsed < s.at+s.duration);
+  const target = segment ? segment.start+(segment.end-segment.start)*Math.max(0,(replay.elapsed-segment.at)/segment.duration) : replay.run.turns_used;
+  // Land exactly on each receipt/faint for a frame, including after a slow frame.
+  const crossing = replay.events.find(t => t > replay.turn && t <= target);
+  drawReplay(replay,crossing ?? target);
+  if (replay.turn >= replay.run.turns_used && replay.hold <= 0 && replay.faints.every(f => f.at !== null && replay.elapsed-f.at >= 400)) { pauseReplay(replay); return; }
+  replay.frame = requestAnimationFrame(now => tickReplay(replay,now));
+}
+function playReplay(replay, restart = false) {
+  pauseReplay();
+  if (reduced.matches) { endReplay(replay); return; }
+  if (restart || replay.turn >= replay.run.turns_used) {
+    clearCelebration(replay);
+    replay.elapsed = 0; replay.turn = -1;
+    replay.faints.forEach(f => { f.at = null; });
+    drawReplay(replay,0,true);
+  }
+  // Turn-zero faints still get their fade when playback starts.
+  replay.faints.filter(f => f.turn === 0 && f.at === -Infinity).forEach(f => { f.at = 0; });
+  activeReplay = replay; replay.playing = true; replay.lastFrame = null;
+  replayControls(replay);
+  replay.frame = requestAnimationFrame(now => tickReplay(replay,now));
+}
+function flipCard(card) {
+  const back = card.getAttribute('aria-expanded') !== 'true';
+  card.classList.toggle('is-flipped',back);
+  card.setAttribute('aria-expanded',String(back));
+  card.focus({preventScroll:true});
+  ['front','back'].forEach(face => {
+    const el = card.querySelector('.card-'+face), visible = (face === 'back') === back;
+    el.inert = !visible; el.setAttribute('aria-hidden',String(!visible));
+  });
+  if (back) playReplay(getReplay(card)); else pauseReplay(replays.get(card));
+}
+// ---- end copied block ----------------------------------------------------------------------
 
 function openModal(run, triggerEl) {
   lastFocused = triggerEl || document.activeElement;
   const dialog = $('run-modal'), content = $('modal-content');
-  content.dataset.uid = run.uid;
-  content.dataset.side = 'front';
-  content.innerHTML = modalFront(run);
-  content.querySelector('.flip-btn').addEventListener('click', () => flip(run, content));
+  content.innerHTML = card(run, true);
   dialog.showModal();
-}
-
-function flip(run, content) {
-  if (content.dataset.side !== 'back') {
-    content.dataset.side = 'back';
-    content.innerHTML = modalBack(run);
-    content.querySelector('[data-flip="front"]').addEventListener('click', () => flip(run, content));
-    content.querySelector('#replay-again').addEventListener('click', () => runReplay(run, content));
-    runReplay(run, content);
-  } else {
-    content.dataset.side = 'front';
-    content.innerHTML = modalFront(run);
-    content.querySelector('.flip-btn').addEventListener('click', () => flip(run, content));
-  }
 }
 
 const modal = () => $('run-modal');
 $('modal-close').addEventListener('click', () => modal().close());
-modal().addEventListener('close', () => { if (lastFocused && document.contains(lastFocused)) lastFocused.focus(); });
+modal().addEventListener('close', () => {
+  pauseReplay();
+  if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
+});
 modal().addEventListener('click', e => {
   const r = $('modal-content').getBoundingClientRect();
   const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
   if (!inside) modal().close();
+});
+// Wired once on the stable #modal-content container (its innerHTML is replaced per open),
+// mirroring the live site's delegated click/keydown handler for .run-card + [data-replay].
+$('modal-content').addEventListener('click', event => {
+  const control = event.target.closest('[data-replay]');
+  if (control) {
+    const rc = control.closest('.run-card'), replay = getReplay(rc);
+    if (control.dataset.replay === 'flip') flipCard(rc);
+    else if (control.dataset.replay === 'end') endReplay(replay);
+    else if (control.dataset.replay === 'restart') playReplay(replay,true);
+    else if (replay.playing) pauseReplay(replay); else playReplay(replay);
+    return;
+  }
+  const rc = event.target.closest('.run-card');
+  if (rc && !event.target.closest('button,a,input,select,textarea,progress,meter,output,label,summary,[role="button"],[contenteditable],[data-no-flip]')) flipCard(rc);
+});
+$('modal-content').addEventListener('keydown', event => {
+  if (event.target.matches('.run-card') && (event.key === 'Enter' || event.key === ' ')) {
+    event.preventDefault();
+    if (!event.repeat) flipCard(event.target);
+  }
 });
 
 function wireCardClicks(root) {
@@ -415,7 +788,7 @@ function renderDesktop() {
       stack.className = 'band-stack' + (list.length ? '' : ' is-empty');
       stack.dataset.top = place.top;
       stack.dataset.bottom = place.bottom;
-      stack.innerHTML = (list.length ? `<span class="band-flag"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#art-flag"/></svg>${escapeHtml(place.name)}</span>` : '')
+      stack.innerHTML = (list.length ? `<span class="band-flag"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#art-flag"/></svg>${escape(place.name)}</span>` : '')
         + list.map(r => compactCard(r, ranks.get(r.uid))).join('');
       col.appendChild(stack);
     });
@@ -453,10 +826,10 @@ function renderPhone() {
   const stage = $('stage-phone');
   stage.innerHTML = places.map(place => {
     const runs = bandRuns(place);
-    const cards = runs.length ? runs.map(r => compactCard(r, ranks.get(r.uid))).join('') : `<p class="phone-band-empty">No runs ended in ${escapeHtml(place.name)}.</p>`;
+    const cards = runs.length ? runs.map(r => compactCard(r, ranks.get(r.uid))).join('') : `<p class="phone-band-empty">No runs ended in ${escape(place.name)}.</p>`;
     return `<section class="phone-band" data-place="${place.id}" data-top="${place.top}" data-bottom="${place.bottom}">
       <div class="phone-band-img" data-band="${place.id}"></div>
-      <h2 class="phone-band-heading">${escapeHtml(place.name.toUpperCase())}</h2>
+      <h2 class="phone-band-heading">${escape(place.name.toUpperCase())}</h2>
       <div class="phone-band-cards">${cards}</div>
     </section>`;
   }).join('');
@@ -479,7 +852,7 @@ function layoutPhoneBands() {
 }
 
 function renderRail() {
-  $('rail-dots').innerHTML = places.map(p => `<li><span class="rail-dot" data-place="${p.id}">${escapeHtml(p.name)}</span></li>`).join('');
+  $('rail-dots').innerHTML = places.map(p => `<li><span class="rail-dot" data-place="${p.id}">${escape(p.name)}</span></li>`).join('');
 }
 
 function observePlaces() {
@@ -509,6 +882,7 @@ async function boot() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
     RUNS = rows.map((r, i) => ({...r, uid: r.run_id || ('run-' + i)}));
+    state.runs = RUNS;
   } catch (err) {
     $('data-state').textContent = 'Could not load mock-runs.json (' + err.message + ').';
     return;
