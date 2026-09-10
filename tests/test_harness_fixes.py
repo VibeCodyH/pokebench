@@ -316,7 +316,7 @@ class RunnerTests(unittest.TestCase):
 
 
 class StateTests(unittest.TestCase):
-    def test_gate_warps_require_collision_but_flood_fill_is_unchanged(self):
+    def test_gate_warps_require_collision_and_map_is_raw_walkability(self):
         for dest, marker in ((51, "S"), (0xFF, "D")):
             with self.subTest(dest=dest):
                 grid = [[True] * 10 for _ in range(9)]
@@ -329,7 +329,7 @@ class StateTests(unittest.TestCase):
         grid = [[False] * 10 for _ in range(9)]
         grid[4][4] = grid[0][0] = True
         state["collision"]["walkable"] = grid
-        self.assertEqual(qwen_red.build_map(state).splitlines()[1].split()[1], "#")
+        self.assertEqual(qwen_red.build_map(state).splitlines()[1].split()[1], ".")  # walkable, no route in window: still "."
 
     def test_pending_party_slot_and_fainted_initialized_mon(self):
         for level, max_hp in ((0, 0), (5, 0)):

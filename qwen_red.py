@@ -56,7 +56,7 @@ ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk
            "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 
 # Provenance (BENCHMARK-SPEC.md §2b — same prompt, same rules, public receipts).
-PROMPT_VERSION = "v18"          # v18 = truthful warp, UI, party and feedback observations
+PROMPT_VERSION = "v19"          # v19 = map shows raw walkability, no reachability flood-fill; v18 = truthful warp/UI/party/feedback
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
@@ -312,9 +312,10 @@ def write_summary(artifact_dir, run_id, model, run_name, think, tracker, turns_u
 
 
 def build_map(state, warps=()):
-    """Render the walkability grid; walkable tiles with no route from the player (flood-fill)
-    render as `#`, so the model never trusts a `.` it cannot reach. Warp tiles (doors, stairs) from
-    the game's warp table render as `D` (test run 4: a door shown as `.` cost ~95 turns of re-entering home)."""
+    """Render the walkability grid straight from the collision RAM: `.` walkable, `#` blocked. No
+    reachability flood-fill (2026-09-10 audit: it painted 292 walkable tiles as `#`, mostly Pewter City,
+    because "no route inside this window" is not "blocked terrain"). Warp tiles (doors, stairs) from the
+    game's warp table render as `D`/`S` (test run 4: a door shown as `.` cost ~95 turns of re-entering home)."""
     c = state.get("collision") or {}
     grid = c.get("walkable")
     cell = c.get("player_cell") or "E5"
@@ -322,15 +323,6 @@ def build_map(state, warps=()):
         return None
     rows, cols = len(grid), len(grid[0])
     pc = ord(cell[0].upper()) - ord("A"); pr = int(cell[1:]) - 1
-    reach = [[False] * cols for _ in range(rows)]
-    if 0 <= pr < rows and 0 <= pc < cols and grid[pr][pc]:
-        stack = [(pr, pc)]; reach[pr][pc] = True
-        while stack:
-            r, cc = stack.pop()
-            for dr, dc in ((1,0),(-1,0),(0,1),(0,-1)):
-                nr, nc = r+dr, cc+dc
-                if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] and not reach[nr][nc]:
-                    reach[nr][nc] = True; stack.append((nr, nc))
     ids = c.get("tile_ids") or []
     ledge_down = set()
     if c.get("tileset") == 0 and ids:  # overworld tileset: 0x36/0x37 are the one-way ledge tiles you hop DOWN over
@@ -338,17 +330,6 @@ def build_map(state, warps=()):
             for cc in range(cols):
                 if r < len(ids) and cc < len(ids[r]) and ids[r][cc] in (0x36, 0x37):
                     ledge_down.add((r, cc))
-    if ledge_down:  # a hop carries you from the tile above the ledge to the tile below it
-        for r, cc in sorted(ledge_down):
-            if r - 1 >= 0 and reach[r - 1][cc] and r + 1 < rows and grid[r + 1][cc] and not reach[r + 1][cc]:
-                reach[r + 1][cc] = True
-                stack = [(r + 1, cc)]
-                while stack:
-                    rr, c2 = stack.pop()
-                    for dr, dc in ((1,0),(-1,0),(0,1),(0,-1)):
-                        nr, nc = rr+dr, c2+dc
-                        if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] and not reach[nr][nc]:
-                            reach[nr][nc] = True; stack.append((nr, nc))
     ppos = (state.get("player") or {}).get("position") or {}
     doors, stairs = set(), set()
     outdoors = c.get("tileset") == 0
@@ -368,11 +349,10 @@ def build_map(state, warps=()):
             elif (r, cc) in doors and grid[r][cc]: line.append("D")
             elif (r, cc) in stairs and grid[r][cc]: line.append("S")
             elif (r, cc) in ledge_down: line.append("v")
-            elif not grid[r][cc]: line.append("#")
-            elif reach[r][cc]: line.append(".")
-            else: line.append("#")  # RAM says walkable but no route from @ (fenced/ledged off): show it as blocked, she treated `~` as a target (v4)
+            elif grid[r][cc]: line.append(".")
+            else: line.append("#")
         out.append(f"{r+1:2d} " + " ".join(line))
-    out.append("@ you  . reachable  # blocked  D door (inside<->outside)  S warp to another map (stairs/cave/far side of a gate)  v ledge (hop DOWN over it; one-way)")
+    out.append("@ you  . walkable  # blocked  D door (inside<->outside)  S warp to another map (stairs/cave/far side of a gate)  v ledge (hop DOWN over it; one-way)")
     out.append("up=row-1 down=row+1 left=col-1 right=col+1")
     return "\n".join(out)
 
