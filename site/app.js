@@ -522,7 +522,15 @@
     },{rootMargin: `-${Math.floor(probe)}px 0px -${Math.max(0,Math.floor(window.innerHeight-probe-2))}px 0px`, threshold: 0});
     document.querySelectorAll('.station, .pin-group').forEach(station => railObserver.observe(station));
   }
-  const narrow = matchMedia('(max-width: 560px)');
+  const narrow = matchMedia('(max-width: 560px)'), wide = matchMedia('(min-width: 1700px)');
+  // Ultra-wide viewports get a 2000-unit stage so the 1200-unit composition keeps its scale;
+  // the extra 400 units each side are dressed with trees, grass and rocks in the station's palette.
+  function wideScene(station, layer) {
+    const kind = station === 'forest' ? 'pine' : 'roundtree', base = art[station+'-'+layer] || '';
+    if (layer === 'far') return base + trees([[-372,-28,1.15],[-232,-14,1],[-118,-36,1.2],[1262,-30,1.1],[1372,-8,1.25],[1512,-32,1]],kind) + cloud(-300,60,.8) + cloud(1420,45,.7);
+    if (layer === 'near') return base + trees([[-395,270,1.8],[-300,400,1.5],[1470,250,1.7],[1560,395,1.45]],kind);
+    return base + grass(-330,300,4,3,'#a9c77c') + grass(1300,260,4,3,'#a9c77c') + tile('rock',-200,190,64,45) + tile('rock',1440,410,70,49);
+  }
   // Recompose the approved tiles for a narrow viewport so buildings remain in shot.
   // The map and attached cards retain separate layers; cards never move with depth.
   function mobileScene(station, layer) {
@@ -542,8 +550,8 @@
     document.querySelectorAll('.scene svg').forEach(svg => {
       const station = stations.find(s => s.id === svg.closest('.station').id);
       const layer = svg.classList.contains('far') ? 'far' : svg.classList.contains('near') ? 'near' : 'ground';
-      svg.setAttribute('viewBox',narrow.matches ? '0 0 390 820' : '0 0 1200 550');
-      svg.innerHTML = narrow.matches ? mobileScene(station.art,layer) : art[station.art+'-'+layer] || '';
+      svg.setAttribute('viewBox',narrow.matches ? '0 0 390 820' : wide.matches ? '-400 0 2000 550' : '0 0 1200 550');
+      svg.innerHTML = narrow.matches ? mobileScene(station.art,layer) : wide.matches ? wideScene(station.art,layer) : art[station.art+'-'+layer] || '';
     });
   }
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -622,6 +630,7 @@
   $('depth-toggle').addEventListener('click',() => { depthEnabled = !depthEnabled; syncMotion(); });
   reduced.addEventListener('change',syncMotion);
   narrow.addEventListener('change',frameScenes);
+  wide.addEventListener('change',frameScenes);
   window.addEventListener('resize',observeJourney);
   // Keep sticky offsets accurate when text wraps or the browser is zoomed.
   new ResizeObserver(() => {
