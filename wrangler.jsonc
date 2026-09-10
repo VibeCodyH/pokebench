@@ -1,13 +1,17 @@
-// Cloudflare Workers config: the leaderboard is static files only, served from site/.
+// Cloudflare Workers config: static files from site/ plus one Worker route, /api/live (needs the
+// TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET secrets; without them the LIVE pill just never shows).
 // Workers Builds runs `python3 site/build_runs.py` first so site/runs.json exists at deploy.
 {
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
   "name": "pokebench",
   "compatibility_date": "2025-10-01",
+  // worker.js answers /api/live (Twitch); everything else falls through to the assets binding.
+  "main": "worker.js",
   // pokebench.tv and www are attached as Custom Domains in the dashboard (Worker → Settings →
   // Domains & Routes). Declaring them here stalled Workers Builds, so they stay out of config.
   "assets": {
     "directory": "./site",
+    "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
   }

@@ -35,6 +35,19 @@ button:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visib
 .page-nav { display: flex; gap: 22px; margin-left: auto; font: 800 11px var(--mono); }
 .page-nav a { text-decoration: none; padding-block: 12px; }
 .page-nav a:hover { text-decoration: underline; }
+/* Socials + LIVE pill: Uiverse.io (ayyjayy2) offset-shadow buttons, restyled to the site palette. */
+.socials { display: flex; align-items: center; gap: 14px; }
+.social-button { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--ink); background: #efe9cf; box-shadow: 4px 4px 0 var(--ink); color: var(--ink); transition: transform .08s, box-shadow .08s; }
+.social-button:hover { background: var(--gold); }
+.social-button:active, .live-pill:active { box-shadow: 0 0 0 var(--ink); transform: translate(3px, 3px); }
+.social-icon { width: 16px; height: 16px; fill: currentColor; }
+.live-pill { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 12px 0 10px; border: 2px solid var(--ink); border-radius: 17px; background: #d9f7e6; box-shadow: 4px 4px 0 var(--ink); font: 900 11px var(--mono); letter-spacing: 1px; color: var(--ink); text-decoration: none; transition: transform .08s, box-shadow .08s; }
+.live-pill[hidden] { display: none; }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: #16c05a; }
+@media (prefers-reduced-motion: no-preference) {
+  .live-dot { animation: live-pulse 1.6s ease-out infinite; }
+  @keyframes live-pulse { from { box-shadow: 0 0 0 0 rgba(22, 192, 90, .7); } to { box-shadow: 0 0 0 9px rgba(22, 192, 90, 0); } }
+}
 .header-controls { display: flex; align-items: center; gap: 22px; }
 .view-switch { display: flex; border: 2px solid var(--ink); border-radius: 7px; padding: 3px; background: #e9eade; gap: 3px; }
 .view-switch button { display: flex; gap: 8px; align-items: center; min-height: 38px; padding: 8px 14px; border: 0; border-radius: 3px; background: transparent; font: 800 11px var(--mono); }
@@ -339,6 +352,7 @@ dialog::backdrop { background: #101c20c9; }
   :root { --header: 118px; --header-base: 118px; }
   .masthead { flex-wrap: wrap; gap: 10px 20px; padding: 13px 20px; }
   .brand { margin-right: auto; }
+  .socials { order: 2; gap: 11px; }
   .page-nav { order: 3; margin-left: 0; width: auto; }
   .header-controls { order: 4; margin-left: auto; }
   .view-switch button { min-height: 32px; font-size: 10px; padding: 6px 13px; }
@@ -382,6 +396,10 @@ dialog::backdrop { background: #101c20c9; }
   .wordmark { font-size: 25px; }
   .tagline { font-size: 9px; }
   .page-nav { gap: 13px; font-size: 9px; }
+  .socials { gap: 9px; }
+  .social-button { width: 28px; height: 28px; box-shadow: 3px 3px 0 var(--ink); }
+  .social-icon { width: 13px; height: 13px; }
+  .live-pill { height: 28px; font-size: 9px; padding: 0 9px 0 8px; box-shadow: 3px 3px 0 var(--ink); }
   .view-switch { padding: 2px; }
   .view-switch button { padding: 6px 8px; font-size: 9px; gap: 5px; }
   .view-switch button span { font-size: 15px; }

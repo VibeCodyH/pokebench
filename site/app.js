@@ -695,6 +695,18 @@
     }
   });
   document.addEventListener('visibilitychange',() => { if (document.hidden) pauseReplay(); });
+  // LIVE pill: the Worker answers /api/live from Twitch (worker.js); a static preview has no route, so the pill stays hidden.
+  const livePill = $('live-pill');
+  async function pollLive() {
+    try {
+      const response = await fetch('/api/live', {cache:'no-store'});
+      if (!response.ok) return;
+      const status = await response.json();
+      livePill.hidden = status.live !== true;
+      livePill.title = status.title ? `Live on Twitch: ${status.title}` : 'Live on Twitch';
+    } catch { /* offline: leave the pill as it was */ }
+  }
+  if (livePill) { pollLive(); setInterval(pollLive, 60000); }
   syncMotion(); activeRail(9);
   loadRuns().then(() => {
     const target = $(location.hash.slice(1));
