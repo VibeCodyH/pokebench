@@ -1,0 +1,1928 @@
+[
+ {
+  "run_id": "sample-astra",
+  "blackouts": [
+   540
+  ],
+  "model": "GPT-6 Astra",
+  "provider": "openai",
+  "family": "GPT",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "openai-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-07",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 612,
+  "wall_time_s": 6120,
+  "tokens_in": 412000,
+  "tokens_out": 16160,
+  "cost_usd": 1.84,
+  "youtube_url": null,
+  "timestamp": "20260907_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 68
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 136
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 204
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 272
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 303
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 326
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 340
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 408
+   },
+   {
+    "key": "pewter_gym",
+    "label": "Entered Brock's Gym",
+    "turn": 476
+   },
+   {
+    "key": "beat_brock",
+    "label": "Beat Brock (Boulder Badge)",
+    "turn": 612
+   }
+  ],
+  "furthest_key": "beat_brock",
+  "furthest_label": "Beat Brock (Boulder Badge)",
+  "furthest_index": 9,
+  "beat_brock": true,
+  "in_game_name": "AAAAA",
+  "rival_name": "BLUE"
+ },
+ {
+  "run_id": "sample-opus",
+  "model": "Claude Opus 4.8",
+  "provider": "anthropic",
+  "family": "Claude",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "anthropic-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-07",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 740,
+  "wall_time_s": 8280,
+  "tokens_in": 541000,
+  "tokens_out": 21400,
+  "cost_usd": 2.1,
+  "youtube_url": null,
+  "timestamp": "20260907_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 82
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 164
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 247
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 329
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 366
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 395
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 411
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 493
+   },
+   {
+    "key": "pewter_gym",
+    "label": "Entered Brock's Gym",
+    "turn": 576
+   },
+   {
+    "key": "beat_brock",
+    "label": "Beat Brock (Boulder Badge)",
+    "turn": 740
+   }
+  ],
+  "furthest_key": "beat_brock",
+  "furthest_label": "Beat Brock (Boulder Badge)",
+  "furthest_index": 9,
+  "beat_brock": true,
+  "in_game_name": "HELPER",
+  "rival_name": "GARY"
+ },
+ {
+  "run_id": "sample-gemini",
+  "model": "Gemini 3.8 Flash",
+  "provider": "google",
+  "family": "Gemini",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "google-api",
+  "think_level": "medium",
+  "num_ctx": 65536,
+  "run_date": "2026-09-06",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 5160,
+  "tokens_in": 297000,
+  "tokens_out": 13000,
+  "cost_usd": 0.42,
+  "youtube_url": null,
+  "timestamp": "20260906_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 143
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 286
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 429
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 571
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 635
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 685
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 714
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 700
+   }
+  ],
+  "furthest_key": "pewter_city",
+  "furthest_label": "Reached Pewter City",
+  "furthest_index": 7,
+  "beat_brock": false,
+  "in_game_name": "CLAUDE",
+  "rival_name": "RIVAL"
+ },
+ {
+  "run_id": "sample-qwen",
+  "blackouts": [
+   820
+  ],
+  "model": "qwen3.8:27b",
+  "provider": "ollama",
+  "family": "Qwen",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "ollama-local",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-06",
+  "model_params": "27B",
+  "quant": "Q4_K_M",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 20820,
+  "tokens_in": 262000,
+  "tokens_out": 14000,
+  "cost_usd": 0,
+  "youtube_url": null,
+  "timestamp": "20260906_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 167
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 333
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 500
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 667
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 682
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 693
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 700
+   }
+  ],
+  "furthest_key": "viridian_forest",
+  "furthest_label": "Entered Viridian Forest",
+  "furthest_index": 6,
+  "beat_brock": false,
+  "in_game_name": "GPT",
+  "rival_name": "ASH"
+ },
+ {
+  "run_id": "sample-llama",
+  "model": "Llama 4 8B",
+  "provider": "ollama-local",
+  "family": "Llama",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "ollama-local",
+  "think_level": "off",
+  "num_ctx": 65536,
+  "run_date": "2026-09-05",
+  "model_params": "8B",
+  "quant": "Q4_K_M",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 10440,
+  "tokens_in": 175000,
+  "tokens_out": 9000,
+  "cost_usd": 0,
+  "youtube_url": null,
+  "timestamp": "20260905_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 250
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 500
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 700
+   }
+  ],
+  "furthest_key": "route_1",
+  "furthest_label": "Reached Route 1",
+  "furthest_index": 2,
+  "beat_brock": false,
+  "in_game_name": "AI",
+  "rival_name": "JOHN"
+ },
+ {
+  "run_id": "sample-mistral",
+  "model": "Mistral Small",
+  "provider": "ollama",
+  "family": "Mistral",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "ollama-local",
+  "think_level": "off",
+  "num_ctx": 65536,
+  "run_date": "2026-09-05",
+  "model_params": null,
+  "quant": "Q4_K_M",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 12960,
+  "tokens_in": 201000,
+  "tokens_out": 11000,
+  "cost_usd": 0,
+  "youtube_url": null,
+  "timestamp": "20260905_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 700
+   }
+  ],
+  "furthest_key": "left_house",
+  "furthest_label": "Left the house",
+  "furthest_index": 0,
+  "beat_brock": false,
+  "in_game_name": "QWEN",
+  "rival_name": "XXX"
+ },
+ {
+  "run_id": "sample-00",
+  "blackouts": [],
+  "model": "Nex N2.5 Pro",
+  "provider": "nex",
+  "family": "Nex",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "nex-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-02",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 11000,
+  "tokens_in": 8774000,
+  "tokens_out": 47000,
+  "cost_usd": 5.95,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 44
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 119
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 227
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 258
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 292
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 385
+   }
+  ],
+  "furthest_key": "got_pokedex",
+  "furthest_label": "Got the Pok\u00e9dex",
+  "furthest_index": 5,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-01",
+  "blackouts": [],
+  "model": "Muse Spark 1.3",
+  "provider": "muse",
+  "family": "Muse",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "muse-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-07",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 6000,
+  "tokens_in": 10773000,
+  "tokens_out": 112000,
+  "cost_usd": 1.16,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 29
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 65
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 145
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 223
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 256
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 311
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 347
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 442
+   }
+  ],
+  "furthest_key": "pewter_city",
+  "furthest_label": "Reached Pewter City",
+  "furthest_index": 7,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-02",
+  "blackouts": [],
+  "model": "GLM 5.3 Flash",
+  "provider": "zhipu",
+  "family": "GLM",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "zhipu-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-01",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 9000,
+  "tokens_in": 4381000,
+  "tokens_out": 111000,
+  "cost_usd": 5.64,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 105
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 210
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 309
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 341
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 439
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 538
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 613
+   }
+  ],
+  "furthest_key": "viridian_forest",
+  "furthest_label": "Entered Viridian Forest",
+  "furthest_index": 6,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-03",
+  "blackouts": [],
+  "model": "DeepSeek V4",
+  "provider": "deepseek",
+  "family": "DeepSeek",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "deepseek-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-03",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 7000,
+  "tokens_in": 8764000,
+  "tokens_out": 113000,
+  "cost_usd": 4.3,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 78
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 121
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 215
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 255
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 353
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 417
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 513
+   }
+  ],
+  "furthest_key": "viridian_forest",
+  "furthest_label": "Entered Viridian Forest",
+  "furthest_index": 6,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-04",
+  "blackouts": [],
+  "model": "Qwen3.8 27B",
+  "provider": "ollama",
+  "family": "Qwen",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "ollama-local",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-04",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 13000,
+  "tokens_in": 9573000,
+  "tokens_out": 108000,
+  "cost_usd": 0,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 37
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 132
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 165
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 262
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 294
+   }
+  ],
+  "furthest_key": "got_parcel",
+  "furthest_label": "Got Oak's Parcel",
+  "furthest_index": 4,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-05",
+  "blackouts": [],
+  "model": "Gemma 4 12B",
+  "provider": "ollama",
+  "family": "Gemma",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "ollama-local",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-06",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 10000,
+  "tokens_in": 6035000,
+  "tokens_out": 63000,
+  "cost_usd": 0,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 65
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 149
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 248
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 331
+   }
+  ],
+  "furthest_key": "viridian_city",
+  "furthest_label": "Reached Viridian City",
+  "furthest_index": 3,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-06",
+  "blackouts": [],
+  "model": "Claude Sonnet 5",
+  "provider": "anthropic",
+  "family": "Claude",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "anthropic-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-05",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 7000,
+  "tokens_in": 4967000,
+  "tokens_out": 105000,
+  "cost_usd": 2.95,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 35
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 133
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 196
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 288
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 376
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 444
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 526
+   }
+  ],
+  "furthest_key": "viridian_forest",
+  "furthest_label": "Entered Viridian Forest",
+  "furthest_index": 6,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-07",
+  "blackouts": [],
+  "model": "Claude Haiku 4.5",
+  "provider": "anthropic",
+  "family": "Claude",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "anthropic-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-09",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 11000,
+  "tokens_in": 6786000,
+  "tokens_out": 84000,
+  "cost_usd": 4.03,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 44
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 131
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 209
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 239
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 349
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 383
+   }
+  ],
+  "furthest_key": "got_pokedex",
+  "furthest_label": "Got the Pok\u00e9dex",
+  "furthest_index": 5,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-08",
+  "blackouts": [],
+  "model": "Gemini 3.8 Flash",
+  "provider": "google",
+  "family": "Gemini",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "google-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-02",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 6000,
+  "tokens_in": 9989000,
+  "tokens_out": 79000,
+  "cost_usd": 4.35,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 33
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 69
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 128
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 213
+   }
+  ],
+  "furthest_key": "viridian_city",
+  "furthest_label": "Reached Viridian City",
+  "furthest_index": 3,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-09",
+  "blackouts": [],
+  "model": "Gemini 3.8 Pro",
+  "provider": "google",
+  "family": "Gemini",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "google-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-01",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 13000,
+  "tokens_in": 6911000,
+  "tokens_out": 61000,
+  "cost_usd": 4.13,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 61
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 135
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 245
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 314
+   }
+  ],
+  "furthest_key": "viridian_city",
+  "furthest_label": "Reached Viridian City",
+  "furthest_index": 3,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-10",
+  "blackouts": [],
+  "model": "GPT-6 Mini",
+  "provider": "openai",
+  "family": "GPT",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "openai-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-03",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 9000,
+  "tokens_in": 7259000,
+  "tokens_out": 90000,
+  "cost_usd": 5.99,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 32
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 84
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 145
+   }
+  ],
+  "furthest_key": "route_1",
+  "furthest_label": "Reached Route 1",
+  "furthest_index": 2,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-11",
+  "blackouts": [],
+  "model": "Llama 5 70B",
+  "provider": "meta",
+  "family": "Llama",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "meta-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-07",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 14000,
+  "tokens_in": 6276000,
+  "tokens_out": 57000,
+  "cost_usd": 5.4,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 35
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 81
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 163
+   }
+  ],
+  "furthest_key": "route_1",
+  "furthest_label": "Reached Route 1",
+  "furthest_index": 2,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-12",
+  "blackouts": [],
+  "model": "Mistral Medium 4",
+  "provider": "mistral",
+  "family": "Mistral",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "mistral-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-03",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 9000,
+  "tokens_in": 9394000,
+  "tokens_out": 69000,
+  "cost_usd": 0.47,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 78
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 148
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 221
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 275
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 319
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 354
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 401
+   }
+  ],
+  "furthest_key": "viridian_forest",
+  "furthest_label": "Entered Viridian Forest",
+  "furthest_index": 6,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-13",
+  "blackouts": [],
+  "model": "Kimi K3",
+  "provider": "moonshot",
+  "family": "Kimi",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "moonshot-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-06",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 8000,
+  "tokens_in": 9656000,
+  "tokens_out": 105000,
+  "cost_usd": 6.2,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 58
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 119
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 144
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 187
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 265
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 358
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 430
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 533
+   }
+  ],
+  "furthest_key": "pewter_city",
+  "furthest_label": "Reached Pewter City",
+  "furthest_index": 7,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-14",
+  "blackouts": [],
+  "model": "Phi 5",
+  "provider": "microsoft",
+  "family": "Phi",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "microsoft-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-01",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 786,
+  "wall_time_s": 7074,
+  "tokens_in": 3577086,
+  "tokens_out": 51876,
+  "cost_usd": 3.09,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 83
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 179
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 254
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 329
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 405
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 480
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 518
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 604
+   },
+   {
+    "key": "pewter_gym",
+    "label": "Entered Brock's Gym",
+    "turn": 710
+   },
+   {
+    "key": "beat_brock",
+    "label": "Beat Brock (Boulder Badge)",
+    "turn": 786
+   }
+  ],
+  "furthest_key": "beat_brock",
+  "furthest_label": "Beat Brock (Boulder Badge)",
+  "furthest_index": 9,
+  "beat_brock": true,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-15",
+  "blackouts": [],
+  "model": "Grok 4.5",
+  "provider": "xai",
+  "family": "Grok",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "xai-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-06",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 6000,
+  "tokens_in": 4576000,
+  "tokens_out": 66000,
+  "cost_usd": 4.15,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 68
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 169
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 200
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 238
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 263
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 360
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 404
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 497
+   },
+   {
+    "key": "pewter_gym",
+    "label": "Entered Brock's Gym",
+    "turn": 534
+   }
+  ],
+  "furthest_key": "pewter_gym",
+  "furthest_label": "Entered Brock's Gym",
+  "furthest_index": 8,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-16",
+  "blackouts": [],
+  "model": "Nex N2.5 Mini",
+  "provider": "nex",
+  "family": "Nex",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "nex-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-08",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 13000,
+  "tokens_in": 7963000,
+  "tokens_out": 79000,
+  "cost_usd": 0.92,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 106
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 163
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 232
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 334
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 405
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 490
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 530
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 569
+   },
+   {
+    "key": "pewter_gym",
+    "label": "Entered Brock's Gym",
+    "turn": 656
+   }
+  ],
+  "furthest_key": "pewter_gym",
+  "furthest_label": "Entered Brock's Gym",
+  "furthest_index": 8,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-17",
+  "blackouts": [],
+  "model": "Yi 2 Large",
+  "provider": "01ai",
+  "family": "Yi",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "01ai-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-03",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 14000,
+  "tokens_in": 11488000,
+  "tokens_out": 43000,
+  "cost_usd": 5.02,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 68
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 126
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 212
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 257
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 348
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 375
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 426
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 518
+   },
+   {
+    "key": "pewter_gym",
+    "label": "Entered Brock's Gym",
+    "turn": 589
+   }
+  ],
+  "furthest_key": "pewter_gym",
+  "furthest_label": "Entered Brock's Gym",
+  "furthest_index": 8,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-18",
+  "blackouts": [],
+  "model": "Command R9",
+  "provider": "cohere",
+  "family": "Command",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "cohere-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-04",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 14000,
+  "tokens_in": 8436000,
+  "tokens_out": 104000,
+  "cost_usd": 2.41,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 107
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 143
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 201
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 292
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 363
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 409
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 479
+   }
+  ],
+  "furthest_key": "viridian_forest",
+  "furthest_label": "Entered Viridian Forest",
+  "furthest_index": 6,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-19",
+  "blackouts": [],
+  "model": "Ornith 9B",
+  "provider": "ollama",
+  "family": "Ornith",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "ollama-local",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-08",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 11000,
+  "tokens_in": 9988000,
+  "tokens_out": 43000,
+  "cost_usd": 0,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 103
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 152
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 207
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 283
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 337
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 387
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 478
+   }
+  ],
+  "furthest_key": "viridian_forest",
+  "furthest_label": "Entered Viridian Forest",
+  "furthest_index": 6,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-20",
+  "blackouts": [],
+  "model": "Qwen3.8 27B",
+  "provider": "ollama",
+  "family": "Qwen",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "ollama-local",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-04",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 680,
+  "wall_time_s": 4760,
+  "tokens_in": 3983440,
+  "tokens_out": 68000,
+  "cost_usd": 0,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 60
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 145
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 203
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 252
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 354
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 423
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 505
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 574
+   },
+   {
+    "key": "pewter_gym",
+    "label": "Entered Brock's Gym",
+    "turn": 645
+   },
+   {
+    "key": "beat_brock",
+    "label": "Beat Brock (Boulder Badge)",
+    "turn": 680
+   }
+  ],
+  "furthest_key": "beat_brock",
+  "furthest_label": "Beat Brock (Boulder Badge)",
+  "furthest_index": 9,
+  "beat_brock": true,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-21",
+  "blackouts": [],
+  "model": "Gemini 3.8 Flash",
+  "provider": "google",
+  "family": "Gemini",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "google-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-06",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 7000,
+  "tokens_in": 10837000,
+  "tokens_out": 55000,
+  "cost_usd": 5.95,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 68
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 119
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 205
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 309
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 412
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 437
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 523
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 631
+   }
+  ],
+  "furthest_key": "pewter_city",
+  "furthest_label": "Reached Pewter City",
+  "furthest_index": 7,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-22",
+  "blackouts": [],
+  "model": "Claude Opus 5",
+  "provider": "anthropic",
+  "family": "Claude",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "anthropic-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-07",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 7000,
+  "tokens_in": 9937000,
+  "tokens_out": 60000,
+  "cost_usd": 1.44,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 86
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 133
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 213
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 319
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 386
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 422
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 497
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 581
+   }
+  ],
+  "furthest_key": "pewter_city",
+  "furthest_label": "Reached Pewter City",
+  "furthest_index": 7,
+  "beat_brock": false,
+  "in_progress": false
+ },
+ {
+  "run_id": "sample-23",
+  "blackouts": [],
+  "model": "GPT-6",
+  "provider": "openai",
+  "family": "GPT",
+  "run_name": "Illustrative sample",
+  "prompt_version": "sample-red-v1",
+  "execution_route": "openai-api",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "run_date": "2026-09-06",
+  "model_params": null,
+  "quant": null,
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "wall_time_s": 8000,
+  "tokens_in": 8494000,
+  "tokens_out": 110000,
+  "cost_usd": 1.2,
+  "youtube_url": null,
+  "timestamp": "20260908_120000",
+  "milestones": [
+   {
+    "key": "left_house",
+    "label": "Left the house",
+    "turn": 28
+   },
+   {
+    "key": "got_starter",
+    "label": "Got a starter",
+    "turn": 72
+   },
+   {
+    "key": "route_1",
+    "label": "Reached Route 1",
+    "turn": 172
+   },
+   {
+    "key": "viridian_city",
+    "label": "Reached Viridian City",
+    "turn": 256
+   },
+   {
+    "key": "got_parcel",
+    "label": "Got Oak's Parcel",
+    "turn": 364
+   },
+   {
+    "key": "got_pokedex",
+    "label": "Got the Pok\u00e9dex",
+    "turn": 407
+   },
+   {
+    "key": "viridian_forest",
+    "label": "Entered Viridian Forest",
+    "turn": 510
+   },
+   {
+    "key": "pewter_city",
+    "label": "Reached Pewter City",
+    "turn": 611
+   },
+   {
+    "key": "pewter_gym",
+    "label": "Entered Brock's Gym",
+    "turn": 696
+   }
+  ],
+  "furthest_key": "pewter_gym",
+  "furthest_label": "Entered Brock's Gym",
+  "furthest_index": 8,
+  "beat_brock": false,
+  "in_progress": false
+ }
+]

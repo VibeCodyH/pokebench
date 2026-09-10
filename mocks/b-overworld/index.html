@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#2dd4bf">
+<title>PokéBench · Overworld (mock B)</title>
+<style>
+:root {
+  --ink: #101c20; --paper: #f8f7eb; --teal: #2dd4bf; --blue: #38bdf8;
+  --cyan: #00f0f0; --gold: #ffce52; --red: #ff7661; --muted: #506157;
+  --mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --header: 76px; --banner: 40px;
+  --pallet: #c8df9f; --route: #c6dc90; --viridian: #b4dfab; --forest: #80b879; --pewter: #c4dda4; --gym: #38443c;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 14px/1.6 var(--sans); }
+button, select { font: inherit; color: inherit; }
+button { cursor: pointer; touch-action: manipulation; }
+a { color: inherit; }
+h1, h2, h3, p, dl, dd, ol, ul { margin: 0; }
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 3px solid #008577; outline-offset: 3px; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.skip { position: fixed; top: -100px; left: 16px; padding: 12px 18px; background: var(--teal); z-index: 100; border: 3px solid var(--ink); font-weight: 800; }
+.skip:focus { top: 12px; }
+
+/* masthead, reproduced from site/styles.css */
+.masthead { min-height: var(--header); position: sticky; top: 0; z-index: 30; background: var(--paper); border-bottom: 3px solid var(--ink); display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 24px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; flex: none; }
+.brand-mark { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; }
+.wordmark { display: block; font: 950 22px/1.1 var(--mono); letter-spacing: -1.2px; }
+.wordmark > span { color: #008577; }
+.tagline { display: block; font-size: 9px; color: #4b5c53; margin-top: 4px; }
+.socials { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.social-button { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--ink); background: #efe9cf; box-shadow: 3px 3px 0 var(--ink); color: var(--ink); }
+.social-icon { width: 14px; height: 14px; fill: currentColor; }
+.live-pill { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px 0 8px; border: 2px solid var(--ink); border-radius: 15px; background: #e9eade; box-shadow: 3px 3px 0 var(--ink); font: 900 10px var(--mono); letter-spacing: 1px; color: #4b5c53; text-decoration: none; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #8f9a92; }
+.sample-banner { min-height: var(--banner); display: flex; gap: 16px; align-items: center; justify-content: center; padding: 6px 16px; border-bottom: 2px solid var(--ink); background: var(--gold); font: 800 11px/1.5 var(--mono); position: sticky; top: var(--header); z-index: 29; text-align: center; }
+.sample-badge { padding: 2px 6px; border: 1px dashed currentColor; font: 800 9px/1.5 var(--mono); white-space: nowrap; }
+
+/* layout: fixed rail | scrolling map | drawer overlay */
+.layout { display: grid; grid-template-columns: 200px minmax(0,1fr); align-items: start; }
+.rail { position: sticky; top: calc(var(--header) + var(--banner)); height: calc(100svh - var(--header) - var(--banner)); overflow-y: auto; border-right: 3px solid var(--ink); background: #eef1e3; padding: 14px 10px; z-index: 10; }
+.rail-heading { font: 850 10px/1.5 var(--mono); letter-spacing: .07em; padding: 0 4px; }
+#rail-here { font: 700 10px/1.5 var(--mono); color: #34492f; margin: 4px 4px 10px; padding: 6px 7px; background: #dbe7cd; border: 1px solid #9db08d; border-radius: 4px; }
+.rail-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 3px; }
+.rung-btn { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 5px 7px; border: 1px solid transparent; border-radius: 5px; background: transparent; text-align: left; font: 750 10px/1.3 var(--mono); }
+.rung-btn:hover { background: #dfead6; }
+.rung-btn .rung-num { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border: 1px solid #86927e; background: var(--paper); font: 800 10px var(--mono); border-radius: 3px; }
+.rung-btn .rung-count { margin-left: auto; color: var(--muted); font-size: 9px; }
+.rung-btn.in-view { background: var(--ink); color: var(--paper); }
+.rung-btn.in-view .rung-num { background: var(--teal); color: var(--ink); border-color: var(--teal); }
+.rung-btn[aria-pressed="true"] { border-color: var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.rung-btn[aria-pressed="true"] .rung-num { background: var(--gold); border-color: var(--ink); }
+.rail-foot { font: 650 8px/1.4 var(--mono); color: #506451; margin: 10px 4px 0; padding-top: 8px; border-top: 1px solid #b8c5af; }
+.rail-clear { margin: 8px 4px 0; font: 800 9px/1.5 var(--mono); background: transparent; border: 0; text-decoration: underline; padding: 4px 0; }
+
+.map-wrap { position: relative; }
+.map-scroll { position: relative; width: min(900px, 96%); margin: 0 auto; }
+.map-art { position: relative; width: 100%; aspect-ratio: 400 / 2500; overflow: hidden; border-left: 3px solid var(--ink); border-right: 3px solid var(--ink); }
+.map-art svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; shape-rendering: crispEdges; }
+.place-section { position: absolute; left: 0; width: 100%; pointer-events: none; }
+
+/* champion plaque board, mounted at the top on the gym */
+.plaque-board { position: relative; z-index: 3; margin: 18px auto 0; width: min(880px, 94%); background: #223228; border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); padding: 16px 18px 20px; color: var(--paper); }
+.plaque-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 2px solid #6c7a63; padding-bottom: 10px; font: 800 10px/1.5 var(--mono); letter-spacing: .05em; }
+.plaque-heading .gold-text { color: var(--gold); }
+.podium { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; margin-top: 14px; }
+.plaque-rows { list-style: none; padding: 0; margin: 12px 0 0; border-top: 1px dashed #5a6a52; }
+.plaque-rows li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 2px; border-bottom: 1px dashed #4a5a44; font: 700 11px/1.5 var(--mono); }
+.plaque-rows small { color: #c7d2b8; }
+.vacant-wall { padding: 16px; border: 2px dashed #7f9077; color: #e9edcd; font: 750 11px/1.6 var(--mono); }
+
+/* pin clusters */
+.cluster { position: absolute; transform: translate(-50%, -50%); z-index: 4; pointer-events: auto; }
+.cluster-toggle { display: flex; align-items: center; gap: 5px; min-height: 30px; padding: 4px 9px; border: 2px solid var(--ink); border-radius: 14px; background: #e5e8cb; box-shadow: 2px 2px 0 var(--ink); font: 850 10px/1 var(--mono); color: #173627; }
+.cluster-toggle .dot-count { background: var(--ink); color: var(--paper); border-radius: 50%; min-width: 17px; height: 17px; display: grid; place-items: center; font-size: 9px; padding: 0 3px; }
+.cluster.has-winner .cluster-toggle { background: var(--gold); }
+.cluster-chips { position: absolute; top: calc(100% + 6px); left: 50%; transform: translate(-50%, -6px); display: flex; flex-direction: column; gap: 4px; opacity: 0; pointer-events: none; transition: opacity .15s ease, transform .15s ease; z-index: 6; }
+.cluster:hover .cluster-chips, .cluster:focus-within .cluster-chips, .cluster.is-open .cluster-chips { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+.pin-chip { display: block; min-width: 150px; min-height: 34px; padding: 5px 9px; border: 2px solid var(--ink); border-radius: 5px; background: var(--paper); box-shadow: 2px 2px 0 var(--ink); font: 750 10px/1.3 var(--mono); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pin-chip.is-winner { background: #fff0bc; }
+.pin-chip.is-dimmed { opacity: .28; }
+.pin-chip small { display: block; color: var(--muted); font-size: 9px; }
+
+.place-label { position: absolute; z-index: 3; left: 14px; background: var(--ink); color: var(--paper); padding: 4px 8px; font: 800 9px/1.5 var(--mono); pointer-events: none; }
+
+/* drawer */
+.drawer-backdrop { position: fixed; inset: 0; background: #101c20b3; z-index: 39; opacity: 0; pointer-events: none; transition: opacity .18s; }
+.drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+.drawer { position: fixed; top: 0; right: 0; height: 100dvh; width: min(400px, 100%); background: var(--paper); border-left: 3px solid var(--ink); box-shadow: -6px 0 0 #101c2033; z-index: 40; transform: translateX(100%); transition: transform .2s ease; overflow-y: auto; }
+.drawer.open { transform: translateX(0); }
+.drawer-inner { padding: 16px; }
+.drawer-close { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border: 2px solid var(--ink); border-radius: 5px; background: var(--paper); font: 800 16px var(--mono); }
+
+/* run card */
+.run-card { color: var(--ink); border: 3px solid var(--ink); border-radius: 9px; box-shadow: 5px 6px 0 var(--ink); background: var(--paper); overflow: hidden; }
+.run-card.is-winner { box-shadow: 0 0 0 2px #ffe597, 6px 8px 0 #15221d; }
+.card-ribbon { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; padding: 6px 12px; background: var(--ink); color: #ffa48f; font: 850 9px/1.5 var(--mono); }
+.run-card.is-winner .card-ribbon { background: var(--gold); color: var(--ink); }
+.card-body { padding: 14px; }
+.model-name { font: 900 19px/1.25 var(--mono); letter-spacing: -.7px; }
+.provider { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.tag { display: inline-flex; padding: 2px 5px; border: 1px solid #748379; border-radius: 3px; font: 800 8px/1.5 var(--mono); }
+.tag.local { background: #d9edbf; }
+.tag.api { background: #cceef7; }
+.furthest { margin-top: 10px; font: 800 11px/1.6 var(--mono); }
+.furthest b { background: #dde8cc; padding: 3px 5px; margin-right: 4px; }
+.run-card.is-winner .furthest b { background: #f9df8b; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; margin: 12px 0 4px; border-block: 1px solid #bdc9b9; }
+.stats > div { padding: 8px 0; }
+.stats > div:nth-child(even) { padding-left: 12px; border-left: 1px solid #bdc9b9; }
+.stats > div:nth-child(n+3) { border-top: 1px solid #bdc9b9; }
+.stats dt { font: 750 8px/1.5 var(--mono); color: var(--muted); }
+.stats dd { font: 850 15px/1.5 var(--mono); }
+.free { color: #096b52; }
+.flip-btn { display: inline-flex; gap: 8px; align-items: center; justify-content: center; min-height: 38px; width: 100%; margin-top: 12px; border: 2px solid var(--ink); border-radius: 5px; padding: 7px 11px; color: var(--paper); background: var(--ink); font: 800 10px/1.5 var(--mono); }
+.flip-btn:hover { background: #294238; }
+
+/* ladder replay (card back) */
+.replay { padding: 14px; }
+.replay-heading { display: flex; justify-content: space-between; align-items: center; font: 850 11px/1.5 var(--mono); margin-bottom: 4px; }
+.replay-turns { font: 800 13px/1.5 var(--mono); background: #e3ecd5; border: 1px solid #9db08d; border-radius: 4px; padding: 6px 8px; margin: 8px 0 12px; text-align: center; }
+.replay-turns b { font-size: 17px; }
+.ladder-track { position: relative; display: flex; flex-direction: column-reverse; gap: 3px; padding-left: 30px; }
+.ladder-rung { position: relative; display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 4px 6px; border-radius: 4px; font: 750 10px/1.3 var(--mono); color: #798170; }
+.ladder-rung .rung-num { width: 20px; height: 20px; flex: none; display: grid; place-items: center; border: 1px solid #86927e; background: var(--paper); font: 800 9px var(--mono); border-radius: 3px; }
+.ladder-rung.is-reached { color: var(--ink); background: #d8ebd0; }
+.ladder-rung.is-reached .rung-num { background: var(--teal); border-color: var(--teal); }
+.ladder-rung.is-furthest { background: #f5e3aa; }
+.ladder-rung .rung-turn { margin-left: auto; font-size: 9px; color: var(--muted); }
+.ladder-sprite { position: absolute; left: -30px; width: 22px; height: 22px; display: grid; place-items: center; transition: bottom .32s ease; }
+.ladder-sprite svg { width: 18px; height: 18px; }
+.flag-icon, .trophy-icon { width: 16px; height: 16px; flex: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: .001ms !important; animation: none !important; }
+  html { scroll-behavior: auto; }
+}
+
+@media (max-width: 700px) {
+  .layout { grid-template-columns: 1fr; }
+  .rail { position: sticky; top: calc(var(--header) + var(--banner)); height: auto; max-height: none; width: 100%; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 3px solid var(--ink); padding: 8px 8px; z-index: 15; }
+  .rail-heading, #rail-here, .rail-foot { display: none; }
+  .rail-list { flex-direction: row; gap: 6px; }
+  .rung-btn { flex-direction: column; gap: 2px; width: auto; min-width: 52px; padding: 5px 4px; }
+  .rung-btn .rung-count { margin-left: 0; }
+  .rail-clear { margin: 0 0 0 4px; white-space: nowrap; }
+  .drawer { width: 100%; top: auto; bottom: 0; height: min(88dvh, 640px); border-left: 0; border-top: 3px solid var(--ink); border-radius: 12px 12px 0 0; transform: translateY(100%); }
+  .drawer.open { transform: translateY(0); }
+  .podium { grid-template-columns: 1fr; }
+  .pin-chip { min-width: 130px; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#map-main">Skip to the map</a>
+<header class="masthead">
+  <a class="brand" href="#" aria-label="PokéBench, back to top">
+    <img src="../pokebench-logo.png" width="40" height="40" alt="" class="brand-mark">
+    <span><span class="wordmark">PokéBench<span>_</span></span><span class="tagline">Billions of parameters vs. one old man.</span></span>
+  </a>
+  <div class="socials">
+    <a id="live-pill" class="live-pill" href="https://www.twitch.tv/pokebenchtv" target="_blank" rel="noopener" title="PokeBenchTV on Twitch"><span class="live-dot" aria-hidden="true"></span><span>OFFLINE</span></a>
+    <a class="social-button" href="https://www.twitch.tv/pokebenchtv" target="_blank" rel="noopener" aria-label="PokéBench on Twitch" title="Twitch"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg></a>
+    <a class="social-button" href="https://x.com/PokeBenchTV" target="_blank" rel="noopener" aria-label="PokéBench on X" title="X"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg></a>
+  </div>
+</header>
+<div class="sample-banner"><strong>SAMPLE DATA — not real results</strong><span class="sample-badge">ILLUSTRATIVE DATA</span></div>
+<p id="card-flip-help" class="sr-only">Press the flip button to toggle between run results and the journey replay. Escape closes the drawer.</p>
+
+<div class="layout">
+  <nav class="rail" aria-label="Journey milestones and rung filter">
+    <p class="rail-heading">YOU ARE HERE</p>
+    <p id="rail-here">Loading the field…</p>
+    <ol class="rail-list" id="rail-list" reversed></ol>
+    <button class="rail-clear" id="rail-clear" hidden>Clear filter ×</button>
+    <p class="rail-foot">Click a rung to dim runs that never reached it. BEST ↑ · START ↓</p>
+  </nav>
+
+  <main id="map-main" class="map-wrap" aria-label="Overworld map of every run">
+    <div id="data-state" role="status" aria-live="polite" style="padding:40px 20px;text-align:center;font:750 12px var(--mono);">Loading the field…</div>
+    <div class="map-scroll" id="map-scroll" hidden>
+      <div class="plaque-board" id="plaque-board">
+        <div class="plaque-heading"><span>THE CHAMPIONSHIP WALL</span><span id="gym-tally" class="gold-text">— / — BEAT BROCK</span></div>
+        <div class="podium" id="podium"></div>
+        <ol class="plaque-rows" id="plaque-rows"></ol>
+      </div>
+      <div class="map-art" id="map-art"></div>
+    </div>
+  </main>
+</div>
+
+<div class="drawer-backdrop" id="drawer-backdrop"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drawer-title" role="dialog" aria-describedby="card-flip-help">
+  <div class="drawer-inner">
+    <button class="drawer-close" id="drawer-close" aria-label="Close run details">×</button>
+    <h2 id="drawer-title" class="sr-only">Run details</h2>
+    <div id="drawer-body"></div>
+  </div>
+</aside>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="art-trainer" viewBox="0 0 32 48"><path d="M8 4h16v4h5v9H4V9h4z" fill="#e9765d"/><path d="M9 5h11v4H9z" fill="#ffd2a0"/><path d="M9 17h17v12H9z" fill="#edc18e"/><path d="M7 18h6v9H7z" fill="#334b47"/><path d="M7 29h18v11H7z" fill="#d7d9b4"/></symbol>
+  <symbol id="art-flag" viewBox="0 0 24 24"><path d="M5 2h2v20H5z" fill="#334746"/><path d="M7 3h13l-4 5 4 5H7z" fill="#ff7661"/></symbol>
+  <symbol id="art-trophy" viewBox="0 0 32 37"><path d="M7 3h18v4h6v12h-5v5h-8v6h7v5H7v-5h7v-6H6v-5H1V7h6z" fill="#172a24"/><path d="M9 5h14v13l-4 4h-6l-4-4z" fill="#fff0a4"/><path d="M16 5h7v13l-4 4h-3z" fill="#d89125"/></symbol>
+</defs></svg>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const finite = v => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+const number = v => finite(v) ? v.toLocaleString('en-US') : '—';
+const local = run => String(run.provider || '').toLowerCase().includes('ollama');
+const won = run => run.furthest_index === 9;
+const price = run => local(run) ? 'FREE' : finite(run.cost_usd) ? '$' + run.cost_usd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: run.cost_usd > 0 && run.cost_usd < .01 ? 6 : 2}) : '—';
+const tokensSum = run => finite(run.tokens_in) && finite(run.tokens_out) ? run.tokens_in + run.tokens_out : null;
+const timeFmt = seconds => {
+  if (!finite(seconds)) return '—';
+  const s = Math.round(seconds), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+  return h ? `${h}h ${m}m` : m ? `${m}m ${s % 60}s` : `${s}s`;
+};
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+// The real Gen-1 ladder, 10 rungs grouped into 6 places (shared.md, not the site's grouping).
+const milestoneList = [
+  {key:'left_house', label:'Left the house', short:'Left house'},
+  {key:'got_starter', label:'Got a starter', short:'Got starter'},
+  {key:'route_1', label:'Reached Route 1', short:'Route 1'},
+  {key:'viridian_city', label:'Reached Viridian City', short:'Viridian City'},
+  {key:'got_parcel', label:"Got Oak's Parcel", short:'Parcel'},
+  {key:'got_pokedex', label:'Got the Pokédex', short:'Pokédex'},
+  {key:'viridian_forest', label:'Entered Viridian Forest', short:'Forest'},
+  {key:'pewter_city', label:'Reached Pewter City', short:'Pewter City'},
+  {key:'pewter_gym', label:"Entered Brock's Gym", short:'Entered gym'},
+  {key:'beat_brock', label:'Beat Brock (Boulder Badge)', short:'Beat Brock'}
+];
+// Places top (Gym) to bottom (Pallet) of the map, matching variant B's geography.
+const places = [
+  {id:'gym', name:"Brock's Gym", rungs:[9,8], band:[0,330], ground:'var(--gym)'},
+  {id:'pewter', name:'Pewter City', rungs:[7], band:[330,730], ground:'var(--pewter)'},
+  {id:'forest', name:'Viridian Forest', rungs:[6], band:[730,1230], ground:'var(--forest)'},
+  {id:'viridian', name:'Viridian City', rungs:[4,3], band:[1230,1650], ground:'var(--viridian)'},
+  {id:'route1', name:'Route 1', rungs:[2], band:[1650,2010], ground:'var(--route)'},
+  {id:'pallet', name:'Pallet Town', rungs:[5,1,0], band:[2010,2500], ground:'var(--pallet)'}
+];
+const MAP_H = 2500, MAP_W = 400;
+const placeForRun = run => places.find(p => p.rungs.includes(run.furthest_index)) || places[places.length - 1];
+const rankSort = (a, b) => b.furthest_index - a.furthest_index || (a.turns_used - b.turns_used) || String(a.model).localeCompare(String(b.model));
+
+let RUNS = [];
+let activeFilter = null;
+let lastFocused = null;
+
+function ladder(run) {
+  return milestoneList.map((m, i) => {
+    const rec = run.milestones.find(x => x.key === m.key);
+    return {...m, idx: i, reached: i <= run.furthest_index, turn: rec ? rec.turn : null};
+  });
+}
+
+function statsBlock(run) {
+  return `<dl class="stats"><div><dt>TURNS</dt><dd>${number(run.turns_used)} <small>/ ${number(run.budget_turns)}</small></dd></div>
+    <div><dt>TOKENS · IN + OUT</dt><dd>${number(tokensSum(run))}</dd></div>
+    <div><dt>COST</dt><dd class="${local(run) ? 'free' : ''}">${price(run)}</dd></div>
+    <div><dt>TIME</dt><dd>${timeFmt(run.wall_time_s)}</dd></div></dl>`;
+}
+
+function cardFront(run) {
+  const label = milestoneList[run.furthest_index]?.label || 'No milestone reached';
+  return `<article class="run-card ${won(run) ? 'is-winner' : ''}">
+    <div class="card-ribbon"><span>${won(run) ? '🏆 BADGE EARNED' : '× STUCK HERE'}</span><span class="sample-badge">SAMPLE</span></div>
+    <div class="card-body">
+      <h3 class="model-name">${escapeHtml(run.model)}</h3>
+      <p class="provider">${escapeHtml(run.provider)}</p>
+      <div class="card-tags"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="tag">${escapeHtml(run.family)}</span><span class="tag">GEN 1 · RED</span></div>
+      <p class="furthest"><b>${run.furthest_index + 1}/10</b> ${escapeHtml(label)}</p>
+      ${statsBlock(run)}
+      <button class="flip-btn" data-flip="back" aria-label="Flip to journey replay">↻ Flip for the journey replay</button>
+    </div></article>`;
+}
+
+function cardBack(run) {
+  const rungs = ladder(run);
+  const rows = rungs.slice().reverse().map(r => {
+    const isFurthest = r === rungs[run.furthest_index];
+    return `<li class="ladder-rung ${r.reached ? 'is-reached' : ''} ${isFurthest ? 'is-furthest' : ''}" data-rung="${r.idx}">
+      <span class="rung-num">${r.idx + 1}</span><span>${escapeHtml(r.short)}</span>
+      <span class="rung-turn">${r.reached && finite(r.turn) ? 'T' + number(r.turn) : r.reached ? 'T?' : '—'}</span></li>`;
+  }).join('');
+  return `<article class="run-card ${won(run) ? 'is-winner' : ''}">
+    <div class="card-ribbon"><span>${escapeHtml(run.model)} · Journey</span><button class="flip-btn" style="width:auto;min-height:28px;margin:0;padding:4px 8px" data-flip="front" aria-label="Flip back to results">Front ↶</button></div>
+    <div class="replay">
+      <div class="replay-heading"><span>THE LADDER</span><span style="color:var(--muted);font-size:9px">RUNGS 1–10</span></div>
+      <div class="replay-turns">Turn <b id="replay-turn-counter">0</b> / ${number(run.turns_used)}</div>
+      <div class="ladder-track" id="ladder-track" style="height:${rungs.length * 33}px">
+        <div class="ladder-sprite" id="ladder-sprite" style="bottom:0" aria-hidden="true"><svg viewBox="0 0 32 48"><use href="#art-trainer"/></svg></div>
+        <ol style="list-style:none;padding:0;margin:0;display:contents">${rows}</ol>
+      </div>
+    </div></article>`;
+}
+
+function runReplay(run, drawerBody) {
+  const track = drawerBody.querySelector('#ladder-track');
+  const sprite = drawerBody.querySelector('#ladder-sprite');
+  const counter = drawerBody.querySelector('#replay-turn-counter');
+  const rows = [...drawerBody.querySelectorAll('.ladder-rung')];
+  const rungHeight = 33;
+  const finish = () => {
+    counter.textContent = number(run.turns_used);
+    sprite.style.bottom = (run.furthest_index * rungHeight) + 'px';
+    sprite.innerHTML = won(run)
+      ? '<svg viewBox="0 0 32 37"><use href="#art-trophy"/></svg>'
+      : '<svg viewBox="0 0 24 24"><use href="#art-flag"/></svg>';
+  };
+  if (reduced.matches) { finish(); return; }
+  let i = 0;
+  sprite.style.bottom = '0px';
+  counter.textContent = '0';
+  const step = () => {
+    if (i > run.furthest_index) { finish(); return; }
+    const row = rows.find(r => Number(r.dataset.rung) === i);
+    const turn = row ? row.querySelector('.rung-turn').textContent.replace('T', '') : run.turns_used;
+    sprite.style.bottom = (i * rungHeight) + 'px';
+    counter.textContent = /^\d/.test(turn) ? turn : number(run.turns_used);
+    i += 1;
+    setTimeout(step, 380);
+  };
+  step();
+}
+
+function openDrawer(run, triggerEl) {
+  lastFocused = triggerEl || document.activeElement;
+  const drawer = $('drawer'), body = $('drawer-body');
+  body.dataset.uid = run.uid;
+  body.innerHTML = cardFront(run);
+  $('drawer-backdrop').classList.add('open');
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  drawer.querySelector('.flip-btn').addEventListener('click', () => flip(run, body));
+  requestAnimationFrame(() => $('drawer-close').focus());
+  document.addEventListener('keydown', onDrawerKeydown);
+}
+
+function flip(run, body) {
+  if (body.dataset.side !== 'back') {
+    body.dataset.side = 'back';
+    body.innerHTML = cardBack(run);
+    body.querySelector('[data-flip="front"]').addEventListener('click', () => flip(run, body));
+    runReplay(run, body);
+  } else {
+    body.dataset.side = 'front';
+    body.innerHTML = cardFront(run);
+    body.querySelector('[data-flip="back"]').addEventListener('click', () => flip(run, body));
+  }
+}
+
+function closeDrawer() {
+  const drawer = $('drawer');
+  if (!drawer.classList.contains('open')) return;
+  drawer.classList.remove('open');
+  drawer.setAttribute('aria-hidden', 'true');
+  $('drawer-backdrop').classList.remove('open');
+  document.removeEventListener('keydown', onDrawerKeydown);
+  if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
+}
+
+function onDrawerKeydown(e) {
+  const drawer = $('drawer');
+  if (e.key === 'Escape') { closeDrawer(); return; }
+  if (e.key !== 'Tab') return;
+  const focusables = [...drawer.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])')].filter(el => el.offsetParent !== null);
+  if (!focusables.length) return;
+  const first = focusables[0], last = focusables[focusables.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
+
+$('drawer-close').addEventListener('click', closeDrawer);
+$('drawer-backdrop').addEventListener('click', closeDrawer);
+
+// --- map art (simple pixel-ish placeholder scenery, kept light on purpose) ---
+function rect(x, y, w, h, fill) { return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`; }
+function tree(x, y, s = 1) {
+  return `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-3" y="10" width="6" height="14" fill="#5a4632"/><path d="M-16 12 L0 -22 L16 12 Z" fill="#2e6b4f"/><path d="M-12 6 L0 -14 L12 6 Z" fill="#3f8a63"/></g>`;
+}
+function building(x, y, w, h, roof, wall) {
+  return `<g><rect x="${x}" y="${y + h * 0.35}" width="${w}" height="${h * 0.65}" fill="${wall}"/><path d="M${x - 4} ${y + h * 0.38} L${x + w / 2} ${y} L${x + w + 4} ${y + h * 0.38} Z" fill="${roof}"/></g>`;
+}
+function water(x, y, w, h) {
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#58b8be"/>` +
+    Array.from({length: Math.max(1, Math.floor(w / 60))}, (_, i) => `<path class="ripple" d="M${x + i * 60 + 10} ${y + h * 0.4} q15 6 30 0 q15 -6 30 0" stroke="#caf0ee" stroke-width="3" fill="none" opacity=".6"/>`).join('');
+}
+function tallGrass(x, y, cols, rows, color = '#5f8f52') {
+  let out = '';
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) out += `<path d="M${x + c * 16} ${y + r * 14 + 10} v-10 M${x + c * 16 + 5} ${y + r * 14 + 10} v-7 M${x + c * 16 + 10} ${y + r * 14 + 10} v-9" stroke="${color}" stroke-width="2.5" fill="none"/>`;
+  return out;
+}
+
+function bandArt(place) {
+  const [y0, y1] = place.band, h = y1 - y0, midX = MAP_W / 2;
+  switch (place.id) {
+    case 'gym':
+      return building(midX - 60, y0 + h * 0.3, 120, h * 0.55, '#8fa78a', '#5a6a56') + tallGrass(20, y0 + h * 0.75, 4, 2) + tallGrass(320, y0 + h * 0.75, 4, 2);
+    case 'pewter':
+      return building(60, y0 + h * 0.25, 70, 90, '#b98a5c', '#e9dcae') + building(midX + 40, y0 + h * 0.55, 80, 95, '#8fa78a', '#dfe6cf') + tree(320, y0 + 40, .9) + tree(30, y0 + 130, .8);
+    case 'forest':
+      return Array.from({length: 14}, (_, i) => tree(20 + (i % 4) * 100 + (i % 2) * 25, y0 + 30 + Math.floor(i / 4) * 130, .85 + (i % 3) * .1)).join('') + tallGrass(160, y0 + h - 40, 6, 2, '#3f6b4a');
+    case 'viridian':
+      return building(70, y0 + 40, 90, 90, '#c69a6a', '#f2e6bf') + building(midX + 50, y0 + h * 0.5, 90, 90, '#8fa78a', '#dfe6cf') + tree(340, y0 + 20, .8) + tree(20, y0 + h - 60, .8);
+    case 'route1':
+      return tallGrass(40, y0 + 40, 5, 3) + tallGrass(280, y0 + h * 0.5, 5, 3) + tree(30, y0 + h - 50, .9) + tree(350, y0 + 40, .9);
+    case 'pallet':
+      return building(70, y0 + 30, 90, 90, '#c69a6a', '#f2e6bf') + building(midX + 30, y0 + 90, 90, 90, '#8fa78a', '#dfe6cf') + tree(340, y0 + 20, .9) + tallGrass(30, y0 + h - 120, 3, 2) + water(0, y0 + h - 70, MAP_W, 70);
+    default: return '';
+  }
+}
+
+function trailPath() {
+  const pts = places.slice().reverse().map((p, i) => {
+    const [y0, y1] = p.band, x = 130 + (i % 2 === 0 ? 0 : 90);
+    return `${x},${(y0 + y1) / 2}`;
+  });
+  return pts.join(' L');
+}
+
+function renderMap() {
+  const bandRects = places.map(p => rect(0, p.band[0], MAP_W, p.band[1] - p.band[0], p.ground.startsWith('var') ? getComputedStyle(document.documentElement).getPropertyValue(p.ground.slice(4, -1)) : p.ground)).join('');
+  const art = places.map(p => `<g>${bandArt(p)}</g>`).join('');
+  const trail = `<path d="M${trailPath()}" fill="none" stroke="#a98a4f" stroke-width="14" stroke-linejoin="round" opacity=".85"/><path d="M${trailPath()}" fill="none" stroke="#e5cf91" stroke-width="8" stroke-linejoin="round"/>`;
+  $('map-art').innerHTML = `<svg viewBox="0 0 ${MAP_W} ${MAP_H}" preserveAspectRatio="xMidYMin slice" aria-hidden="true">${bandRects}${trail}${art}</svg>`;
+
+  // place labels + IntersectionObserver sentinels, positioned in real % of the art box.
+  const artEl = $('map-art');
+  places.forEach(p => {
+    const [y0, y1] = p.band;
+    const sentinel = document.createElement('div');
+    sentinel.className = 'place-section';
+    sentinel.dataset.place = p.id;
+    sentinel.style.top = (y0 / MAP_H * 100) + '%';
+    sentinel.style.height = ((y1 - y0) / MAP_H * 100) + '%';
+    artEl.appendChild(sentinel);
+    const label = document.createElement('div');
+    label.className = 'place-label';
+    label.style.top = (y0 / MAP_H * 100 + 1) + '%';
+    label.textContent = p.name.toUpperCase();
+    artEl.appendChild(label);
+  });
+}
+
+function keepChipsInViewport(chips) {
+  chips.style.transform = '';
+  const rect = chips.getBoundingClientRect(), pad = 8;
+  let shift = 0;
+  if (rect.left < pad) shift = pad - rect.left;
+  else if (rect.right > window.innerWidth - pad) shift = (window.innerWidth - pad) - rect.right;
+  if (shift) chips.style.transform = `translate(calc(-50% + ${shift}px), 0)`;
+}
+
+function renderClusters() {
+  const artEl = $('map-art');
+  places.forEach((p, pi) => {
+    const runs = RUNS.filter(r => placeForRun(r) === p).sort(rankSort);
+    if (!runs.length) return;
+    const [y0, y1] = p.band;
+    const cx = 50 + (pi % 2 === 0 ? -8 : 8);
+    const cy = (y0 + y1) / 2;
+    const cluster = document.createElement('div');
+    cluster.className = 'cluster' + (runs.some(won) ? ' has-winner' : '');
+    cluster.style.left = cx + '%';
+    cluster.style.top = (cy / MAP_H * 100) + '%';
+    const toggle = document.createElement('button');
+    toggle.className = 'cluster-toggle';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.innerHTML = `<span>${escapeHtml(p.name)}</span><span class="dot-count">${runs.length}</span>`;
+    cluster.appendChild(toggle);
+    const chips = document.createElement('div');
+    chips.className = 'cluster-chips';
+    toggle.addEventListener('click', () => {
+      const open = cluster.classList.toggle('is-open');
+      toggle.setAttribute('aria-expanded', String(open));
+      if (open) requestAnimationFrame(() => keepChipsInViewport(chips));
+    });
+    cluster.addEventListener('mouseenter', () => keepChipsInViewport(chips));
+    cluster.addEventListener('focusin', () => keepChipsInViewport(chips));
+    runs.forEach(run => {
+      const chip = document.createElement('button');
+      chip.className = 'pin-chip' + (won(run) ? ' is-winner' : '');
+      chip.dataset.uid = run.uid;
+      chip.dataset.furthest = run.furthest_index;
+      chip.innerHTML = `${escapeHtml(run.model)}<small>stopped turn ${number(run.turns_used)}</small>`;
+      chip.setAttribute('aria-label', `${run.model}, ${milestoneList[run.furthest_index]?.label}, open run details`);
+      chip.addEventListener('click', () => openDrawer(run, chip));
+      chips.appendChild(chip);
+    });
+    cluster.appendChild(chips);
+    artEl.appendChild(cluster);
+  });
+  document.addEventListener('click', e => {
+    if (e.target.closest('.cluster')) return;
+    document.querySelectorAll('.cluster.is-open').forEach(c => { c.classList.remove('is-open'); c.querySelector('.cluster-toggle').setAttribute('aria-expanded', 'false'); });
+  });
+}
+
+function renderPlaques() {
+  const winners = RUNS.filter(won).sort(rankSort);
+  $('gym-tally').textContent = `${winners.length} / ${RUNS.length} BEAT BROCK`;
+  if (!winners.length) {
+    $('podium').innerHTML = '';
+    $('plaque-rows').innerHTML = '<div class="vacant-wall">No champions recorded yet. Brock is keeping the wall warm.</div>';
+    return;
+  }
+  $('podium').innerHTML = winners.slice(0, 3).map(r => cardFront(r).replace('run-card', 'run-card podium-card')).join('');
+  $('podium').querySelectorAll('.podium-card .flip-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const uid = btn.closest('.podium-card').dataset.uid;
+    });
+  });
+  // wire podium clicks by re-querying runs (simpler than closures above)
+  [...$('podium').children].forEach((el, i) => {
+    const run = winners[i];
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', ev => { if (!ev.target.closest('.flip-btn')) openDrawer(run, el); });
+    el.querySelector('.flip-btn').addEventListener('click', () => openDrawer(run, el));
+  });
+  const rest = winners.slice(3);
+  $('plaque-rows').innerHTML = rest.length ? rest.map(r => `<li><button class="text-plaque" data-uid="${r.uid}" style="background:none;border:0;color:inherit;text-align:left;font:inherit;cursor:pointer;padding:0">${escapeHtml(r.model)} <small>· ${number(r.turns_used)} turns</small></button><small>#${winners.indexOf(r) + 1}</small></li>`).join('') : '';
+  $('plaque-rows').querySelectorAll('[data-uid]').forEach(btn => {
+    const run = RUNS.find(r => r.uid === btn.dataset.uid);
+    btn.addEventListener('click', () => openDrawer(run, btn));
+  });
+}
+
+function reachedCount(i) { return RUNS.filter(r => r.furthest_index >= i).length; }
+
+function renderRail() {
+  const list = $('rail-list');
+  list.innerHTML = milestoneList.map((m, i) => `<li><button class="rung-btn" data-rung="${i}" aria-pressed="false"><span class="rung-num">${i + 1}</span><span>${escapeHtml(m.short)}</span><span class="rung-count">${reachedCount(i)}</span></button></li>`).join('');
+  // Order top-to-bottom as rung 10 down to rung 1, matching the gym-at-top map.
+  [...list.children].reverse().forEach(li => list.appendChild(li));
+  list.querySelectorAll('.rung-btn').forEach(btn => btn.addEventListener('click', () => toggleFilter(Number(btn.dataset.rung), btn)));
+  $('rail-clear').addEventListener('click', () => clearFilter());
+}
+
+function toggleFilter(rung, btn) {
+  if (activeFilter === rung) { clearFilter(); return; }
+  activeFilter = rung;
+  document.querySelectorAll('.rung-btn').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.rung) === rung)));
+  document.querySelectorAll('.pin-chip').forEach(chip => chip.classList.toggle('is-dimmed', Number(chip.dataset.furthest) < rung));
+  $('rail-clear').hidden = false;
+}
+function clearFilter() {
+  activeFilter = null;
+  document.querySelectorAll('.rung-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  document.querySelectorAll('.pin-chip').forEach(chip => chip.classList.remove('is-dimmed'));
+  $('rail-clear').hidden = true;
+}
+
+function observePlaces() {
+  const sentinels = [...document.querySelectorAll('.place-section')];
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const place = places.find(p => p.id === entry.target.dataset.place);
+      if (place) {
+        $('rail-here').textContent = place.name;
+        document.querySelectorAll('.rung-btn').forEach(b => b.classList.toggle('in-view', place.rungs.includes(Number(b.dataset.rung))));
+      }
+    });
+  }, {rootMargin: '-40% 0px -40% 0px', threshold: 0});
+  sentinels.forEach(s => io.observe(s));
+}
+
+async function boot() {
+  try {
+    const res = await fetch('../mock-runs.json', {cache: 'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    RUNS = rows.map((r, i) => ({...r, uid: r.run_id || ('run-' + i)}));
+  } catch (err) {
+    $('data-state').textContent = 'Could not load mock-runs.json (' + err.message + ').';
+    return;
+  }
+  $('data-state').hidden = true;
+  $('map-scroll').hidden = false;
+  renderMap();
+  renderClusters();
+  renderPlaques();
+  renderRail();
+  observePlaces();
+  $('rail-here').textContent = "Brock's Gym";
+}
+boot();
+})();
+</script>
+</body>
+</html>

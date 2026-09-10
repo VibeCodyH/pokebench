@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>PokéBench · Board (mock C)</title>
+<link rel="icon" href="data:,">
+<style>
+:root {
+  --ink: #101c20; --paper: #f8f7eb; --teal: #2dd4bf; --blue: #38bdf8;
+  --cyan: #00f0f0; --gold: #ffce52; --red: #ff7661; --muted: #506157;
+  --mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --masthead-h: 74px; --banner-h: 40px; --sticky-top: 114px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 14px/1.6 var(--sans); }
+button, select, input { font: inherit; color: inherit; }
+button, a, select { touch-action: manipulation; }
+button, select { cursor: pointer; }
+button:disabled { cursor: default; opacity: .5; }
+h1, h2, h3, p, dl, dd, ul { margin: 0; }
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 3px solid #008577; outline-offset: 3px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+[hidden] { display: none !important; }
+.sprite-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+img, svg { image-rendering: pixelated; }
+.mono { font-family: var(--mono); }
+
+/* masthead */
+.masthead { position: sticky; top: 0; z-index: 40; background: var(--paper); border-bottom: 3px solid var(--ink); display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 13px 24px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: inherit; }
+.brand-mark { width: 40px; height: 40px; object-fit: contain; }
+.wordmark { display: block; font: 950 22px/1.1 var(--mono); letter-spacing: -1.2px; }
+.wordmark > span { color: #008577; }
+.tagline { display: block; font-size: 9px; color: #4b5c53; margin-top: 3px; }
+.socials { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.social-button { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--ink); background: #efe9cf; box-shadow: 3px 3px 0 var(--ink); color: var(--ink); }
+.social-button:hover { background: var(--gold); }
+.social-icon { width: 14px; height: 14px; fill: currentColor; }
+.live-pill { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px 0 9px; border: 2px solid var(--ink); border-radius: 15px; background: #e9eade; box-shadow: 3px 3px 0 var(--ink); font: 900 10px var(--mono); letter-spacing: 1px; color: #4b5c53; text-decoration: none; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #8f9a92; }
+
+/* sample banner */
+.sample-banner { position: sticky; top: var(--masthead-h); z-index: 39; display: flex; gap: 16px; align-items: center; justify-content: center; padding: 8px 18px; border-bottom: 2px solid var(--ink); background: var(--gold); font: 800 11px/1.5 var(--mono); flex-wrap: wrap; }
+.sample-badge { padding: 2px 6px; border: 1px dashed currentColor; font: 800 9px var(--mono); white-space: nowrap; }
+
+main { width: min(1180px, calc(100% - 40px)); margin-inline: auto; padding-bottom: 60px; }
+
+/* wall */
+.wall { padding: 30px 0 20px; }
+.wall-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 2px solid var(--ink); margin-bottom: 20px; }
+.wall-head h1 { font: 950 clamp(26px,3.4vw,42px)/1.1 var(--mono); letter-spacing: -1.3px; }
+.tally { font: 800 11px/1.5 var(--mono); background: var(--ink); color: var(--paper); padding: 6px 10px; }
+.podium { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; align-items: start; }
+.vacant { grid-column: 1/-1; padding: 24px; border: 2px dashed #77876c; background: #e7eddc; }
+.plaques { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.plaque-row { display: grid; grid-template-columns: 40px minmax(0,1.6fr) minmax(0,1fr) 90px 76px; gap: 12px; align-items: center; padding: 8px 12px; border: 1.5px solid #7c8b74; background: #eef1e2; font: 750 11px var(--mono); }
+.plaque-rank { font: 900 12px var(--mono); color: var(--muted); }
+.plaque-model { font-weight: 850; overflow-wrap: anywhere; }
+.plaque-provider { color: var(--muted); font-size: 10px; }
+.plaque-turns { text-align: right; }
+.plaque-cost { text-align: right; }
+.plaque-cost.free { color: #096b52; font-weight: 850; }
+
+/* run cards (shared: podium + expanded strip) */
+.run-card { color: var(--ink); text-align: left; perspective: 1400px; border-radius: 8px; max-width: 100%; }
+.card-inner { position: relative; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.2,.7,.2,1); }
+@media (prefers-reduced-motion: reduce) { .card-inner { transition: none; } }
+.run-card.is-flipped .card-inner { transform: rotateY(180deg); }
+.card-face { display: flex; flex-direction: column; background: var(--paper); border: 3px solid var(--ink); border-radius: 8px; box-shadow: 4px 5px 0 var(--ink); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.card-front { transform: rotateY(0deg); }
+.card-back { transform: rotateY(180deg); }
+.run-card:not(.is-flipped) .card-back { position: absolute; inset: 0; overflow: hidden; }
+.run-card.is-flipped .card-front { position: absolute; inset: 0; overflow: hidden; }
+.card-face[inert] { pointer-events: none; }
+.is-winner .card-face { border-color: #202b21; box-shadow: 0 0 0 2px #ffe597, 5px 7px 0 #15221d; }
+.card-ribbon { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 6px 10px; background: var(--ink); color: #ffa48f; font: 850 9px var(--mono); border-radius: 4px 4px 0 0; }
+.is-winner .card-ribbon { background: var(--gold); color: var(--ink); border-bottom: 2px solid var(--ink); }
+.card-ribbon .ribbon-status { display: inline-flex; align-items: center; gap: 5px; }
+.card-ribbon .card-rank { margin-left: auto; font: 900 10px var(--mono); }
+.card-ribbon .sample-badge { font-size: 7px; color: var(--paper); }
+.is-winner .card-ribbon .sample-badge { color: var(--ink); }
+.trophy-ic, .rank1-ic { width: 15px; height: 17px; flex: none; }
+.x-mark { color: var(--red); font: 900 14px var(--mono); }
+.card-close { margin-left: 4px; border: 0; background: transparent; color: inherit; font: 900 14px var(--mono); padding: 0 4px; line-height: 1; }
+.card-body { padding: 13px 14px 15px; flex: 1; }
+.model-name { font: 900 17px/1.25 var(--mono); letter-spacing: -.6px; }
+.provider { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.ingame-name { font: 700 10px var(--mono); color: var(--muted); margin-top: 3px; }
+.ingame-name b { color: #b3261e; }
+.ingame-name .rival { color: #1d4ed8; }
+.card-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+.tag { display: inline-flex; padding: 2px 5px; border: 1px solid #748379; border-radius: 3px; font: 800 8px var(--mono); }
+.tag.local { background: #d9edbf; }
+.tag.api { background: #cceef7; }
+.furthest { margin-top: 9px; font: 800 10px/1.6 var(--mono); }
+.furthest b { background: #dde8cc; padding: 2px 5px; margin-right: 4px; white-space: nowrap; }
+.is-winner .furthest b { background: #f9df8b; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; margin: 10px 0; border-block: 1px solid #bdc9b9; }
+.stats > div { padding: 7px 0; }
+.stats > div:nth-child(even) { padding-left: 10px; border-left: 1px solid #bdc9b9; }
+.stats > div:nth-child(n+3) { border-top: 1px solid #bdc9b9; }
+.stats dt { font: 750 7px var(--mono); color: var(--muted); }
+.stats dd { font: 850 13px var(--mono); }
+.free { color: #096b52; }
+.flip-btn, .replay-btn, .text-button { display: inline-flex; gap: 6px; align-items: center; justify-content: center; min-height: 32px; border: 2px solid var(--ink); border-radius: 5px; padding: 6px 10px; color: var(--paper); background: var(--ink); font: 800 9px var(--mono); margin-top: 10px; }
+.text-button { background: transparent; color: inherit; border: 0; text-decoration: underline; text-underline-offset: 3px; padding: 4px 0; margin: 0; min-height: 0; }
+.replay-btn { background: var(--paper); color: var(--ink); }
+
+/* ladder (journey replay, card back) */
+.replay-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; border-bottom: 2px solid var(--ink); background: var(--gold); }
+.replay-heading h3 { font: 850 10px var(--mono); }
+.is-winner .replay-heading, .card-ribbon.is-back { background: var(--gold); }
+.ladder { position: relative; padding-top: 38px; margin: 6px 0 4px; }
+.ladder-rungs { display: grid; grid-template-columns: repeat(10, 1fr); background: #e7eddb; border-block: 2px solid var(--ink); }
+.ladder-rung { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 1px 5px; border-right: 1px dotted #b3c1a8; min-width: 0; }
+.ladder-rung:last-child { border-right: 0; }
+.ladder-rung.lit { background: #d8ebd0; }
+.rung-ic { width: 16px; height: 16px; }
+.ladder-rung:not(.lit) .rung-ic { opacity: .32; filter: grayscale(1); }
+.rung-turn { font: 800 7px var(--mono); color: var(--muted); min-height: 10px; }
+.rung-name { font: 650 6px/1.2 var(--mono); color: var(--muted); text-align: center; }
+.rung-marker-slot { position: absolute; top: -32px; left: 50%; transform: translateX(-50%); }
+.ladder-marker { display: block; width: 20px; height: 24px; }
+.ladder-marker svg { width: 100%; height: 100%; }
+.ladder-sprite { position: absolute; top: 0; left: 0%; width: 18px; height: 30px; transform: translateX(-50%); pointer-events: none; }
+.ladder-sprite svg { width: 100%; height: 100%; }
+@media (prefers-reduced-motion: no-preference) {
+  .ladder-sprite.idle svg { animation: sprite-idle 1s steps(2) infinite alternate; }
+}
+@keyframes sprite-idle { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+.replay-readout { display: flex; align-items: center; gap: 6px; margin-top: 6px; font: 800 10px var(--mono); flex-wrap: wrap; }
+.counter { font: 900 15px var(--mono); font-variant-numeric: tabular-nums; }
+.counter-budget { color: var(--muted); font-size: 9px; }
+
+/* toolbar */
+.board { padding-top: 8px; }
+.toolbar { display: flex; gap: 16px; align-items: end; flex-wrap: wrap; padding: 16px 0; margin: 4px 0 10px; border-block: 2px solid var(--ink); }
+.field { display: grid; gap: 5px; }
+.field label { font: 800 9px var(--mono); }
+.field select, .field input { background: var(--paper); border: 1.5px solid var(--ink); border-radius: 4px; min-height: 34px; padding: 6px 9px; font: 750 11px var(--mono); }
+.toggle-btn { border: 1.5px solid var(--ink); border-radius: 4px; background: var(--paper); min-height: 34px; padding: 6px 10px; font: 800 9px var(--mono); align-self: end; }
+.toggle-btn[aria-pressed="true"] { background: var(--teal); }
+#run-count { margin: 0 0 6px auto; font: 750 11px var(--mono); }
+
+/* sticky band header (the rail) */
+.band-header { position: sticky; top: var(--sticky-top); z-index: 20; background: var(--paper); border-bottom: 2px solid var(--ink); padding: 6px 0; }
+.band-header-row, .strip { display: grid; grid-template-columns: minmax(140px,1fr) 210px 74px 74px; gap: 10px; align-items: center; }
+.col-chip.col-label, .col-turns.col-label, .col-cost.col-label { font: 800 8px var(--mono); color: var(--muted); letter-spacing: .05em; }
+.col-turns.col-label, .col-cost.col-label { text-align: right; }
+.band-segments { display: flex; width: 210px; height: 28px; border: 2px solid var(--ink); overflow: hidden; }
+.band-seg { display: flex; align-items: center; justify-content: center; font: 800 6px/1.05 var(--mono); text-align: center; color: var(--paper); background: var(--muted); border-right: 1px solid var(--ink); padding: 0 1px; overflow: hidden; white-space: normal; word-break: break-word; }
+.band-seg:last-child { border-right: 0; }
+.band-seg.active { background: var(--teal); color: var(--ink); }
+
+/* run list / trail strips */
+.run-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.run-row { border: 1.5px solid #7c8b74; background: var(--paper); }
+.strip { width: 100%; background: transparent; border: 0; padding: 8px 10px; text-align: left; }
+.strip:hover { background: #eef1e2; }
+.col-chip { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.chip-model { font: 850 12px var(--mono); overflow-wrap: anywhere; }
+.chip-provider { font: 650 9px var(--mono); color: var(--muted); }
+.chip-hero { font: 800 8px var(--mono); color: #096b52; }
+.trail { display: flex; width: 210px; height: 21px; }
+.rung { position: relative; width: 21px; height: 21px; flex: none; display: flex; align-items: center; justify-content: center; background: #e7eddb; border-right: 1px solid #c7d1ba; box-sizing: border-box; }
+.rung:last-child { border-right: 0; }
+.rung.lit { background: #cfe6c2; }
+.rung .rung-ic { width: 13px; height: 13px; opacity: .4; }
+.rung.lit .rung-ic { opacity: 1; }
+.rung.here { background: var(--gold); box-shadow: inset 0 0 0 1px var(--ink); }
+.rung-sprite { position: absolute; bottom: 100%; left: 50%; transform: translate(-50%, 3px); width: 11px; height: 17px; }
+.col-turns { text-align: right; font: 850 11px var(--mono); white-space: nowrap; }
+.col-turns small { color: var(--muted); font-weight: 650; }
+.col-cost { text-align: right; font: 850 11px var(--mono); }
+.strip-expand { padding: 10px; border-top: 2px solid var(--ink); background: #f1efe0; }
+.no-matches { padding: 24px; border: 2px dashed #77876c; background: #e7eddc; text-align: center; font: 750 12px var(--mono); }
+
+.pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px; }
+.pager button { border: 2px solid var(--ink); background: var(--paper); border-radius: 4px; min-height: 34px; padding: 6px 12px; font: 800 10px var(--mono); }
+.pager span { font: 750 10px var(--mono); }
+
+@media (max-width: 900px) {
+  .podium { grid-template-columns: 1fr; }
+  .band-header-row, .strip { grid-template-columns: minmax(120px,1fr) 170px 62px 62px; }
+  .trail, .band-segments { width: 170px; }
+  .rung { width: 17px; height: 17px; }
+}
+@media (max-width: 560px) {
+  main { width: calc(100% - 24px); }
+  .masthead { padding: 10px 14px; gap: 8px; }
+  .wordmark { font-size: 19px; }
+  .socials { gap: 7px; }
+  .social-button { width: 26px; height: 26px; }
+  .plaque-row { grid-template-columns: 30px 1fr; row-gap: 3px; }
+  .plaque-provider, .plaque-turns, .plaque-cost { grid-column: 2; text-align: left; }
+  .band-header-row, .strip { grid-template-columns: 1fr; }
+  .col-chip.col-label { display: none; }
+  .col-turns.col-label, .col-cost.col-label { display: none; }
+  .band-segments { width: 100%; }
+  .trail { width: 100%; overflow-x: auto; }
+  .rung { width: 10%; flex: 1 0 auto; }
+  .col-turns, .col-cost { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; }
+  .card-inner { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<svg class="sprite-defs" aria-hidden="true"><defs>
+  <symbol id="art-trainer" viewBox="0 0 32 48"><path d="M5 41h25v5H5z" fill="#122b3c55"/><path d="M8 4h16v4h5v9H4V9h4z" fill="#e9765d"/><path d="M9 5h11v4H9z" fill="#ffd2a0"/><path d="M9 17h17v12H9z" fill="#edc18e"/><path d="M7 18h6v9H7z" fill="#334b47"/><path d="M7 29h18v11H7z" fill="#d7d9b4"/><path d="M5 30h6v9H5zM23 30h5v9h-5z" fill="#de795b"/><path d="M9 40h6v6H9zM20 40h6v6h-6z" fill="#243e50"/></symbol>
+  <symbol id="art-trophy" viewBox="0 0 32 37"><path d="M7 3h18v4h6v12h-5v5h-8v6h7v5H7v-5h7v-6H6v-5H1V7h6z" fill="#172a24"/><path d="M9 5h14v13l-4 4h-6l-4-4z" fill="#fff0a4"/><path d="M16 5h7v13l-4 4h-3z" fill="#d89125"/><path d="M4 10h3v7H4m21-7h3v7h-3M15 23h2v8h-2M9 32h14v1H9" fill="#ffdc69"/></symbol>
+  <symbol id="ic-house" viewBox="0 0 20 20"><path d="M3 9 10 3 17 9V17H3Z" fill="#dc8b64"/><path d="M2 10 10 2 18 10H16L10 5 4 10Z" fill="#a4584b"/><rect x="8" y="12" width="4" height="5" fill="#574f42"/></symbol>
+  <symbol id="ic-ball" viewBox="0 0 20 20"><path d="M10 2a8 8 0 0 1 7.94 7H12a2 2 0 0 0-4 0H2.06A8 8 0 0 1 10 2Z" fill="#ff7661"/><path d="M2.06 11H8a2 2 0 0 0 4 0h5.94A8 8 0 0 1 10 18a8 8 0 0 1-7.94-7Z" fill="#f8f7eb"/><rect x="1.5" y="9" width="17" height="2" fill="#101c20"/><circle cx="10" cy="10" r="2.6" fill="#f8f7eb" stroke="#101c20" stroke-width="1.2"/></symbol>
+  <symbol id="ic-sign" viewBox="0 0 20 20"><rect x="9" y="8" width="2" height="10" fill="#645c3b"/><rect x="3" y="3" width="14" height="6" fill="#dc8b64" stroke="#101c20" stroke-width="1"/><rect x="5" y="5" width="10" height="2" fill="#574f42"/></symbol>
+  <symbol id="ic-city" viewBox="0 0 20 20"><rect x="2" y="9" width="6" height="9" fill="#80a66e"/><rect x="9" y="5" width="6" height="13" fill="#a8c9b7"/><rect x="15" y="11" width="4" height="7" fill="#80a66e"/><rect x="3" y="11" width="2" height="2" fill="#f8f7eb"/><rect x="10" y="7" width="2" height="2" fill="#f8f7eb"/><rect x="10" y="11" width="2" height="2" fill="#f8f7eb"/></symbol>
+  <symbol id="ic-parcel" viewBox="0 0 20 20"><rect x="3" y="6" width="14" height="11" fill="#c98a4b" stroke="#101c20" stroke-width="1"/><rect x="8.5" y="6" width="3" height="11" fill="#8a5a2e"/><rect x="3" y="10" width="14" height="3" fill="#8a5a2e"/></symbol>
+  <symbol id="ic-dex" viewBox="0 0 20 20"><rect x="4" y="3" width="12" height="15" rx="1" fill="#ff7661" stroke="#101c20" stroke-width="1"/><circle cx="7" cy="6" r="1.6" fill="#38bdf8" stroke="#101c20" stroke-width=".8"/><rect x="6" y="10" width="8" height="5" fill="#f8f7eb"/></symbol>
+  <symbol id="ic-tree" viewBox="0 0 20 20"><rect x="9" y="13" width="2" height="5" fill="#645c3b"/><circle cx="10" cy="9" r="7" fill="#3c7960"/><circle cx="6" cy="8" r="4" fill="#78a677"/></symbol>
+  <symbol id="ic-gym" viewBox="0 0 20 20"><rect x="2" y="8" width="16" height="10" fill="#a1b297" stroke="#101c20" stroke-width="1"/><path d="M1 8 10 2 19 8Z" fill="#43655f"/><rect x="8" y="12" width="4" height="6" fill="#2a4845"/></symbol>
+  <symbol id="ic-badge" viewBox="0 0 32 32"><path d="M9 2h14v4h5v7h3v10h-6v6H8v-5H2V12h4V6h3z" fill="#759b96"/><path d="M10 4h11v4h5v13h-5v6H9v-6H5v-8h5z" fill="#d6e7ce"/><path d="M12 9h8v3h4v9h-7v5H9V15h3z" fill="#a8c9b7"/><path d="M11 5h10v3H11zM6 13h4v7H6z" fill="#fff5ce"/></symbol>
+  <symbol id="ic-flag" viewBox="0 0 20 20"><rect x="4" y="2" width="1.6" height="16" fill="#101c20"/><path d="M5.6 3 16 6 5.6 9Z" fill="#ff7661"/></symbol>
+</defs></svg>
+
+<header class="masthead">
+  <a class="brand" href="#" aria-label="PokéBench, back to top">
+    <img src="../pokebench-logo.png" width="40" height="40" alt="" class="brand-mark">
+    <span><span class="wordmark">PokéBench<span>_</span></span><span class="tagline">Billions of parameters vs. one old man.</span></span>
+  </a>
+  <div class="socials">
+    <a id="live-pill" class="live-pill" href="https://www.twitch.tv/pokebenchtv" target="_blank" rel="noopener" title="PokeBenchTV on Twitch"><span class="live-dot" aria-hidden="true"></span><span>OFFLINE</span></a>
+    <a class="social-button" href="https://www.twitch.tv/pokebenchtv" target="_blank" rel="noopener" aria-label="PokéBench on Twitch" title="Twitch"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg></a>
+    <a class="social-button" href="https://www.youtube.com/@Pokebenchtv" target="_blank" rel="noopener" aria-label="PokéBench on YouTube" title="YouTube"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+    <a class="social-button" href="https://x.com/PokeBenchTV" target="_blank" rel="noopener" aria-label="PokéBench on X" title="X"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg></a>
+  </div>
+</header>
+<div class="sample-banner"><strong>SAMPLE DATA — not real results</strong><span class="sample-badge">ILLUSTRATIVE DATA</span></div>
+
+<main>
+  <section class="wall" aria-labelledby="wall-title">
+    <div class="wall-head"><h1 id="wall-title">The Championship Wall</h1><p class="tally" id="tally" role="status">— / — RUNS BEAT BROCK</p></div>
+    <div class="podium" id="podium" aria-label="Top 3 runs that beat Brock"></div>
+    <div class="plaques" id="plaques" aria-label="Other runs that beat Brock"></div>
+  </section>
+
+  <section class="board" aria-labelledby="board-title">
+    <h2 id="board-title" class="sr-only">All 30 runs</h2>
+    <div class="toolbar">
+      <div class="field"><label for="f-provider">Provider</label>
+        <select id="f-provider"><option value="all">All providers</option><option value="local">Local (Ollama)</option><option value="api">API</option></select>
+      </div>
+      <div class="field"><label for="f-family">Family</label><select id="f-family"><option value="all">All families</option></select></div>
+      <div class="field"><label for="f-search">Search</label><input id="f-search" type="search" placeholder="Model name…" autocomplete="off"></div>
+      <button id="f-onerun" class="toggle-btn" type="button" aria-pressed="false">ONE RUN PER MODEL</button>
+      <p id="run-count" role="status"></p>
+    </div>
+    <div class="band-header" id="band-header">
+      <div class="band-header-row">
+        <span class="col-chip col-label">MODEL</span>
+        <span class="band-segments" id="band-segments" aria-label="Journey rail: Pallet Town, Route 1, Viridian City, Viridian Forest, Pewter City, Brock's Gym"></span>
+        <span class="col-turns col-label">TURNS</span>
+        <span class="col-cost col-label">COST</span>
+      </div>
+    </div>
+    <ul class="run-list" id="run-list"></ul>
+    <div class="pager" id="pager" hidden>
+      <button id="pg-prev" type="button">‹ Prev</button>
+      <span id="pg-status" class="mono"></span>
+      <button id="pg-next" type="button">Next ›</button>
+    </div>
+  </section>
+</main>
+<p id="announcer" class="sr-only" role="status" aria-live="polite"></p>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const escape = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const finite = v => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+  const number = v => finite(v) ? v.toLocaleString('en-US') : '—';
+  const isLocal = run => /ollama/i.test(String(run.provider || ''));
+  const won = run => run.beat_brock === true;
+  const capitalize = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '—';
+  const providerLabel = run => isLocal(run) ? 'Local (Ollama)' : capitalize(run.provider);
+  const price = run => isLocal(run) ? 'FREE' : finite(run.cost_usd) ? '$' + run.cost_usd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: run.cost_usd > 0 && run.cost_usd < .01 ? 6 : 2}) : '—';
+  const tokensOf = run => finite(run.tokens_in) && finite(run.tokens_out) ? run.tokens_in + run.tokens_out : null;
+  const timeStr = s => { if (!finite(s)) return '—'; const t = Math.round(s), h = Math.floor(t/3600), m = Math.floor(t%3600/60); return h ? `${h}h ${m}m` : m ? `${m}m ${t%60}s` : `${t}s`; };
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+  const milestoneList = [
+    {key:'left_house', short:'Left house', icon:'house'},
+    {key:'got_starter', short:'Got starter', icon:'ball'},
+    {key:'route_1', short:'Route 1', icon:'sign'},
+    {key:'viridian_city', short:'Viridian City', icon:'city'},
+    {key:'got_parcel', short:'Parcel', icon:'parcel'},
+    {key:'got_pokedex', short:'Pokédex', icon:'dex'},
+    {key:'viridian_forest', short:'Forest', icon:'tree'},
+    {key:'pewter_city', short:'Pewter City', icon:'city'},
+    {key:'pewter_gym', short:'Entered gym', icon:'gym'},
+    {key:'beat_brock', short:'Beat Brock', icon:'badge'}
+  ];
+  const places = [
+    {id:'pallet', name:'PALLET', rungs:[0,1,5]},
+    {id:'route1', name:'ROUTE 1', rungs:[2]},
+    {id:'viridian', name:'VIRIDIAN', rungs:[3,4]},
+    {id:'forest', name:'FOREST', rungs:[6]},
+    {id:'pewter', name:'PEWTER', rungs:[7]},
+    {id:'gym', name:'GYM', rungs:[8,9]}
+  ];
+  const placeOf = run => places.find(p => p.rungs.includes(run.furthest_index)) || places[0];
+
+  const state = {runs: [], provider: 'all', family: 'all', search: '', oneRunPerModel: false, page: 1, pageSize: 50, expandedUid: null, expandedButton: null, localHero: null};
+
+  function ladder(run) {
+    return milestoneList.map((m, i) => {
+      const hits = (run.milestones || []).filter(x => x && x.key === m.key && finite(x.turn));
+      const turn = hits.length ? Math.min(...hits.map(x => x.turn)) : null;
+      return {...m, index: i, turn, reached: finite(turn) || i <= run.furthest_index};
+    });
+  }
+  function furthestTurnOf(run) {
+    const m = (run.milestones || []).find(x => x.key === run.furthest_key);
+    return m && finite(m.turn) ? m.turn : (finite(run.turns_used) ? run.turns_used : Infinity);
+  }
+  function rankSort(a, b) {
+    return (b.furthest_index - a.furthest_index) || (furthestTurnOf(a) - furthestTurnOf(b)) || String(a.model).localeCompare(String(b.model));
+  }
+  function globalRank(run) { return 1 + state.runs.filter(o => rankSort(o, run) < 0).length; }
+  function bestPerModel(runs) {
+    const map = new Map();
+    runs.forEach(r => { const cur = map.get(r.model); if (!cur || rankSort(r, cur) < 0) map.set(r.model, r); });
+    return [...map.values()];
+  }
+
+  function miniTrail(run) {
+    const furthest = run.furthest_index;
+    return `<span class="trail" aria-hidden="true">` + milestoneList.map((m, i) => {
+      const lit = i <= furthest, here = i === furthest;
+      return `<span class="rung ${lit?'lit':''} ${here?'here':''}">
+        <svg class="rung-ic" viewBox="0 0 20 20"><use href="#ic-${m.icon}"></use></svg>
+        ${here ? `<svg class="rung-sprite" viewBox="0 0 32 48"><use href="#art-trainer"></use></svg>` : ''}
+      </span>`;
+    }).join('') + `</span>`;
+  }
+
+  function ladderLg(run) {
+    return `<div class="ladder">
+      <div class="ladder-rungs">
+        ${milestoneList.map((m, i) => `<div class="ladder-rung" data-idx="${i}">
+          <span class="rung-marker-slot"></span>
+          <svg class="rung-ic" viewBox="0 0 20 20" aria-hidden="true"><use href="#ic-${m.icon}"></use></svg>
+          <span class="rung-turn" data-turn-label></span>
+          <span class="rung-name">${escape(m.short)}</span>
+        </div>`).join('')}
+      </div>
+      <div class="ladder-sprite" aria-hidden="true"><svg viewBox="0 0 32 48"><use href="#art-trainer"></use></svg></div>
+    </div>`;
+  }
+
+  function buildCard(run, opts = {}) {
+    const win = won(run);
+    return `<article class="run-card ${win ? 'is-winner' : ''}" data-uid="${run.uid}" tabindex="-1">
+      <div class="card-inner">
+        <div class="card-face card-front" aria-hidden="false">
+          <div class="card-ribbon"><span class="ribbon-status">${win ? '<svg class="trophy-ic" viewBox="0 0 32 37" aria-hidden="true"><use href="#art-trophy"></use></svg> BADGE EARNED' : '<b class="x-mark" aria-hidden="true">×</b> STUCK HERE'}</span><span class="card-rank">#${globalRank(run)}</span><span class="sample-badge">ILLUSTRATIVE</span>${opts.closable ? `<button class="card-close" data-close-card type="button" aria-label="Close card">×</button>` : ''}</div>
+          <div class="card-body">
+            <h3 class="model-name">${escape(run.model)}</h3>
+            <p class="provider">${escape(providerLabel(run))}</p>
+            ${run.in_game_name ? `<p class="ingame-name">plays as <b>${escape(run.in_game_name)}</b>${run.rival_name ? ` · rival <b class="rival">${escape(run.rival_name)}</b>` : ''}</p>` : ''}
+            <div class="card-tags"><span class="tag ${isLocal(run) ? 'local' : 'api'}">${isLocal(run) ? 'LOCAL' : 'API'}</span><span class="tag">${escape(run.family || '—')}</span><span class="tag">GEN 1 · RED</span></div>
+            <p class="furthest"><b>${run.furthest_index + 1}/10</b> ${escape(run.furthest_label || '')}</p>
+            <dl class="stats">
+              <div><dt>TURNS</dt><dd>${number(run.turns_used)} <small>/ ${number(run.budget_turns)}</small></dd></div>
+              <div><dt>TOKENS IN+OUT</dt><dd>${number(tokensOf(run))}</dd></div>
+              <div><dt>COST</dt><dd class="${isLocal(run) ? 'free' : ''}">${escape(price(run))}</dd></div>
+              <div><dt>TIME</dt><dd>${escape(timeStr(run.wall_time_s))}</dd></div>
+            </dl>
+            <button class="flip-btn" data-flip type="button" aria-label="Flip ${escape(run.model)} card to the journey replay">↻ Flip for replay</button>
+          </div>
+        </div>
+        <div class="card-face card-back" aria-hidden="true" inert>
+          <div class="card-ribbon is-back"><span class="ribbon-status">${escape(run.model)} · Journey</span><button class="text-button" data-flip type="button">Front ↶</button></div>
+          <div class="card-body">
+            ${ladderLg(run)}
+            <div class="replay-readout"><span>TURN</span> <span class="counter" data-counter>0</span><span class="counter-budget">/ ${number(run.budget_turns)}</span>
+              <button class="replay-btn" data-replay-restart type="button">Replay ↺</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  // --- replay animation ---
+  const activeAnims = new Map();
+  function buildTimeline(run, rungs) {
+    const furthest = run.furthest_index;
+    let prevTurn = 0, prevX = 0;
+    const segs = [];
+    for (let i = 0; i <= furthest; i++) {
+      const r = rungs[i];
+      let t = finite(r.turn) ? r.turn : prevTurn + Math.max(15, Math.round((run.turns_used - prevTurn) / Math.max(1, furthest - i + 2)));
+      if (t < prevTurn) t = prevTurn;
+      const toX = (i + 0.5) / 10;
+      segs.push({idx: i, fromTurn: prevTurn, toTurn: t, fromX: prevX, toX});
+      prevTurn = t; prevX = toX;
+    }
+    const totalSpan = Math.max(1, segs.reduce((s, x) => s + (x.toTurn - x.fromTurn), 0));
+    const WALK_BUDGET = 3400;
+    segs.forEach(s => { s.duration = Math.max(180, Math.round(WALK_BUDGET * (s.toTurn - s.fromTurn) / totalSpan)); });
+    const settleFrom = prevTurn, settleTo = Math.max(prevTurn, run.turns_used);
+    return {segs, settleFrom, settleTo, settleDuration: settleTo > settleFrom ? 650 : 0, furthest};
+  }
+  function animateValue(from, to, duration, onUpdate, token) {
+    return new Promise(resolve => {
+      if (duration <= 0 || from === to) { onUpdate(to); resolve(); return; }
+      const start = performance.now();
+      function step(now) {
+        if (token.cancelled) { resolve(); return; }
+        const t = Math.min(1, (now - start) / duration);
+        onUpdate(from + (to - from) * t);
+        if (t < 1) requestAnimationFrame(step); else resolve();
+      }
+      requestAnimationFrame(step);
+    });
+  }
+  function resetLadderVisual(cardEl) {
+    cardEl.querySelectorAll('.ladder-rung').forEach(el => { el.classList.remove('lit'); const l = el.querySelector('[data-turn-label]'); if (l) l.textContent = ''; });
+    cardEl.querySelectorAll('.ladder-marker').forEach(el => el.remove());
+    const sprite = cardEl.querySelector('.ladder-sprite');
+    if (sprite) { sprite.hidden = false; sprite.classList.remove('idle'); sprite.style.left = '0%'; }
+    const counter = cardEl.querySelector('[data-counter]');
+    if (counter) counter.textContent = '0';
+  }
+  function finishReplay(cardEl, run, plan) {
+    const sprite = cardEl.querySelector('.ladder-sprite');
+    const rungEls = [...cardEl.querySelectorAll('.ladder-rung')];
+    const endEl = rungEls[plan.furthest];
+    if (sprite) sprite.hidden = true;
+    if (endEl) {
+      const marker = document.createElement('span');
+      marker.className = 'ladder-marker';
+      marker.innerHTML = won(run) ? `<svg viewBox="0 0 32 37" aria-hidden="true"><use href="#art-trophy"></use></svg>` : `<svg viewBox="0 0 20 20" aria-hidden="true"><use href="#ic-flag"></use></svg>`;
+      const slot = endEl.querySelector('.rung-marker-slot');
+      if (slot) slot.appendChild(marker);
+    }
+    const counter = cardEl.querySelector('[data-counter]');
+    if (counter) counter.textContent = number(run.turns_used);
+  }
+  async function runSequence(cardEl, run, rungs, plan, token) {
+    const sprite = cardEl.querySelector('.ladder-sprite');
+    const counterEl = cardEl.querySelector('[data-counter]');
+    const rungEls = [...cardEl.querySelectorAll('.ladder-rung')];
+    for (const seg of plan.segs) {
+      if (token.cancelled) return;
+      await animateValue(seg.fromTurn, seg.toTurn, seg.duration, v => {
+        if (counterEl) counterEl.textContent = number(Math.round(v));
+        const span = Math.max(1, seg.toTurn - seg.fromTurn);
+        const x = seg.fromX + (seg.toX - seg.fromX) * ((v - seg.fromTurn) / span);
+        if (sprite) sprite.style.left = (x * 100) + '%';
+      }, token);
+      if (token.cancelled) return;
+      rungEls[seg.idx].classList.add('lit');
+      const label = rungEls[seg.idx].querySelector('[data-turn-label]');
+      if (label) label.textContent = 'T' + number(seg.toTurn);
+    }
+    if (token.cancelled) return;
+    if (plan.settleDuration > 0) {
+      if (sprite) sprite.classList.add('idle');
+      await animateValue(plan.settleFrom, plan.settleTo, plan.settleDuration, v => { if (counterEl) counterEl.textContent = number(Math.round(v)); }, token);
+      if (sprite) sprite.classList.remove('idle');
+    }
+    if (token.cancelled) return;
+    finishReplay(cardEl, run, plan);
+  }
+  function applyInstantFinal(cardEl, run, rungs, plan) {
+    const rungEls = [...cardEl.querySelectorAll('.ladder-rung')];
+    plan.segs.forEach(seg => {
+      rungEls[seg.idx].classList.add('lit');
+      const label = rungEls[seg.idx].querySelector('[data-turn-label]');
+      if (label) label.textContent = 'T' + number(seg.toTurn);
+    });
+    finishReplay(cardEl, run, plan);
+  }
+  function cancelReplay(cardEl) {
+    const token = activeAnims.get(cardEl);
+    if (token) token.cancelled = true;
+    activeAnims.delete(cardEl);
+  }
+  function startReplay(cardEl, run) {
+    cancelReplay(cardEl);
+    const rungs = ladder(run);
+    const plan = buildTimeline(run, rungs);
+    resetLadderVisual(cardEl);
+    if (reduced.matches) { applyInstantFinal(cardEl, run, rungs, plan); return; }
+    const token = {cancelled: false};
+    activeAnims.set(cardEl, token);
+    runSequence(cardEl, run, rungs, plan, token);
+  }
+
+  function toggleFlip(cardEl) {
+    const run = state.runs.find(r => r.uid === cardEl.dataset.uid);
+    if (!run) return;
+    const flipped = cardEl.classList.toggle('is-flipped');
+    ['front', 'back'].forEach(face => {
+      const el = cardEl.querySelector('.card-' + face);
+      const visible = (face === 'back') === flipped;
+      el.inert = !visible;
+      el.setAttribute('aria-hidden', String(!visible));
+    });
+    if (flipped) startReplay(cardEl, run); else cancelReplay(cardEl);
+  }
+  function restartCard(cardEl) {
+    const run = state.runs.find(r => r.uid === cardEl.dataset.uid);
+    if (run) startReplay(cardEl, run);
+  }
+
+  // --- wall ---
+  function renderWall() {
+    const winners = state.runs.filter(won).sort(rankSort);
+    $('tally').textContent = `${winners.length} / ${state.runs.length} RUNS BEAT BROCK`;
+    const top3 = winners.slice(0, 3), rest = winners.slice(3);
+    $('podium').innerHTML = top3.length ? top3.map(r => buildCard(r, {closable: false})).join('') : `<p class="vacant">No champions recorded. Brock is keeping the wall warm.</p>`;
+    $('plaques').innerHTML = rest.map(r => `<div class="plaque-row"><span class="plaque-rank">#${globalRank(r)}</span><span class="plaque-model">${escape(r.model)}</span><span class="plaque-provider">${escape(providerLabel(r))}</span><span class="plaque-turns">${number(r.turns_used)} turns</span><span class="plaque-cost ${isLocal(r) ? 'free' : ''}">${escape(price(r))}</span></div>`).join('');
+  }
+
+  // --- board / list ---
+  function rowHTML(run) {
+    const uid = run.uid, place = placeOf(run);
+    const label = `${escape(run.model)}, ${escape(providerLabel(run))}, reached ${run.furthest_index + 1} of 10: ${escape(run.furthest_label || '')}, ${number(run.turns_used)} of ${number(run.budget_turns)} turns, ${escape(price(run))}. Activate to view full card.`;
+    return `<li class="run-row" data-uid="${uid}" data-place="${place.id}">
+      <button class="strip" type="button" aria-expanded="false" aria-controls="panel-${uid}" data-toggle="${uid}" aria-label="${label}">
+        <span class="col-chip"><span class="chip-model">${escape(run.model)}</span><span class="chip-provider">${escape(providerLabel(run))} · ${escape(run.family || '')}</span>${uid === state.localHero ? '<span class="chip-hero">★ LOCAL HERO</span>' : ''}</span>
+        ${miniTrail(run)}
+        <span class="col-turns">${number(run.turns_used)}<small>/${number(run.budget_turns)}</small></span>
+        <span class="col-cost ${isLocal(run) ? 'free' : ''}">${escape(price(run))}</span>
+      </button>
+      <div class="strip-expand" id="panel-${uid}" hidden></div>
+    </li>`;
+  }
+  function getFilteredSorted() {
+    let list = state.runs.slice();
+    if (state.provider === 'local') list = list.filter(isLocal);
+    else if (state.provider === 'api') list = list.filter(r => !isLocal(r));
+    if (state.family !== 'all') list = list.filter(r => String(r.family || 'Unknown') === state.family);
+    if (state.search.trim()) { const q = state.search.trim().toLowerCase(); list = list.filter(r => String(r.model || '').toLowerCase().includes(q)); }
+    if (state.oneRunPerModel) list = bestPerModel(list);
+    list.sort(rankSort);
+    return list;
+  }
+  function renderList() {
+    const filtered = getFilteredSorted();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
+    state.page = Math.min(state.page, totalPages);
+    const startIdx = (state.page - 1) * state.pageSize;
+    const pageItems = filtered.slice(startIdx, startIdx + state.pageSize);
+    $('run-count').textContent = filtered.length ? `Showing ${startIdx + 1}–${startIdx + pageItems.length} of ${filtered.length}` : 'No runs match these filters.';
+    $('pager').hidden = totalPages <= 1;
+    $('pg-status').textContent = `Page ${state.page} of ${totalPages}`;
+    $('pg-prev').disabled = state.page <= 1;
+    $('pg-next').disabled = state.page >= totalPages;
+    $('run-list').innerHTML = pageItems.length ? pageItems.map(rowHTML).join('') : `<li class="no-matches">No runs match these filters.</li>`;
+    state.expandedUid = null; state.expandedButton = null;
+    setupBandObserver();
+  }
+
+  // --- expand / collapse (accordion, focus-trapped) ---
+  function pauseAnyReplay(panel) { const card = panel.querySelector('.run-card'); if (card) cancelReplay(card); }
+  function collapseExpanded() {
+    if (!state.expandedUid) return;
+    const panel = $('panel-' + state.expandedUid);
+    if (panel) { pauseAnyReplay(panel); panel.hidden = true; panel.innerHTML = ''; }
+    const btn = state.expandedButton;
+    btn?.setAttribute('aria-expanded', 'false');
+    state.expandedUid = null; state.expandedButton = null;
+    document.removeEventListener('keydown', onExpandedKeydown);
+    btn?.focus();
+  }
+  function expandStrip(uid, button) {
+    const run = state.runs.find(r => r.uid === uid);
+    const panel = $('panel-' + uid);
+    if (!run || !panel) return;
+    panel.innerHTML = buildCard(run, {closable: true});
+    panel.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+    state.expandedUid = uid; state.expandedButton = button;
+    document.addEventListener('keydown', onExpandedKeydown);
+    const card = panel.querySelector('.run-card');
+    requestAnimationFrame(() => card.querySelector('[data-flip]')?.focus());
+    $('announcer').textContent = `${run.model} card open.`;
+  }
+  function onExpandedKeydown(e) {
+    if (e.key === 'Escape') { e.stopPropagation(); collapseExpanded(); return; }
+    if (e.key === 'Tab' && state.expandedUid) {
+      const panel = $('panel-' + state.expandedUid);
+      if (!panel) return;
+      const focusables = [...panel.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && !el.closest('[inert]') && el.getClientRects().length > 0);
+      if (!focusables.length) return;
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }
+
+  // --- sticky band ("YOU ARE HERE" rail) ---
+  function buildBandHeader() {
+    $('band-segments').innerHTML = places.map(p => `<span class="band-seg" data-place="${p.id}" style="flex:${p.rungs.length} 0 0%">${escape(p.name)}</span>`).join('');
+  }
+  function setActiveBand(placeId) {
+    document.querySelectorAll('.band-seg').forEach(seg => seg.classList.toggle('active', seg.dataset.place === placeId));
+  }
+  let bandObserver;
+  function setupBandObserver() {
+    bandObserver?.disconnect();
+    const header = document.querySelector('.masthead'), banner = document.querySelector('.sample-banner'), bandHeader = $('band-header');
+    const stickyTop = (header?.offsetHeight || 0) + (banner?.offsetHeight || 0);
+    const probe = stickyTop + (bandHeader?.offsetHeight || 0) + 16;
+    bandObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => { if (entry.isIntersecting) setActiveBand(entry.target.dataset.place); });
+    }, {rootMargin: `-${Math.floor(probe)}px 0px -${Math.max(0, window.innerHeight - probe - 40)}px 0px`, threshold: 0});
+    document.querySelectorAll('.run-row').forEach(row => bandObserver.observe(row));
+  }
+  function syncStickyOffsets() {
+    const header = document.querySelector('.masthead').offsetHeight;
+    const banner = document.querySelector('.sample-banner').offsetHeight;
+    document.documentElement.style.setProperty('--masthead-h', header + 'px');
+    document.documentElement.style.setProperty('--sticky-top', (header + banner) + 'px');
+  }
+
+  // --- toolbar ---
+  function initToolbar() {
+    const families = [...new Set(state.runs.map(r => String(r.family || 'Unknown')))].sort();
+    $('f-family').innerHTML = '<option value="all">All families</option>' + families.map(f => `<option value="${escape(f)}">${escape(f)}</option>`).join('');
+    $('f-provider').addEventListener('change', e => { state.provider = e.target.value; state.page = 1; renderList(); });
+    $('f-family').addEventListener('change', e => { state.family = e.target.value; state.page = 1; renderList(); });
+    $('f-search').addEventListener('input', e => { state.search = e.target.value; state.page = 1; renderList(); });
+    $('f-onerun').addEventListener('click', () => { state.oneRunPerModel = !state.oneRunPerModel; $('f-onerun').setAttribute('aria-pressed', String(state.oneRunPerModel)); state.page = 1; renderList(); });
+    $('pg-prev').addEventListener('click', () => { state.page = Math.max(1, state.page - 1); renderList(); });
+    $('pg-next').addEventListener('click', () => { state.page = state.page + 1; renderList(); });
+  }
+
+  // --- global click / keyboard delegation ---
+  document.addEventListener('click', e => {
+    const toggle = e.target.closest('[data-toggle]');
+    if (toggle) {
+      const uid = toggle.dataset.toggle;
+      if (state.expandedUid === uid) { collapseExpanded(); return; }
+      collapseExpanded();
+      expandStrip(uid, toggle);
+      return;
+    }
+    if (e.target.closest('[data-close-card]')) { collapseExpanded(); return; }
+    const flipBtn = e.target.closest('[data-flip]');
+    if (flipBtn) { toggleFlip(flipBtn.closest('.run-card')); return; }
+    const replayBtn = e.target.closest('[data-replay-restart]');
+    if (replayBtn) { restartCard(replayBtn.closest('.run-card')); return; }
+    if (state.expandedUid) {
+      const withinExpand = e.target.closest('.strip-expand');
+      const withinTrigger = e.target.closest(`[data-toggle="${state.expandedUid}"]`);
+      if (!withinExpand && !withinTrigger) collapseExpanded();
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const card = e.target.closest('.run-card');
+      if (card && e.target === card) { e.preventDefault(); toggleFlip(card); }
+    }
+  });
+  window.addEventListener('resize', () => { syncStickyOffsets(); setupBandObserver(); });
+
+  async function init() {
+    buildBandHeader();
+    syncStickyOffsets();
+    try {
+      const res = await fetch('../mock-runs.json', {cache: 'no-store'});
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const rows = await res.json();
+      state.runs = rows.map((r, i) => ({...r, uid: 'run-' + i}));
+    } catch (err) {
+      console.error('Failed to load mock-runs.json', err);
+      $('run-list').innerHTML = `<li class="no-matches">Could not load mock-runs.json.</li>`;
+      return;
+    }
+    state.localHero = [...state.runs].filter(isLocal).sort(rankSort)[0]?.uid || null;
+    initToolbar();
+    renderWall();
+    renderList();
+    syncStickyOffsets();
+    $('announcer').textContent = `${state.runs.length} illustrative sample runs loaded.`;
+  }
+  init();
+})();
+</script>
+</body>
+</html>
