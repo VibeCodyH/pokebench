@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#2dd4bf">
+<title>PokéBench · The Map (mock D)</title>
+<style>
+:root {
+  --ink: #101c20; --paper: #f8f7eb; --teal: #2dd4bf; --blue: #38bdf8;
+  --cyan: #00f0f0; --gold: #ffce52; --red: #ff7661; --muted: #506157;
+  --mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --header: 76px; --banner: 40px; --railh: 36px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 14px/1.6 var(--sans); }
+button, select { font: inherit; color: inherit; }
+button { cursor: pointer; touch-action: manipulation; }
+a { color: inherit; }
+h1, h2, h3, p, dl, dd, ol, ul { margin: 0; }
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 3px solid #008577; outline-offset: 3px; }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.skip { position: fixed; top: -100px; left: 16px; padding: 12px 18px; background: var(--teal); z-index: 100; border: 3px solid var(--ink); font-weight: 800; }
+.skip:focus { top: 12px; }
+
+/* masthead, reproduced from site/styles.css + site/index.html */
+.masthead { min-height: var(--header); position: sticky; top: 0; z-index: 30; background: var(--paper); border-bottom: 3px solid var(--ink); display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 24px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; flex: none; }
+.brand-mark { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; }
+.wordmark { display: block; font: 950 22px/1.1 var(--mono); letter-spacing: -1.2px; }
+.wordmark > span { color: #008577; }
+.tagline { display: block; font-size: 9px; color: #4b5c53; margin-top: 4px; }
+.socials { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.social-button { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--ink); background: #efe9cf; box-shadow: 3px 3px 0 var(--ink); color: var(--ink); }
+.social-icon { width: 14px; height: 14px; fill: currentColor; }
+.live-pill { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px 0 8px; border: 2px solid var(--ink); border-radius: 15px; background: #e9eade; box-shadow: 3px 3px 0 var(--ink); font: 900 10px var(--mono); letter-spacing: 1px; color: #4b5c53; text-decoration: none; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #8f9a92; }
+.sample-banner { min-height: var(--banner); position: sticky; top: var(--header); z-index: 29; display: flex; gap: 16px; align-items: center; justify-content: center; padding: 6px 16px; border-bottom: 2px solid var(--ink); background: var(--gold); font: 800 11px/1.5 var(--mono); text-align: center; }
+.sample-badge { padding: 2px 6px; border: 1px dashed currentColor; font: 800 9px/1.5 var(--mono); white-space: nowrap; }
+
+/* YOU ARE HERE sticky rail strip — a thin bar, never covers the map */
+.rail-strip { min-height: var(--railh); position: sticky; top: calc(var(--header) + var(--banner)); z-index: 28; display: flex; align-items: center; gap: 10px; padding: 6px 16px; background: #eef1e3; border-bottom: 2px solid var(--ink); overflow-x: auto; }
+.rail-label { flex: none; font: 850 9px/1.5 var(--mono); letter-spacing: .06em; color: #34492f; }
+.rail-dots { display: flex; gap: 6px; list-style: none; padding: 0; margin: 0; }
+.rail-dot { display: inline-flex; align-items: center; gap: 5px; min-height: 26px; padding: 3px 9px; border: 1px solid #9db08d; border-radius: 12px; background: var(--paper); font: 800 9px/1.5 var(--mono); white-space: nowrap; background: transparent; border: 1px solid transparent; color: var(--muted); }
+.rail-dot.is-current { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+#main { padding-bottom: 60px; }
+#data-state { padding: 60px 20px; text-align: center; font: 750 12px var(--mono); }
+
+.stage-desktop { display: grid; grid-template-columns: minmax(200px,260px) minmax(0,700px) minmax(200px,260px); justify-content: center; align-items: start; gap: 30px; width: min(1260px, 100%); margin: 26px auto 0; padding: 0 20px; }
+.map-col { position: relative; }
+.map-col img { display: block; width: 100%; height: auto; image-rendering: pixelated; border: 3px solid var(--ink); box-shadow: 6px 6px 0 #101c2022; }
+.band-sentinel { position: absolute; left: 0; width: 1px; pointer-events: none; }
+.gutter { position: relative; display: flex; flex-direction: column; }
+.band-stack { position: relative; display: flex; flex-direction: column; gap: 14px; padding: 4px 0 22px; }
+.band-stack::before { content: ""; position: absolute; top: 16px; width: 26px; height: 0; border-top: 2px dashed #7c8a72; }
+.gutter.left .band-stack::before { right: -26px; }
+.gutter.right .band-stack::before { left: -26px; }
+.band-stack.is-empty::before { display: none; }
+.band-flag { display: none; }
+.band-stack:not(.is-empty) .band-flag { display: inline-flex; align-items: center; gap: 5px; font: 800 8px/1.5 var(--mono); color: #46583e; margin-bottom: 2px; }
+.band-flag svg { width: 11px; height: 11px; }
+
+/* compact card — the always-visible unit */
+.compact-card { position: relative; width: 100%; max-width: 240px; text-align: left; background: var(--paper); border: 2px solid var(--ink); border-radius: 7px; box-shadow: 3px 3px 0 var(--ink); padding: 10px 11px; display: flex; flex-direction: column; gap: 5px; transition: transform .1s ease, box-shadow .1s ease; }
+.compact-card:hover, .compact-card:focus-visible { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 var(--ink); }
+.compact-card.is-winner { border-color: #7a5f14; box-shadow: 0 0 0 2px var(--gold), 3px 3px 0 var(--ink); }
+.compact-card.is-winner:hover, .compact-card.is-winner:focus-visible { box-shadow: 0 0 0 2px var(--gold), 5px 5px 0 var(--ink); }
+.rank-badge { position: absolute; top: -10px; left: -10px; width: 26px; height: 26px; display: grid; place-items: center; background: var(--gold); border: 2px solid var(--ink); border-radius: 50%; font: 900 10px/1 var(--mono); box-shadow: 2px 2px 0 var(--ink); }
+.cc-model { font: 850 13px/1.3 var(--mono); letter-spacing: -.2px; overflow-wrap: anywhere; }
+.cc-provider { font: 700 9px/1.4 var(--mono); color: var(--muted); }
+.cc-status { font: 750 10px/1.4 var(--mono); }
+.cc-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.tag { display: inline-flex; padding: 2px 5px; border: 1px solid #748379; border-radius: 3px; font: 800 8px/1.5 var(--mono); }
+.tag.local { background: #d9edbf; }
+.tag.api { background: #cceef7; }
+.cc-cost { font: 800 10px/1.5 var(--mono); }
+.cc-cost.free { color: #096b52; }
+
+/* phone: sliced band blocks */
+.stage-phone { display: none; }
+.phone-band { border-bottom: 3px solid var(--ink); }
+.phone-band-img { width: 100%; image-rendering: pixelated; background-repeat: no-repeat; border-bottom: 2px solid var(--ink); }
+.phone-band-cards { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 20px; }
+.phone-band-heading { font: 850 10px/1.5 var(--mono); letter-spacing: .05em; padding: 10px 16px 0; color: #34492f; }
+.phone-band-cards .compact-card { max-width: none; }
+.phone-band-empty { padding: 4px 16px 16px; font: 700 10px/1.6 var(--mono); color: var(--muted); }
+
+/* modal */
+dialog#run-modal { width: min(480px, calc(100% - 32px)); max-height: 88dvh; overflow: auto; background: var(--paper); color: var(--ink); padding: 0; border: 3px solid var(--ink); border-radius: 9px; box-shadow: 7px 7px 0 var(--teal); }
+dialog#run-modal::backdrop { background: #101c20c9; }
+.card-ribbon { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 38px; padding: 7px 44px 7px 14px; background: var(--ink); color: #ffa48f; font: 850 9px/1.5 var(--mono); }
+.card-ribbon.is-winner { background: var(--gold); color: var(--ink); }
+.modal-close { position: absolute; top: 6px; right: 6px; z-index: 2; width: 30px; height: 30px; border: 2px solid var(--paper); border-radius: 5px; background: var(--ink); color: var(--paper); font: 800 15px var(--mono); }
+.modal-body, .replay-body { padding: 16px 18px 20px; position: relative; }
+.model-name { font: 900 21px/1.25 var(--mono); letter-spacing: -.8px; }
+.provider { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.furthest { margin-top: 12px; font: 800 11px/1.6 var(--mono); }
+.furthest b { background: #dde8cc; padding: 3px 5px; margin-right: 4px; }
+.is-winner-modal .furthest b { background: #f9df8b; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; margin: 13px 0; border-block: 1px solid #bdc9b9; }
+.stats > div { padding: 9px 0; }
+.stats > div:nth-child(even) { padding-left: 12px; border-left: 1px solid #bdc9b9; }
+.stats > div:nth-child(n+3) { border-top: 1px solid #bdc9b9; }
+.stats dt { font: 750 8px/1.5 var(--mono); color: var(--muted); }
+.stats dd { font: 850 14px/1.5 var(--mono); }
+.stats small { font-size: 9px; font-weight: 600; color: #506157; }
+.free { color: #096b52; }
+.run-date { font: 700 10px/1.6 var(--mono); color: var(--muted); margin-top: 4px; }
+.flip-btn { display: inline-flex; gap: 8px; align-items: center; justify-content: center; min-height: 38px; width: 100%; margin-top: 14px; border: 2px solid var(--ink); border-radius: 5px; padding: 7px 11px; color: var(--paper); background: var(--ink); font: 800 10px/1.5 var(--mono); }
+.flip-btn:hover { background: #294238; }
+.replay-heading-row { display: flex; justify-content: space-between; align-items: center; font: 850 11px/1.5 var(--mono); }
+.replay-turns { font: 800 13px/1.5 var(--mono); background: #e3ecd5; border: 1px solid #9db08d; border-radius: 4px; padding: 6px 8px; margin: 10px 0 12px; text-align: center; }
+.replay-turns b { font-size: 17px; }
+.ladder-track { position: relative; display: flex; flex-direction: column-reverse; gap: 3px; padding-left: 30px; }
+.ladder-rung { position: relative; display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 4px 6px; border-radius: 4px; font: 750 10px/1.3 var(--mono); color: #798170; }
+.ladder-rung .rung-num { width: 20px; height: 20px; flex: none; display: grid; place-items: center; border: 1px solid #86927e; background: var(--paper); font: 800 9px var(--mono); border-radius: 3px; }
+.ladder-rung.is-reached { color: var(--ink); background: #d8ebd0; }
+.ladder-rung.is-reached .rung-num { background: var(--teal); border-color: var(--teal); }
+.ladder-rung.is-furthest { background: #f5e3aa; }
+.ladder-rung .rung-turn { margin-left: auto; font-size: 9px; color: var(--muted); }
+.ladder-sprite { position: absolute; left: -30px; width: 22px; height: 22px; display: grid; place-items: center; transition: bottom .32s ease; }
+.ladder-sprite svg { width: 18px; height: 18px; }
+.replay-actions { display: flex; gap: 8px; margin-top: 14px; }
+.replay-actions button { flex: 1; min-height: 36px; border: 2px solid var(--ink); border-radius: 5px; background: var(--paper); font: 800 9px/1.5 var(--mono); }
+.replay-actions [data-flip="front"] { background: var(--ink); color: var(--paper); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: .001ms !important; animation: none !important; }
+  html { scroll-behavior: auto; }
+}
+
+@media (min-width: 1000px) {
+  .stage-phone { display: none !important; }
+}
+@media (max-width: 999px) {
+  .stage-desktop { display: none !important; }
+  .stage-phone { display: block; }
+}
+@media (max-width: 560px) {
+  .masthead { padding: 10px 14px; gap: 8px; }
+  .brand-mark { width: 34px; height: 34px; }
+  .wordmark { font-size: 19px; }
+  .tagline { display: none; }
+  .socials { gap: 7px; }
+  .social-button { width: 26px; height: 26px; }
+  .live-pill { display: none; }
+  .rail-label { display: none; }
+  dialog#run-modal { padding: 0; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the map</a>
+<header class="masthead">
+  <a class="brand" href="#" aria-label="PokéBench, back to top">
+    <img src="../pokebench-logo.png" width="40" height="40" alt="" class="brand-mark">
+    <span><span class="wordmark">PokéBench<span>_</span></span><span class="tagline">Billions of parameters vs. one old man.</span></span>
+  </a>
+  <div class="socials">
+    <a id="live-pill" class="live-pill" href="https://www.twitch.tv/pokebenchtv" target="_blank" rel="noopener" title="PokeBenchTV on Twitch"><span class="live-dot" aria-hidden="true"></span><span>OFFLINE</span></a>
+    <a class="social-button" href="https://www.twitch.tv/pokebenchtv" target="_blank" rel="noopener" aria-label="PokéBench on Twitch" title="Twitch"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg></a>
+    <a class="social-button" href="https://www.youtube.com/@Pokebenchtv" target="_blank" rel="noopener" aria-label="PokéBench on YouTube" title="YouTube"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+    <a class="social-button" href="https://x.com/PokeBenchTV" target="_blank" rel="noopener" aria-label="PokéBench on X" title="X"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg></a>
+    <a class="social-button" href="https://bsky.app/profile/pokebenchtv.bsky.social" target="_blank" rel="noopener" aria-label="PokéBench on Bluesky" title="Bluesky"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg></a>
+  </div>
+</header>
+<div class="sample-banner"><strong>SAMPLE DATA — not real results</strong><span class="sample-badge">ILLUSTRATIVE DATA</span></div>
+<div class="rail-strip" aria-label="Journey places">
+  <span class="rail-label">YOU ARE HERE</span>
+  <ol class="rail-dots" id="rail-dots"></ol>
+</div>
+<p id="card-flip-help" class="sr-only">Press the flip button to toggle between run results and the journey replay. Escape closes the dialog.</p>
+
+<main id="main" tabindex="-1">
+  <div id="data-state" role="status" aria-live="polite">Loading the field…</div>
+
+  <!-- desktop: left gutter | full map | right gutter -->
+  <div class="stage-desktop" id="stage-desktop" hidden>
+    <div class="gutter left" id="gutter-left"></div>
+    <div class="map-col" id="map-col">
+      <img id="map-img" src="../map-base.png" alt="Pixel map of the road from Pallet Town up to Pewter Gym and the Hall of Fame">
+    </div>
+    <div class="gutter right" id="gutter-right"></div>
+  </div>
+
+  <!-- phone: sliced band image, then that band's cards, repeated -->
+  <div class="stage-phone" id="stage-phone" hidden></div>
+</main>
+
+<dialog id="run-modal" aria-labelledby="modal-title" aria-describedby="card-flip-help">
+  <button class="modal-close" id="modal-close" aria-label="Close run details">×</button>
+  <div id="modal-content"></div>
+</dialog>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="art-trainer" viewBox="0 0 32 48"><path d="M8 4h16v4h5v9H4V9h4z" fill="#e9765d"/><path d="M9 5h11v4H9z" fill="#ffd2a0"/><path d="M9 17h17v12H9z" fill="#edc18e"/><path d="M7 18h6v9H7z" fill="#334b47"/><path d="M7 29h18v11H7z" fill="#d7d9b4"/></symbol>
+  <symbol id="art-flag" viewBox="0 0 24 24"><path d="M5 2h2v20H5z" fill="#334746"/><path d="M7 3h13l-4 5 4 5H7z" fill="#ff7661"/></symbol>
+  <symbol id="art-trophy" viewBox="0 0 32 37"><path d="M7 3h18v4h6v12h-5v5h-8v6h7v5H7v-5h7v-6H6v-5H1V7h6z" fill="#172a24"/><path d="M9 5h14v13l-4 4h-6l-4-4z" fill="#fff0a4"/><path d="M16 5h7v13l-4 4h-3z" fill="#d89125"/></symbol>
+  <symbol id="art-pin" viewBox="0 0 24 24"><path d="M12 2c-4 0-7 3-7 7 0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z" fill="#e9765d"/><circle cx="12" cy="9" r="3" fill="#f8f7eb"/></symbol>
+</defs></svg>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const finite = v => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+const number = v => finite(v) ? v.toLocaleString('en-US') : '—';
+const local = run => String(run.provider || '').toLowerCase().includes('ollama');
+const won = run => run.furthest_index === 9;
+const price = run => local(run) ? 'FREE' : finite(run.cost_usd) ? '$' + run.cost_usd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: run.cost_usd > 0 && run.cost_usd < .01 ? 6 : 2}) : '—';
+const timeFmt = seconds => {
+  if (!finite(seconds)) return '—';
+  const s = Math.round(seconds), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+  return h ? `${h}h ${m}m` : m ? `${m}m ${s % 60}s` : `${s}s`;
+};
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+// The real Gen-1 ladder, 10 rungs (shared.md ordering).
+const milestoneList = [
+  {key:'left_house', label:'Left the house', short:'Left house'},
+  {key:'got_starter', label:'Got a starter', short:'Got starter'},
+  {key:'route_1', label:'Reached Route 1', short:'Route 1'},
+  {key:'viridian_city', label:'Reached Viridian City', short:'Viridian City'},
+  {key:'got_parcel', label:"Got Oak's Parcel", short:'Parcel'},
+  {key:'got_pokedex', label:'Got the Pokédex', short:'Pokédex'},
+  {key:'viridian_forest', label:'Entered Viridian Forest', short:'Forest'},
+  {key:'pewter_city', label:'Reached Pewter City', short:'Pewter City'},
+  {key:'pewter_gym', label:"Entered Brock's Gym", short:'Entered gym'},
+  {key:'beat_brock', label:'Beat Brock (Boulder Badge)', short:'Beat Brock'}
+];
+
+// Six places, top (Hall of Fame / Brock's Gym) to bottom (Pallet Town), with the measured
+// signpost y-fractions from mocks/map-base.png (667x2000): PEWTER CITY ~.25, VIRIDIAN FOREST
+// ~.42, VIRIDIAN CITY ~.615, ROUTE 1 ~.765, PALLET TOWN ~.895.
+const places = [
+  {id:'gym', name:"Brock's Gym & Hall of Fame", rungs:[9,8], top:0,     bottom:0.25},
+  {id:'pewter', name:'Pewter City', rungs:[7], top:0.25,  bottom:0.42},
+  {id:'forest', name:'Viridian Forest', rungs:[6], top:0.42,  bottom:0.615},
+  {id:'viridian', name:'Viridian City', rungs:[4,3], top:0.615, bottom:0.765},
+  {id:'route1', name:'Route 1', rungs:[2], top:0.765, bottom:0.895},
+  {id:'pallet', name:'Pallet Town', rungs:[5,1,0], top:0.895, bottom:1}
+];
+const MAP_NAT_W = 667, MAP_NAT_H = 2000;
+const placeForRun = run => places.find(p => p.rungs.includes(run.furthest_index)) || places[places.length - 1];
+const rankSort = (a, b) => b.furthest_index - a.furthest_index || (a.turns_used - b.turns_used) || String(a.model).localeCompare(String(b.model));
+
+let RUNS = [];
+let lastFocused = null;
+
+function statsBlock(run) {
+  return `<dl class="stats"><div><dt>TURNS</dt><dd>${number(run.turns_used)} <small>/ ${number(run.budget_turns)}</small></dd></div>
+    <div><dt>TOKENS IN / OUT</dt><dd>${number(run.tokens_in)} <small>/ ${number(run.tokens_out)}</small></dd></div>
+    <div><dt>COST</dt><dd class="${local(run) ? 'free' : ''}">${price(run)}</dd></div>
+    <div><dt>TIME</dt><dd>${timeFmt(run.wall_time_s)}</dd></div></dl>`;
+}
+
+function compactCard(run, rank) {
+  const idx = run.furthest_index;
+  const label = milestoneList[idx]?.label || 'No milestone reached';
+  const status = won(run) ? `Boulder Badge · turn ${number(run.turns_used)}` : `stopped turn ${number(run.turns_used)} · ${idx + 1}/10 ${escapeHtml(label)}`;
+  const badge = rank ? `<span class="rank-badge" aria-hidden="true">#${rank}</span>` : '';
+  return `<button type="button" class="compact-card ${won(run) ? 'is-winner' : ''}" data-uid="${run.uid}" aria-label="${escapeHtml(run.model)}, ${won(run) ? 'beat Brock' : status}, open run details">
+    ${badge}
+    <span class="cc-model">${escapeHtml(run.model)}</span>
+    <span class="cc-provider">${escapeHtml(run.provider)} · ${escapeHtml(run.family)}</span>
+    <span class="cc-status">${status}</span>
+    <span class="cc-foot"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="cc-cost ${local(run) ? 'free' : ''}">${price(run)}</span></span>
+  </button>`;
+}
+
+function modalFront(run) {
+  const label = milestoneList[run.furthest_index]?.label || 'No milestone reached';
+  return `<div class="card-ribbon ${won(run) ? 'is-winner' : ''}"><span>${won(run) ? '🏆 BADGE EARNED' : '× STUCK HERE'}</span><span class="sample-badge">ILLUSTRATIVE</span></div>
+    <div class="modal-body ${won(run) ? 'is-winner-modal' : ''}">
+      <h3 id="modal-title" class="model-name">${escapeHtml(run.model)}</h3>
+      <p class="provider">${escapeHtml(run.provider)} · ${escapeHtml(run.family)}</p>
+      <p class="furthest"><b>${run.furthest_index + 1}/10</b> ${escapeHtml(label)}</p>
+      ${statsBlock(run)}
+      <p class="run-date">Run date ${escapeHtml(run.run_date || '—')} · illustrative sample, not a real result</p>
+      <button class="flip-btn" data-flip="back" aria-label="Flip to journey replay">↻ Flip for the journey replay</button>
+    </div>`;
+}
+
+function ladderRows(run) {
+  return milestoneList.map((m, i) => {
+    const rec = run.milestones.find(x => x.key === m.key);
+    return {...m, idx: i, reached: i <= run.furthest_index, turn: rec ? rec.turn : null};
+  });
+}
+
+function modalBack(run) {
+  const rungs = ladderRows(run);
+  const rows = rungs.slice().reverse().map(r => `<li class="ladder-rung ${r.reached ? 'is-reached' : ''} ${r.idx === run.furthest_index ? 'is-furthest' : ''}" data-rung="${r.idx}">
+      <span class="rung-num">${r.idx + 1}</span><span>${escapeHtml(r.short)}</span>
+      <span class="rung-turn">${r.reached && finite(r.turn) ? 'T' + number(r.turn) : r.reached ? 'T?' : '—'}</span></li>`).join('');
+  return `<div class="card-ribbon ${won(run) ? 'is-winner' : ''}"><span>${escapeHtml(run.model)} · Journey</span></div>
+    <div class="replay-body">
+      <div class="replay-heading-row"><span>THE LADDER</span><span style="color:var(--muted);font-size:9px">RUNGS 1–10</span></div>
+      <div class="replay-turns">Turn <b id="replay-turn-counter">0</b> / ${number(run.turns_used)}</div>
+      <div class="ladder-track" id="ladder-track" style="height:${rungs.length * 33}px">
+        <div class="ladder-sprite" id="ladder-sprite" style="bottom:0" aria-hidden="true"><svg viewBox="0 0 32 48"><use href="#art-trainer"/></svg></div>
+        <ol style="list-style:none;padding:0;margin:0;display:contents">${rows}</ol>
+      </div>
+      <div class="replay-actions">
+        <button data-flip="front" aria-label="Flip back to results">Front ↶</button>
+        <button id="replay-again" type="button">▶ Replay</button>
+      </div>
+    </div>`;
+}
+
+function runReplay(run, root) {
+  const sprite = root.querySelector('#ladder-sprite');
+  const counter = root.querySelector('#replay-turn-counter');
+  const rows = [...root.querySelectorAll('.ladder-rung')];
+  const rungHeight = 33;
+  const finish = () => {
+    counter.textContent = number(run.turns_used);
+    sprite.style.bottom = (run.furthest_index * rungHeight) + 'px';
+    sprite.innerHTML = won(run) ? '<svg viewBox="0 0 32 37"><use href="#art-trophy"/></svg>' : '<svg viewBox="0 0 24 24"><use href="#art-flag"/></svg>';
+  };
+  if (reduced.matches) { finish(); return; }
+  let i = 0;
+  sprite.style.bottom = '0px';
+  sprite.innerHTML = '<svg viewBox="0 0 32 48"><use href="#art-trainer"/></svg>';
+  counter.textContent = '0';
+  const step = () => {
+    if (i > run.furthest_index) { finish(); return; }
+    const row = rows.find(r => Number(r.dataset.rung) === i);
+    const turn = row ? row.querySelector('.rung-turn').textContent.replace('T', '') : run.turns_used;
+    sprite.style.bottom = (i * rungHeight) + 'px';
+    counter.textContent = /^\d/.test(turn) ? turn : number(run.turns_used);
+    i += 1;
+    setTimeout(step, 380);
+  };
+  step();
+}
+
+function openModal(run, triggerEl) {
+  lastFocused = triggerEl || document.activeElement;
+  const dialog = $('run-modal'), content = $('modal-content');
+  content.dataset.uid = run.uid;
+  content.dataset.side = 'front';
+  content.innerHTML = modalFront(run);
+  content.querySelector('.flip-btn').addEventListener('click', () => flip(run, content));
+  dialog.showModal();
+}
+
+function flip(run, content) {
+  if (content.dataset.side !== 'back') {
+    content.dataset.side = 'back';
+    content.innerHTML = modalBack(run);
+    content.querySelector('[data-flip="front"]').addEventListener('click', () => flip(run, content));
+    content.querySelector('#replay-again').addEventListener('click', () => runReplay(run, content));
+    runReplay(run, content);
+  } else {
+    content.dataset.side = 'front';
+    content.innerHTML = modalFront(run);
+    content.querySelector('.flip-btn').addEventListener('click', () => flip(run, content));
+  }
+}
+
+const modal = () => $('run-modal');
+$('modal-close').addEventListener('click', () => modal().close());
+modal().addEventListener('close', () => { if (lastFocused && document.contains(lastFocused)) lastFocused.focus(); });
+modal().addEventListener('click', e => {
+  const r = $('modal-content').getBoundingClientRect();
+  const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  if (!inside) modal().close();
+});
+
+function wireCardClicks(root) {
+  root.querySelectorAll('.compact-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const run = RUNS.find(r => r.uid === btn.dataset.uid);
+      if (run) openModal(run, btn);
+    });
+  });
+}
+
+function splitLR(list) {
+  const left = [], right = [];
+  list.forEach((item, i) => (i % 2 === 0 ? left : right).push(item));
+  return {left, right};
+}
+
+function winnerRankMap() {
+  const winners = RUNS.filter(won).sort((a, b) => a.turns_used - b.turns_used);
+  const map = new Map();
+  winners.slice(0, 3).forEach((r, i) => map.set(r.uid, i + 1));
+  return map;
+}
+
+function bandRuns(place) {
+  return RUNS.filter(r => placeForRun(r) === place).sort(rankSort);
+}
+
+function renderDesktop() {
+  const ranks = winnerRankMap();
+  const leftEl = $('gutter-left'), rightEl = $('gutter-right');
+  leftEl.innerHTML = '';
+  rightEl.innerHTML = '';
+  places.forEach(place => {
+    const runs = bandRuns(place);
+    const {left, right} = splitLR(runs);
+    [[leftEl, left], [rightEl, right]].forEach(([col, list]) => {
+      const stack = document.createElement('div');
+      stack.className = 'band-stack' + (list.length ? '' : ' is-empty');
+      stack.dataset.top = place.top;
+      stack.dataset.bottom = place.bottom;
+      stack.innerHTML = (list.length ? `<span class="band-flag"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#art-flag"/></svg>${escapeHtml(place.name)}</span>` : '')
+        + list.map(r => compactCard(r, ranks.get(r.uid))).join('');
+      col.appendChild(stack);
+    });
+  });
+  wireCardClicks(leftEl);
+  wireCardClicks(rightEl);
+  places.forEach(place => {
+    const sentinel = document.createElement('div');
+    sentinel.className = 'band-sentinel';
+    sentinel.dataset.place = place.id;
+    sentinel.dataset.top = place.top;
+    sentinel.dataset.bottom = place.bottom;
+    $('map-col').appendChild(sentinel);
+  });
+  layoutDesktopBands();
+}
+
+function layoutDesktopBands() {
+  const img = $('map-img');
+  const h = img.getBoundingClientRect().height || (img.clientWidth * (MAP_NAT_H / MAP_NAT_W));
+  if (!h) return;
+  document.querySelectorAll('.band-stack').forEach(el => {
+    const top = parseFloat(el.dataset.top), bottom = parseFloat(el.dataset.bottom);
+    el.style.minHeight = Math.max(40, Math.round(h * (bottom - top))) + 'px';
+  });
+  document.querySelectorAll('.band-sentinel').forEach(el => {
+    const top = parseFloat(el.dataset.top), bottom = parseFloat(el.dataset.bottom);
+    el.style.top = (top * 100) + '%';
+    el.style.height = ((bottom - top) * 100) + '%';
+  });
+}
+
+function renderPhone() {
+  const ranks = winnerRankMap();
+  const stage = $('stage-phone');
+  stage.innerHTML = places.map(place => {
+    const runs = bandRuns(place);
+    const cards = runs.length ? runs.map(r => compactCard(r, ranks.get(r.uid))).join('') : `<p class="phone-band-empty">No runs ended in ${escapeHtml(place.name)}.</p>`;
+    return `<section class="phone-band" data-place="${place.id}" data-top="${place.top}" data-bottom="${place.bottom}">
+      <div class="phone-band-img" data-band="${place.id}"></div>
+      <h2 class="phone-band-heading">${escapeHtml(place.name.toUpperCase())}</h2>
+      <div class="phone-band-cards">${cards}</div>
+    </section>`;
+  }).join('');
+  wireCardClicks(stage);
+  layoutPhoneBands();
+}
+
+function layoutPhoneBands() {
+  document.querySelectorAll('.phone-band-img').forEach(el => {
+    const w = el.parentElement.getBoundingClientRect().width || el.getBoundingClientRect().width;
+    if (!w) return;
+    const place = places.find(p => p.id === el.dataset.band);
+    const renderedTotalH = w * (MAP_NAT_H / MAP_NAT_W);
+    const bandH = renderedTotalH * (place.bottom - place.top);
+    el.style.height = Math.round(bandH) + 'px';
+    el.style.backgroundImage = "url('../map-base.png')";
+    el.style.backgroundSize = `100% ${renderedTotalH}px`;
+    el.style.backgroundPosition = `0 -${Math.round(renderedTotalH * place.top)}px`;
+  });
+}
+
+function renderRail() {
+  $('rail-dots').innerHTML = places.map(p => `<li><span class="rail-dot" data-place="${p.id}">${escapeHtml(p.name)}</span></li>`).join('');
+}
+
+function observePlaces() {
+  const desktopSentinels = [...document.querySelectorAll('.band-sentinel')];
+  const phoneSentinels = [...document.querySelectorAll('.phone-band')];
+  const onEntries = entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const id = entry.target.dataset.place;
+      document.querySelectorAll('.rail-dot').forEach(d => d.classList.toggle('is-current', d.dataset.place === id));
+    });
+  };
+  const io = new IntersectionObserver(onEntries, {rootMargin: '-40% 0px -40% 0px', threshold: 0});
+  desktopSentinels.forEach(s => io.observe(s));
+  phoneSentinels.forEach(s => io.observe(s));
+}
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { layoutDesktopBands(); layoutPhoneBands(); }, 120);
+});
+
+async function boot() {
+  try {
+    const res = await fetch('../mock-runs.json', {cache: 'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    RUNS = rows.map((r, i) => ({...r, uid: r.run_id || ('run-' + i)}));
+  } catch (err) {
+    $('data-state').textContent = 'Could not load mock-runs.json (' + err.message + ').';
+    return;
+  }
+  $('data-state').hidden = true;
+  $('stage-desktop').hidden = false;
+  $('stage-phone').hidden = false;
+  renderRail();
+  renderDesktop();
+  renderPhone();
+  observePlaces();
+  const img = $('map-img');
+  if (img.complete) layoutDesktopBands();
+  else img.addEventListener('load', layoutDesktopBands);
+  document.querySelector('.rail-dot').classList.add('is-current');
+}
+boot();
+})();
+</script>
+</body>
+</html>
