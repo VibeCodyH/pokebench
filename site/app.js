@@ -441,7 +441,7 @@
       return rankSort(a,b);
     });
     $('run-count').textContent = `${filtered.length} of ${state.runs.length} runs${state.sample ? ' · sample' : ''}`;
-    $('table-cards').innerHTML = filtered.length ? filtered.map(run => card(run,true)).join('') : `<div class="no-matches"><h2>${state.runs.length ? 'No runs match these filters.' : 'No runs yet — run the harness.'}</h2>${state.runs.length ? '<button class="text-button" id="reset-filters">Reset filters</button>' : '<p>Every attempt starts at home. <a href="runs.sample.json" data-load-sample>Load sample data</a> to explore the site.</p>'}</div>`;
+    $('table-cards').innerHTML = filtered.length ? filtered.map(run => card(run,true)).join('') : `<div class="no-matches"><h2>${state.runs.length ? 'No runs match these filters.' : 'No runs yet. Run the harness.'}</h2>${state.runs.length ? '<button class="text-button" id="reset-filters">Reset filters</button>' : '<p>Every attempt starts at home. <a href="runs.sample.json" data-load-sample>Load sample data</a> to explore the site.</p>'}</div>`;
     syncSelection();
   }
   function renderTimeline() {
@@ -559,7 +559,7 @@
   function renderDataState(message, error = false) {
     $('data-state').hidden = false;
     $('data-state').classList.toggle('error',error);
-    $('data-state').innerHTML = `<div><h2>No runs yet — run the harness.</h2><p>${escape(message)}</p></div><a href="runs.sample.json" data-load-sample>Load sample data →</a>`;
+    $('data-state').innerHTML = `<div><h2>No runs yet. Run the harness.</h2><p>${escape(message)}</p></div><a href="runs.sample.json" data-load-sample>Load sample data →</a>`;
   }
   async function loadRuns(sample = false) {
     const id = ++requestId;
