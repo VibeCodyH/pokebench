@@ -219,12 +219,18 @@ button:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visib
 .replay-stats { margin: 7px 0; }
 .replay-stats > div { padding-block: 5px; }
 .replay-stats dd { font-variant-numeric: tabular-nums; }
+.counter-stage { position: relative; display: inline-block; }
 [data-counter="turns"] { display: inline-block; transform-origin: left center; }
+.sparkles { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.spark { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; background: var(--gold); box-shadow: 0 0 5px #ffdf7a; z-index: 2; }
+.spark:nth-child(3n+1) { background: #ffe9a3; width: 6px; height: 6px; }
+.spark:nth-child(3n+2) { background: #d99a00; width: 7px; height: 7px; }
+.replay-toolbar { padding: 8px 12px 0; border-bottom: 2px solid var(--ink); background: #f3f1e4; }
 .replay-controls { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .replay-controls button { min-height: 36px; padding: 6px 8px; border: 1px solid #596d5d; background: #e3ecd5; border-radius: 3px; font: 800 9px/1.5 var(--mono); }
 .replay-controls [data-replay="play"] { background: var(--ink); color: var(--paper); min-width: 54px; }
 .replay-status { margin-left: auto; color: var(--muted); font: 650 8px/1.5 var(--mono); }
-.replay-progress { display: block; width: 100%; height: 6px; appearance: none; border: 0; background: #d7dfcc; accent-color: #008577; margin: 9px 0 12px; }
+.replay-progress { display: block; width: 100%; height: 6px; appearance: none; border: 0; background: #d7dfcc; accent-color: #008577; margin: 8px 0 10px; }
 .replay-progress::-webkit-progress-bar { background: #d7dfcc; }
 .replay-progress::-webkit-progress-value { background: #008577; }
 .replay-progress::-moz-progress-bar { background: #008577; }

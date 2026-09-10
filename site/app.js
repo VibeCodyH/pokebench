@@ -176,10 +176,12 @@
         ['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]])}</div>`;
   }
   function runReplay(run, rungs) {
-    return `${runMap(run,rungs)}<div class="replay-body"><p class="running-label">RUNNING TOTALS <span>· tokens, cost &amp; time interpolated</span></p>
-      <dl class="stats replay-stats"><div><dt>TURNS</dt><dd><span data-counter="turns">0</span> <small>/ ${number(run.turns_used)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd data-counter="tokens">${finite(tokens(run)) ? '0' : '—'}</dd></div><div><dt>COST</dt><dd data-counter="cost">${price({...run,cost_usd:finite(run.cost_usd) ? 0 : null})}</dd></div><div><dt>TIME</dt><dd data-counter="time">${finite(run.wall_time_s) ? '0s' : '—'}</dd></div></dl>
-      <div class="replay-controls" role="group" aria-label="Journey replay controls"><button data-replay="play" aria-label="Play replay">Play</button><button data-replay="restart">Restart</button><button data-replay="end">Skip to end</button><span class="replay-status">Ready · ~6s</span></div>
-      <progress class="replay-progress" max="${run.turns_used || 1}" value="0" aria-label="Replay progress in turns"></progress>${runDetails(run,rungs)}</div>`;
+    const hits = rungs.filter(r => finite(r.turn) && r.turn <= run.turns_used).length;
+    return `<div class="replay-toolbar"><div class="replay-controls" role="group" aria-label="Journey replay controls"><button data-replay="play" aria-label="Play replay">Play</button><button data-replay="restart">Restart</button><button data-replay="end">Skip to end</button><span class="replay-status">Ready · ~${Math.round(6+hits*PULSE_MS/1000)}s</span></div>
+      <progress class="replay-progress" max="${run.turns_used || 1}" value="0" aria-label="Replay progress in turns"></progress></div>
+      ${runMap(run,rungs)}<div class="replay-body"><p class="running-label">RUNNING TOTALS <span>· tokens, cost &amp; time interpolated</span></p>
+      <dl class="stats replay-stats"><div><dt>TURNS</dt><dd><span class="counter-stage"><span data-counter="turns">0</span><span class="sparkles" aria-hidden="true"></span></span> <small>/ ${number(run.turns_used)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd data-counter="tokens">${finite(tokens(run)) ? '0' : '—'}</dd></div><div><dt>COST</dt><dd data-counter="cost">${price({...run,cost_usd:finite(run.cost_usd) ? 0 : null})}</dd></div><div><dt>TIME</dt><dd data-counter="time">${finite(run.wall_time_s) ? '0s' : '—'}</dd></div></dl>
+      ${runDetails(run,rungs)}</div>`;
   }
   function card(run, full = false) {
     const selected = state.selected.has(run.uid), rungs = ladder(run);
@@ -201,6 +203,9 @@
   // Unknown timing is only an animation estimate and never becomes a receipt.
   const replays = new WeakMap();
   let activeReplay = null;
+  // Milestone celebration: the turn clock holds for PULSE_MS while the counter grows gold,
+  // bursts sparkles at full size, sits, then shrinks back and the count resumes.
+  const PULSE_MS = 1100, BURST_AT = .25;
   function replayTimeline(run, rungs) {
     const arrivals = [0];
     let lastKnown = 0;
@@ -246,10 +251,10 @@
       if (pin < 0) pin = Math.min(9,run.furthest_index+1);
       return {turn,pin,at:null};
     });
-    const replay = {card,run,rungs,...timeline,faints,turn:-1,elapsed:0,pulseUntil:0,lastFrame:null,frame:0,playing:false,
+    const replay = {card,run,rungs,...timeline,faints,turn:-1,elapsed:0,hold:0,burstTimer:0,lastFrame:null,frame:0,playing:false,
       events:[...new Set([...rungs.map(r => r.turn).filter(t => finite(t) && t <= run.turns_used),...faints.map(f => f.turn),run.turns_used])].sort((a,b) => a-b),
       pins:[...card.querySelectorAll('[data-pin]')],rows:[...card.querySelectorAll('[data-rung]')],
-      counters:Object.fromEntries([...card.querySelectorAll('[data-counter]')].map(el => [el.dataset.counter,el])),
+      counters:Object.fromEntries([...card.querySelectorAll('[data-counter]')].map(el => [el.dataset.counter,el])),sparks:card.querySelector('.sparkles'),total:card.querySelector('.replay-stats small'),
       sprite:card.querySelector('.replay-trainer'),trail:card.querySelector('.replay-trail'),finish:card.querySelector('.replay-finish'),
       overlay:card.querySelector('.blackout-overlay'),progress:card.querySelector('.replay-progress'),
       play:card.querySelector('[data-replay="play"]'),status:card.querySelector('.replay-status')};
@@ -280,17 +285,15 @@
     replay.finish.setAttribute('visibility',turn >= run.turns_used ? 'visible' : 'hidden');
     replay.finish.setAttribute('transform',`translate(${x} ${y})`);
     replay.sprite.setAttribute('visibility',turn >= run.turns_used ? 'hidden' : 'visible');
+    let celebrate = false;
     rungs.forEach((r,i) => {
       const hit = finite(r.turn) && r.turn <= turn;
       replay.pins[i].classList.toggle('is-hit',hit);
       replay.rows[i].classList.toggle('is-hit',hit);
-      if (hit && r.turn > before && !instant && !reduced.matches) {
-        replay.pulseUntil = replay.elapsed+500;
-        counters.turns.getAnimations().forEach(a => a.cancel());
-        counters.turns.animate([{transform:'scale(1)',color:'var(--ink)'},{transform:'scale(1.22)',color:'#916000',background:'var(--gold)',fontWeight:950,offset:.25},{transform:'scale(1)',color:'var(--ink)'}],{duration:500});
-      }
+      if (hit && r.turn > before && !instant && !reduced.matches) celebrate = true;
     });
     counters.turns.textContent = number(Math.floor(turn));
+    if (celebrate) pulseTurns(replay);
     counters.tokens.textContent = number(finite(tokens(run)) ? Math.round(tokens(run)*ratio) : null);
     counters.cost.textContent = price({...run,cost_usd:finite(run.cost_usd) ? run.cost_usd*ratio : null});
     counters.time.textContent = time(finite(run.wall_time_s) ? run.wall_time_s*ratio : null);
@@ -304,6 +307,43 @@
     });
     replay.overlay.style.opacity = darkness;
   }
+  function pulseTurns(replay) {
+    const el = replay.counters.turns;
+    replay.hold = PULSE_MS;
+    el.getAnimations().forEach(a => a.cancel());
+    el.animate([
+      {transform:'scale(1)',color:'var(--ink)',textShadow:'0 0 0 transparent'},
+      {transform:'scale(1.5)',color:'#c98a00',textShadow:'0 0 14px var(--gold)',offset:BURST_AT,easing:'ease-out'},
+      {transform:'scale(1.5)',color:'#c98a00',textShadow:'0 0 8px var(--gold)',offset:.75},
+      {transform:'scale(1)',color:'var(--ink)',textShadow:'0 0 0 transparent'},
+    ],{duration:PULSE_MS,easing:'ease-in-out'});
+    // The "/ total" steps back so the grown count has room.
+    replay.total.getAnimations().forEach(a => a.cancel());
+    replay.total.animate([{opacity:1},{opacity:.12,offset:BURST_AT},{opacity:.12,offset:.75},{opacity:1}],{duration:PULSE_MS});
+    clearTimeout(replay.burstTimer);
+    replay.burstTimer = setTimeout(() => burstSparkles(replay),PULSE_MS*BURST_AT);
+  }
+  function burstSparkles(replay) {
+    if (!replay.sparks || !replay.card.isConnected) return;
+    const count = 18;
+    for (let i = 0; i < count; i++) {
+      const spark = document.createElement('i');
+      spark.className = 'spark';
+      replay.sparks.appendChild(spark);
+      const angle = (i/count)*Math.PI*2+(Math.random()-.5)*.6, dist = 30+Math.random()*40;
+      spark.animate([
+        {transform:'translate(-50%,-50%) rotate(0deg) scale(1)',opacity:1},
+        {opacity:1,offset:.55},
+        {transform:`translate(calc(-50% + ${(Math.cos(angle)*dist).toFixed(1)}px),calc(-50% + ${(Math.sin(angle)*dist-8).toFixed(1)}px)) rotate(${Math.round(180+Math.random()*270)}deg) scale(.4)`,opacity:0},
+      ],{duration:650+Math.random()*350,easing:'cubic-bezier(.1,.8,.3,1)'}).finished.then(() => spark.remove(),() => spark.remove());
+    }
+  }
+  function clearCelebration(replay) {
+    clearTimeout(replay.burstTimer);
+    replay.hold = 0;
+    [replay.counters.turns,replay.total].forEach(el => el.getAnimations().forEach(a => a.cancel()));
+    if (replay.sparks) replay.sparks.replaceChildren();
+  }
   function replayControls(replay) {
     replay.play.textContent = replay.playing ? 'Pause' : replay.turn >= replay.run.turns_used ? 'Replay' : 'Play';
     replay.play.setAttribute('aria-label',replay.playing ? 'Pause replay' : 'Play replay');
@@ -313,13 +353,13 @@
   function pauseReplay(replay = activeReplay) {
     if (!replay) return;
     cancelAnimationFrame(replay.frame);
-    replay.counters.turns.getAnimations().forEach(a => a.cancel());
     replay.playing = false; replay.lastFrame = null;
     if (activeReplay === replay) activeReplay = null;
     replayControls(replay);
   }
   function endReplay(replay) {
     pauseReplay(replay);
+    clearCelebration(replay);
     replay.elapsed = replay.duration+400;
     replay.faints.forEach(f => { f.at = -Infinity; });
     drawReplay(replay,replay.run.turns_used,true);
@@ -328,21 +368,29 @@
   function tickReplay(replay, now) {
     if (!replay.playing) return;
     if (!replay.card.isConnected || replay.card.closest('[hidden]') || document.hidden) { pauseReplay(replay); return; }
-    if (replay.lastFrame !== null) replay.elapsed += now-replay.lastFrame;
+    const dt = replay.lastFrame === null ? 0 : now-replay.lastFrame;
     replay.lastFrame = now;
+    // The clock stands still while a milestone celebrates; only the hold timer runs down.
+    if (replay.hold > 0) {
+      replay.hold = Math.max(0,replay.hold-dt);
+      replay.frame = requestAnimationFrame(now => tickReplay(replay,now));
+      return;
+    }
+    replay.elapsed += dt;
     const segment = replay.segments.find(s => s.duration && replay.elapsed < s.at+s.duration);
     const target = segment ? segment.start+(segment.end-segment.start)*Math.max(0,(replay.elapsed-segment.at)/segment.duration) : replay.run.turns_used;
     // Land exactly on each receipt/faint for a frame, including after a slow frame.
     const crossing = replay.events.find(t => t > replay.turn && t <= target);
     drawReplay(replay,crossing ?? target);
-    if (replay.turn >= replay.run.turns_used && replay.elapsed >= replay.pulseUntil && replay.faints.every(f => f.at !== null && replay.elapsed-f.at >= 400)) { pauseReplay(replay); return; }
+    if (replay.turn >= replay.run.turns_used && replay.hold <= 0 && replay.faints.every(f => f.at !== null && replay.elapsed-f.at >= 400)) { pauseReplay(replay); return; }
     replay.frame = requestAnimationFrame(now => tickReplay(replay,now));
   }
   function playReplay(replay, restart = false) {
     pauseReplay();
     if (reduced.matches) { endReplay(replay); return; }
     if (restart || replay.turn >= replay.run.turns_used) {
-      replay.elapsed = 0; replay.turn = -1; replay.pulseUntil = 0;
+      clearCelebration(replay);
+      replay.elapsed = 0; replay.turn = -1;
       replay.faints.forEach(f => { f.at = null; });
       drawReplay(replay,0,true);
     }
