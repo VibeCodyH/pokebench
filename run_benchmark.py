@@ -203,6 +203,10 @@ _SAFETY_TOKENS = 1024
 # model's own loop evidence (revisiting the same tile) stays intact. fit_recent still caps
 # the result at num_ctx, bounding cost when a model is stuck at one milestone for many turns.
 MILESTONE_WINDOW = 2
+# Provider-error policy: abort on auth/billing bodies, back off 5s→300s, give up after this many
+# seconds of consecutive failures. Billing 429s look like rate limits by status; only the body tells.
+ERROR_WINDOW = 1800
+BILLING_WORDS = ("credits are depleted", "credit balance", "prepay", "insufficient_quota", "insufficient quota")
 
 
 def milestone_anchor_turn(tracker, keep):
@@ -243,12 +247,14 @@ def fit_recent(history, num_ctx, static_chars):
     return kept
 
 
-def run(model, provider, server, budget=1000, run_name="run"):
+def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
     server = server.rstrip("/")
     os.makedirs(RUNS_DIR, exist_ok=True)
     slug = re.sub(r"[^A-Za-z0-9_-]+", "-", model["key"]).strip("-")[:80] or "model"
     prefix = f"{slug}-{time.strftime('%Y%m%d_%H%M%S')}-"
     artifact_dir = tempfile.mkdtemp(prefix=prefix, dir=RUNS_DIR)
+    if not no_frames:
+        os.makedirs(os.path.join(artifact_dir, "frames"))
     run_id = os.path.basename(artifact_dir)
     log_path = os.path.join(artifact_dir, "log.jsonl")
     notes_path = os.path.join(artifact_dir, "notes.md")
@@ -280,6 +286,8 @@ def run(model, provider, server, budget=1000, run_name="run"):
     save_name = None
     acted = False
     blackouts = []
+    errors_in_a_row = 0
+    first_error_at = None
     try:
         # A turn is one model plan that reached the emulator. Pauses, server hiccups and
         # provider errors retry the same turn number so outages never eat the model's budget.
@@ -303,8 +311,12 @@ def run(model, provider, server, budget=1000, run_name="run"):
                 screen_text = frame.get("screen_text") or "(nothing written on screen)"
                 # Warps render exit/door tiles as D/S (a door shown as a plain . once cost ~95 turns);
                 # a text box overwrites tilemap rows and paints false # walls, so hide the map instead.
-                if frame.get("screen_text"):
+                if frame.get("dialog_open") or frame.get("screen_text"):
                     amap = "(map hidden while text is on screen)"
+                elif frame.get("settle") == "capped":
+                    amap = "(map hidden while frame is unsettled)"
+                elif frame.get("menu_open") or frame.get("in_battle"):
+                    amap = "(no map: in battle or menu)"
                 else:
                     amap = build_map(state, frame.get("warps") or ()) or frame.get("ascii") or "(no map: in battle or menu)"
                 img = shrink_png(base64.b64decode(frame["screenshot_b64"]))
@@ -325,20 +337,49 @@ def run(model, provider, server, budget=1000, run_name="run"):
             windowed = [h for h, t in zip(history, history_turns) if t >= anchor]
             recent = fit_recent(windowed, model["num_ctx"], len(system_prompt) + len(head) + len(tail))
             user = head + "\n".join(recent) + tail
+            frame_file = None
+            if not no_frames:
+                frame_file = f"frames/turn-{turn:04d}.png"
+                with open(os.path.join(artifact_dir, frame_file), "wb") as output:
+                    output.write(base64.b64decode(img))  # exactly the resized PNG passed to provider.chat
+            observation = {"frame_file": frame_file, "collision": state.get("collision"),
+                           "warps": frame.get("warps") or [], "party_count": len(state.get("party") or []),
+                           "dialog_open": frame.get("dialog_open"), "menu_open": frame.get("menu_open"),
+                           "in_battle": frame.get("in_battle"), "settle": frame.get("settle")}
             started = time.time()
             try:
                 plan, thinking, tokens = provider.chat(system_prompt, user, img, SCHEMA, model["think"])
             except Exception as exc:
-                status = getattr(getattr(exc, "response", None), "status_code", None)
-                if status in (401, 402, 403):  # auth/quota: retrying will not help, abort the run
-                    print(f"[turn {turn}] non-retryable provider error {status}, aborting: {exc}", flush=True)
-                    break
-                print(f"[turn {turn}] model error: {exc}; retrying the same turn", flush=True)
+                if frame_file:
+                    # A retried turn gets the required canonical filename; preserve this failed
+                    # request's image separately so its log record cannot point at a later PNG.
+                    error_frame = frame_file[:-4] + f"-error-{time.time_ns()}.png"
+                    os.rename(os.path.join(artifact_dir, frame_file), os.path.join(artifact_dir, error_frame))
+                    observation["frame_file"] = error_frame
+                response = getattr(exc, "response", None)
+                status = getattr(response, "status_code", None)
+                body = (getattr(response, "text", None) or "")[:500]
                 with open(log_path, "a") as output:
-                    output.write(json.dumps({"turn": turn, "model_error": str(exc), "turn_not_counted": True}) + "\n")
+                    output.write(json.dumps({"turn": turn, "model_error": str(exc), "error_body": body,
+                                             "turn_not_counted": True, **observation}) + "\n")
+                errors_in_a_row += 1
+                first_error_at = first_error_at or time.time()
+                # Auth and billing failures never clear on their own (a depleted-credits 429 once looped
+                # 5,341 times overnight), and a provider that stays down past the window is not worth waiting on.
+                billing = any(word in body.lower() for word in BILLING_WORDS)
+                if status in (401, 402, 403) or billing:
+                    print(f"[turn {turn}] non-retryable provider error {status}, aborting: {exc} {body}", flush=True)
+                    break
+                if time.time() - first_error_at > ERROR_WINDOW:
+                    print(f"[turn {turn}] provider failing for {ERROR_WINDOW}s straight, aborting: {exc} {body}", flush=True)
+                    break
+                delay = min(5 * 2 ** (errors_in_a_row - 1), 300)
+                print(f"[turn {turn}] model error: {exc} {body}; retrying the same turn in {delay}s", flush=True)
                 turn -= 1
-                time.sleep(5)
+                time.sleep(delay)
                 continue
+            errors_in_a_row = 0
+            first_error_at = None
             elapsed = time.time() - started
             for key in total_tokens:
                 total_tokens[key] += tokens[key]
@@ -371,7 +412,10 @@ def run(model, provider, server, budget=1000, run_name="run"):
                     tail_parts.append(f" MAP CHANGED {start.get('map_name')} -> {end.get('map_name')}")
                 elif start.get("pos") == end.get("pos"):
                     ui_turn = bool(steps) and all(st.get("before", {}).get("ui") for st in steps if st.get("before"))
-                    tail_parts.append(" (menu/dialog input, position unchanged)" if ui_turn else " (no movement)")
+                    moved = any(p.get("map_id") != start.get("map_id") or p.get("pos") != start.get("pos")
+                                for st in steps for p in (st.get("before"), st.get("after")) if p)
+                    tail_parts.append(" (back at the starting position)" if moved else
+                                      " (menu/dialog input, position unchanged)" if ui_turn else " (no movement)")
                 blocked = {}
                 for st in steps:
                     b, af = st.get("before"), st.get("after")
@@ -393,7 +437,15 @@ def run(model, provider, server, budget=1000, run_name="run"):
                     if "error" in st:
                         tail_parts.append(f" action error: {st['error']}")
                 if pages:
-                    tail_parts.append(' said: "' + " | ".join(pages)[:1500] + '"')
+                    shown, used = 0, 0
+                    for line in pages:
+                        used += len(line) + (3 if shown else 0)
+                        if used > 1500:
+                            break
+                        shown += 1
+                    tail_parts.append(' said: "' + " | ".join(pages[:shown]) + '"')
+                    if shown < len(pages):
+                        tail_parts.append(f" (… {len(pages) - shown} more lines not shown)")
             except Exception as exc:
                 result = f"action error: {exc}"
                 tail_parts.append(f" action error: {exc}")
@@ -409,6 +461,7 @@ def run(model, provider, server, budget=1000, run_name="run"):
                     "plan": plan, "result": result, "model_s": elapsed, "tokens": tokens,
                     # what the model was shown + what came back, so a run can be audited after the fact
                     "screen_text": screen_text, "map": amap, "feedback": history[-1], "steps": steps,
+                    **observation,
                     "state_after": compact(state_after) if isinstance(state_after, dict) else None,
                 }) + "\n")
             # A milestone map can be entered and left inside one 6-action batch; the per-step RAM
@@ -450,6 +503,7 @@ def main(argv=None):
     parser.add_argument("--server", default="http://localhost:8765")
     parser.add_argument("--turns", type=int, default=1000)
     parser.add_argument("--run-name", default="")
+    parser.add_argument("--no-frames", action="store_true", help="don't save frame PNGs")
     args = parser.parse_args(argv)
     if args.turns <= 0:
         parser.error("--turns must be positive")
@@ -459,7 +513,7 @@ def main(argv=None):
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))
     try:
-        run(model, provider, args.server, args.turns, args.run_name or args.model_key)
+        run(model, provider, args.server, args.turns, args.run_name or args.model_key, no_frames=args.no_frames)
     except KeyboardInterrupt:
         print("Run interrupted; partial summary written.", flush=True)
         return 130

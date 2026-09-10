@@ -99,41 +99,31 @@ def _ui_open() -> bool:
 
 def _dialog_open() -> bool:
     """Positive dialog check from RAM. The standard text box is drawn at (0,12) with
-    corner tile 0x79; it is gone the frame the box closes. In battle the box is
-    permanent, so there we treat a nested menu corner (FIGHT/move box) in row 12
-    as 'text finished'."""
-    row = S._emulator.read_range(_TILEMAP_ROW12, 20)
-    if row[0] != _BOX_CORNER:
-        return False
-    if S._emulator.read_u8(_red.ADDR_BATTLE_TYPE) != 0 and _BOX_CORNER in row[1:]:
-        return False
-    return True
-
-
-def _letters_up_top() -> bool:
-    """Info screens (Pokémon stats, Pokédex) have no 0x79 corner where we look, but the overworld never
-    draws letter tiles (>= 0x80) in rows 0-11; a screenful of them means a menu/info screen is up."""
-    if S._emulator.read_u8(_red.ADDR_BATTLE_TYPE) != 0:
-        return False
-    raw = S._emulator.read_range(_TILEMAP, 12 * 20)
-    return sum(1 for b in raw if 0x80 <= b <= 0xF9) >= 6
+    corner tile 0x79. A menu may overlap the box; report both flags in that case."""
+    return S._emulator.read_u8(_TILEMAP_ROW12) == _BOX_CORNER
 
 
 def _menu_open() -> bool:
-    if _letters_up_top():
+    raw = S._emulator.read_range(_TILEMAP, 18 * 20)
+    # ShowPokedexData uses its own border tiles (also used for the starter preview).
+    # Identify the layout, not a count of letter-range tiles that also matches the title.
+    if bytes(raw[:20]) == b"\x63" + b"\x64" * 18 + b"\x65" and raw[20] == 0x66 and raw[39] == 0x67:
         return True
-    # Gen 1 overworld tileset tile IDs are < 0x60; 0x79 in the upper screen is the top-left corner of a menu
-    # box (Yes/No prompt, shop list, Start menu at col 10 row 0, naming preset box at row 4), so the helper stops
-    # instead of confirming the highlighted choice. Verified on a live boot 2026-09-08: the intro name-select
-    # list stopped the helper with 0 presses (stop_reason menu). Yes/No boxes use the same border tile (inferred).
-    if S._emulator.read_u8(_red.ADDR_BATTLE_TYPE) != 0:
-        # In battle the text-box corner is permanent, so it can't flag a menu. The ▶ selection cursor
-        # (0xED) is drawn only while a battle menu (FIGHT/ITEM/PKMN/RUN or a submenu) awaits a choice,
-        # and is absent while battle text advances — verified 2026-09-09 on the stuck wild-Rattata
-        # state (a_until had mashed A 100x re-selecting OAK's PARCEL because this returned False here).
-        return _MENU_CURSOR in S._emulator.read_range(_TILEMAP, 18 * 20)
-    raw = S._emulator.read_range(0xC3A0, 12 * 20)  # wTileMap rows 0-11
-    return _BOX_CORNER in raw
+    # The Pokédex list has an alternating vertical divider in column 14.
+    if raw[14] == 0x71 and bytes(raw[34:355:20]) == bytes([0x71, 0x70]) * 8 + b"\x71":
+        return True
+    # pokered draws these borders BEFORE polling input: upper-screen Yes/No, Mart,
+    # PC, naming and Start menus; FIGHT at (8,12). Move selection also draws a
+    # TYPE/PP box at (0,8). Do not depend on the cursor having appeared yet.
+    for r in range(13):
+        for c in range(19):
+            if (r, c) == (12, 0):
+                continue  # the standard dialogue box itself
+            i = r * 20 + c
+            if raw[i] == _BOX_CORNER and raw[i + 1] == 0x7A and raw[i + 20] == 0x7C:
+                return True  # ┌─ with │ below; an isolated title/boot tile is not a box
+    # Party selection uses a cursor above the standard box, including outside battle.
+    return _MENU_CURSOR in raw and (_dialog_open() or S._emulator.read_u8(_red.ADDR_BATTLE_TYPE) != 0)
 
 
 _TILEMAP = 0xC3A0
@@ -182,10 +172,10 @@ def _screen_text() -> str:
     """Every word on screen right now, decoded from wTileMap with the game's own charmap
     (letters are >= 0x80; overworld tiles are < 0x60 so they decode to nothing). This is
     what the model would read from the screenshot, as text: dialog, menus, battle HUD.
-    Only decode when a box/menu/battle is actually up: the title screen draws its logo with
+    Only decode when a box/menu is actually up: the title screen draws its logo with
     tile ids in the letter range, which otherwise decodes to a fake 'ABCDEFG...' alphabet the
     model reads as a name-entry screen (Codex run-10, T2)."""
-    if not _ui_open():
+    if not (_dialog_open() or _menu_open()):
         return ""
     raw = S._emulator.read_range(_TILEMAP, 18 * 20)
     rows = []
@@ -209,47 +199,38 @@ def _box_lines() -> str:
 
 
 async def _a_until_dialog_end() -> dict:
-    """Press A until the text box is gone (max 15) — returns {presses, stop_reason}.
-    History: upstream checked nonexistent 'dialog_active'; v2 screenshot-signature loop stopped on first
-    REVISITED layout -> always one press late next to sign/NPC (7-turn loop in Viridian 2026-09-08). v3 reads
-    wTileMap corner 0x79 from RAM, pre-checks no_box/menu and stops on menu to avoid confirming a choice."""
-    if not _dialog_open():
-        return {"presses": 0, "stop_reason": "no_box"}
-    if _menu_open():
-        return {"presses": 0, "stop_reason": "menu"}
+    """Advance dialogue with at most 100 single-frame A presses, stopping at a choice/menu.
+    Check settled RAM before the first press and after every release; never hold A
+    across the transition from a text page to a menu's input loop."""
     presses = 0
     stop_reason = "capped"
-    said = [_box_lines()]  # transcript of what she skipped, so the words reach her turn history
-    for _ in range(_A_UNTIL_CAP):
-        if _menu_open():
-            # Recheck BEFORE every press (Codex 2026-09-09): a box reopening during the grace wait
-            # slips past the post-press menu check below, so a menu that appears mid-loop (battle text
-            # ending on the FIGHT/ITEM menu, or a scripted scene opening a choice) would eat one A press.
-            stop_reason = "menu"
+    said, trace = [], []
+    settle = await _settle_screen(_FRAME_SETTLE_TICKS)
+    for _ in range(_A_UNTIL_CAP + 1):
+        dialog_open, menu_open = _dialog_open(), _menu_open()
+        in_battle = S._emulator.read_u8(_red.ADDR_BATTLE_TYPE) != 0
+        if presses:
+            trace.append({"press": presses, "ui": dialog_open or menu_open or in_battle,
+                          "dialog_open": dialog_open, "menu_open": menu_open,
+                          "in_battle": in_battle, "settle": settle, "screen_text": _screen_text()})
+        if dialog_open:
+            said.append(_box_lines())
+        if menu_open:
+            words = set(_screen_text().replace(" / ", " ").split())
+            stop_reason = "choice" if {"YES", "NO"} <= words else "menu"
             break
-        await S._run_sync(S._emulator.press, "a", 8)  # 8-frame hold = reliable register
-        await S._run_sync(S._emulator.tick, 30)
+        if settle == "capped":
+            break
+        if not dialog_open:
+            stop_reason = "closed"
+            break
+        if presses == _A_UNTIL_CAP:
+            break
+        await S._run_sync(S._emulator.press, "a", 1)
         presses += 1
-        if _dialog_open():
-            line = _box_lines()
-            if line and line != said[-1]:
-                said.append(line)
-        if not _dialog_open():
-            # Scripted scenes (intro, Oak's Lab) close the box, move sprites, then open the next
-            # box on their own. Measured 2026-09-08: the helper returned "closed" after 1-2 presses
-            # four turns in a row in the lab. Wait a moment without pressing; only a box that stays
-            # closed is really the end.
-            for _ in range(_REOPEN_GRACE_TICKS):
-                await S._run_sync(S._emulator.tick, 30)
-                if _dialog_open():
-                    break
-            else:
-                stop_reason = "closed"
-                break
-        elif _menu_open():
-            stop_reason = "menu"
-            break
-    return {"presses": presses, "stop_reason": stop_reason, "text": _squash(said)[:30]}
+        settle = await _settle_screen(_FRAME_SETTLE_TICKS, grace=True)
+    return {"presses": presses, "stop_reason": stop_reason, "text": _squash(said),
+            "trace": trace, "settle": settle}
 
 
 _SETTLE_CAP_TICKS = 40   # 40 x 6 frames = 4 s max for the text to finish printing
@@ -265,18 +246,24 @@ def _screen_sig() -> bytes:
     return raw.translate(bytes.maketrans(bytes(_ARROW_TILES), b"\x7f\x7f"))
 
 
-async def _settle_screen(cap_ticks: int) -> None:
-    """Tick until the tile map has not changed for 3 reads 6 frames apart (text finished printing,
-    menu/info screen fully drawn, battle wipe over). Replaces the text-box-only wait: test run 4
-    T64 caught Charmander's info screen half drawn, T78/T101 caught battle wipes as rows of 9s."""
-    same, last = 0, None
+async def _settle_screen(cap_ticks: int, grace: bool = False) -> str:
+    """Wait for stable tilemap reads with scripted movement/fades clear, six frames apart.
+    A plain overworld frame settles after 2 stable reads. Once a script/fade was seen in this wait
+    (or the caller passes grace=True: the dialogue helper after a box closes), require the full
+    reopening grace interval: scripts pause on an unchanged tilemap before drawing the next box
+    (Oak's lab, turns 12->13 and 18->19 of the 2026-09-10 audit). Never press a button here."""
+    same, last, saw_busy = 0, None, grace
     for _ in range(cap_ticks):
         await S._run_sync(S._emulator.tick, 6)
         sig = await S._run_sync(_screen_sig)
-        same = same + 1 if sig == last else 0
-        last = sig
-        if same >= 2:
-            return
+        busy = await S._run_sync(_transition_busy)
+        saw_busy = saw_busy or busy
+        same = same + 1 if sig == last and not busy else 0
+        last = None if busy else sig
+        stable_ticks = 2 if _dialog_open() or not saw_busy else _REOPEN_GRACE_TICKS * 30 // 6
+        if same >= stable_ticks:
+            return "cleared"
+    return "capped"
 
 
 _last_settle: dict = {}  # busy_reason of the most recent _settle_after, surfaced in /action/traced for review
@@ -292,18 +279,16 @@ async def _settle_after(action: str) -> None:
     T35->T36: /frame caught Oak's escort mid-walk, reporting the lab door pose while the script
     was still walking her to the aide)."""
     clear = 0
-    busy_reason = "capped"
     for i in range(_WARP_CAP_TICKS):
         if await S._run_sync(_transition_busy):
             clear = 0
         else:
             clear += 1
             if clear >= 2:
-                busy_reason = "cleared"
                 break
         await S._run_sync(S._emulator.tick, 6)
-    await _settle_screen(_SETTLE_CAP_TICKS)
-    _last_settle["busy_reason"] = busy_reason  # logged per action so a review can tell a premature release from a cap
+    screen_settle = await _settle_screen(_SETTLE_CAP_TICKS)
+    _last_settle["busy_reason"] = screen_settle  # a later clear can finish an initially capped script wait
 
 
 async def _settle_warp(stale: dict) -> dict:
@@ -329,8 +314,8 @@ async def _execute_unlocked(action_str: str):
     a = action_str.strip().lower()
     if a == "a_until_dialog_end":
         res = await _a_until_dialog_end()
-        await _settle_after(a)  # a scripted scene can keep moving after the last box closes (Oak's escort ends
-        return res              # here); v14 settled every OTHER action but this path, so T39 leaked (Codex run-10)
+        _last_settle["busy_reason"] = res["settle"]  # the helper already settled its final traced snapshot
+        return res
     res = await _orig_execute(action_str)
     await _settle_after(a)
     return res
@@ -557,18 +542,16 @@ async def get_frame():
         # Test run 3 (2026-09-08): black or fading screenshots and pre-warp coordinates went to the model
         # (T121/T186/T189), and Oak's intercept ran while she was thinking so the prompt said Pallet but the
         # actions started in the lab (T74->T75). Wait for the game to hand control back, cap 8 s.
-        for _ in range(_FRAME_SETTLE_TICKS):
-            if not await S._run_sync(_transition_busy):
-                break
-            await S._run_sync(S._emulator.tick, 6)
-        await _settle_screen(_SETTLE_CAP_TICKS)
+        settle = await _settle_screen(_FRAME_SETTLE_TICKS)
 
         def _build():
             state = S._get_state_dict()
             png = S._get_screenshot_bytes()
             b64 = base64.b64encode(png).decode("ascii")
             ascii_text = (state.get("collision") or {}).get("ascii")
-            return {"state": state, "screenshot_b64": b64, "ascii": ascii_text, "screen_text": _screen_text(), "warps": _warps()}
+            return {"state": state, "screenshot_b64": b64, "ascii": ascii_text, "screen_text": _screen_text(), "warps": _warps(),
+                    "dialog_open": _dialog_open(), "menu_open": _menu_open(),
+                    "in_battle": S._emulator.read_u8(_red.ADDR_BATTLE_TYPE) != 0, "settle": settle}
         data = await S._run_sync(_build)
     return data
 

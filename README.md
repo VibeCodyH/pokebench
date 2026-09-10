@@ -80,6 +80,16 @@ an MP4 and optionally pushing the same encode to one or two RTMP targets. Setup 
 `models.yaml`. The Anthropic, OpenAI and Google rows there are still placeholders and the adapters are
 unsmoked. Local Ollama runs are the only verified path today.
 
+The registry runner saves the exact input PNG to `frames/turn-0001.png` (four-digit turn number);
+`--no-frames` disables this. Each `log.jsonl` record includes `frame_file` (relative to the run
+directory, or null), raw `collision` and `warps`, `party_count`, and the snapshot's `dialog_open`,
+`menu_open`, `in_battle`, and `settle` (`cleared` or `capped`). Failed model attempts keep separate
+`turn-0001-error-<timestamp>.png` receipts so retries cannot overwrite their images.
+Helper steps include a `dialog.trace` entry per internal A press, with UI/textbox/menu flags,
+screen text and settling status after release. `dialog.stop_reason` is `closed`, `choice`, `menu`,
+or `capped`; collected helper text is retained in full, and shortened history quotes state how
+many lines were omitted.
+
 ## What's in here
 
 | File | Job |
