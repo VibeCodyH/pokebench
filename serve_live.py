@@ -25,13 +25,23 @@ from pokemon_agent.memory import red as _red
 # encounter is mislabeled. The active battle mon lives at wEnemyMon (0xCFE5).
 # Verified on a live save-state: 0xD89D=177 (Squirtle, stale) vs 0xCFE5=36 (Pidgey).
 _ENEMY_MON = 0xCFE5  # species+0, HP+1, status+4, moves+8, level+0x0E, maxHP+0x0F
+# wEnemyMon is only (re)loaded at the send-out, so during a trainer's "wants to fight!" intro it still holds
+# the PREVIOUS battle's mon (Gemini run 2026-09-10: T469 showed a Route 2 Pidgey, T503 a half-dead Sandshrew,
+# as the "current" opponent). pokered InitBattleCommon writes $ff to wEnemyMonPartyPos (struct offset 3) right
+# before wIsInBattle := TRAINER_BATTLE, and LoadEnemyMonData overwrites it with the slot index at send-out.
+_NOT_SENT_OUT = 0xFF
 
 def _read_battle_active(self):
     bt = self.emu.read_u8(_red.ADDR_BATTLE_TYPE)
     result = {"in_battle": bt != 0,
               "type": {0: "none", 1: "wild", 2: "trainer"}.get(bt, f"unknown({bt})")}
-    if bt != 0:
-        m = self.emu.read_range(_ENEMY_MON, 0x20)
+    if bt == 0:
+        return result
+    m = self.emu.read_range(_ENEMY_MON, 0x20)
+    if m[0] == 0 or (bt == 2 and m[3] == _NOT_SENT_OUT):
+        result["enemy"] = None
+        result["opponent"] = "not sent out yet"
+    else:
         sid = m[0]
         result["enemy"] = {
             "species_id": sid,

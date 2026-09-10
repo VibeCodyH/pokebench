@@ -25,17 +25,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OLLAMA = os.environ.get("OLLAMA_HOST", "http://<server-host>:11434")
 RUNS_DIR = os.path.join(HERE, "runs")
 
-SYSTEM = """__IDENTITY__ You get the game state read from RAM, an ASCII walkability map, and a screenshot. The game keeps running in real time between turns (NPCs move, animations finish), so the screenshot is a moment in time; each turn only 1-6 button presses happen, so make them count.
+SYSTEM = """__IDENTITY__ You get the game state read from RAM, an ASCII walkability map, and a screenshot. The game keeps running in real time between turns (NPCs move, animations finish), so the screenshot is a moment in time; each turn only 1-6 button presses happen.
 
-How the game works: overworld movement is one tile per walk_X. Talk to people/signs with press_a while facing them. DOORS, STAIRS, and building entrances/exits are WARP tiles: you trigger them just by WALKING ONTO them, never with A. Every warp tile is marked on the ASCII map (read from the game's own warp table): `D` = a door between inside and outside (a building's street entrance from the outside, or its exit mat from the inside), `S` = a warp to some OTHER map (stairs to another floor, a cave mouth, the far side of a gate house). So a `.` is NEVER a door, and inside a house or shop the `S` is the stairs, not the way out: to reach the street find the `D`. IMPORTANT: after leaving a building you stand directly BELOW its `D`; walking up re-enters it. Step away sideways first, then head to your goal. In menus and dialog, press_a advances/confirms, press_b cancels. Use a_until_dialog_end to skip through long text. ★SCREEN TEXT below is exactly what is written on screen right now, read from the game's memory. If a text box is open, READ IT FIRST: people tell you what to do next (if someone says "don't leave yet", stay and talk to them; if the text names a place or a person, that is your lead). Then clear the box with a_until_dialog_end; whatever it skipped past is quoted back to you in RECENT TURNS. You cannot walk while a text box is open. The title/intro screens need press_start then press_a. Name entry (yours, then your rival's): your call. The preset names are the fast path (move onto one, press_a). If you want a name of your own, pick NEW NAME: on the letter grid walk_X moves the cursor, press_a types the highlighted letter, press_b deletes. To finish the name, move the cursor to the ED (end) tile at the bottom-right and press_a, or just press_start to submit it directly.
+How the game works: overworld movement is one tile per walk_X. Talk to people/signs with press_a while facing them. DOORS, STAIRS, and building entrances/exits are WARP tiles: you trigger them just by WALKING ONTO them, never with A. Every warp tile is marked on the ASCII map (read from the game's own warp table): `D` = a door between inside and outside (a building's street entrance from the outside, or its exit mat from the inside), `S` = a warp to some OTHER map (stairs to another floor, a cave mouth, the far side of a gate house). A `.` is never a door. In menus and dialog, press_a advances/confirms, press_b cancels. a_until_dialog_end presses A through dialogue until the text box closes or a choice/menu appears (up to 100 presses); it does nothing when no text box is open. ★SCREEN TEXT below is exactly what is written on screen right now, read from the game's memory; whatever a_until_dialog_end skipped past is quoted back to you in RECENT TURNS. You cannot walk while a text box is open. The title/intro screens need press_start then press_a. Name entry (yours, then your rival's): move onto a preset name and press_a, or pick NEW NAME: on the letter grid walk_X moves the cursor, press_a types the highlighted letter, press_b deletes; to finish, move the cursor to the ED (end) tile at the bottom-right and press_a, or press_start to submit.
 
-Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. The grid is a WINDOW that moves with you: E5 is always your current STATE position (x,y), so grid letters/rows are NOT world coordinates (column A = x-4, J = x+5; row 1 = y-4, row 9 = y+4) and E5 never disagrees with STATE. `.` walkable, `#` blocked, `D` door between inside and outside / `S` warp to another map: outdoor doors and stairs trigger the moment you step onto them, but an EXIT MAT inside a building (the `D` tiles on its edge wall) does not: stand on it and walk once more INTO the wall behind it (down for a bottom-wall mat, up for a top-wall mat) to go through; the grid tells you which. Sidestepping between the two mat tiles does nothing, `v` a ledge: walk_down from the tile above it hops you over to the tile below; you can never go back up through it. ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.`, `D`, `S`, or (going down only) `v`. The ONE exception is the exit-mat step above: from a `D` mat you walk into the `#` wall behind it. If the tile directly ABOVE `@` is `#`, you CANNOT go north this turn regardless of what tiles further up look like — walk left or right along the wall to find the one `.` opening, then go up through it. up = row-1, down = row+1, left = col-1, right = col+1. Never plan a route through `#`. To enter a building, walk onto its `D`. Your memory of the Gen 1 maps is unreliable: treat any recalled layout ('the stairs are bottom-left', 'the Pokémon Center is north') as a guess until the map or screenshot confirms it.
+Map reading: the ASCII map is 10 columns (A-J) x 9 rows (1-9); you are @ at E5. The grid is a WINDOW that moves with you: E5 is always your current STATE position (x,y), so grid letters/rows are NOT world coordinates (column A = x-4, J = x+5; row 1 = y-4, row 9 = y+4) and E5 never disagrees with STATE. `.` walkable, `#` blocked, `D` door between inside and outside / `S` warp to another map. Outdoor doors and stairs trigger the moment you step onto them; an EXIT MAT inside a building (the `D` tiles on its edge wall) does not: standing on it, you walk once more INTO the wall behind it (down for a bottom-wall mat, up for a top-wall mat) to go through. `v` is a ledge: walk_down from the tile above it hops you over to the tile below; you can never go back up through it. ★MOVEMENT RULE: you can only step a direction if the tile IMMEDIATELY next to `@` in that direction is `.`, `D`, `S`, or (going down only) `v`. The ONE exception is the exit-mat step above: from a `D` mat you walk into the `#` wall behind it. up = row-1, down = row+1, left = col-1, right = col+1.
 
-Overall goal: beat the game. The opening runs in a fixed order, and the game will not let you skip a step. Where you are in it is visible in STATE (party, parcel flag, pokedex flag): (1) No Pokémon yet: your house and the lab are dead ends. Walk to the NORTH edge of Pallet Town toward the tall grass; Professor Oak stops you there and walks you to his lab, where you pick a starter and fight your rival. (2) Starter but no parcel and no Pokédex: Oak has nothing more for you yet. Leave Pallet NORTH through Route 1 to Viridian City; the clerk in the Viridian Mart hands you Oak's parcel. (3) Parcel in your bag: go back SOUTH down Route 1 to Oak's lab and give it to him; he gives you the Pokédex. (4) Pokédex: north again to Viridian, then Route 2 -> Viridian Forest -> Pewter City -> Brock's gym. Heal at Pokémon Centers (talk to the nurse). Buy Potions and Poké Balls at Marts.
-
-Battle basics: in battle, press_a picks FIGHT, then a move; effective moves matter (Water beats Fire/Rock, Grass beats Water, Fire beats Grass/Bug, Electric beats Water). If HP is low and you have Potions, use ITEM. Run from wild battles you do not need.
-
-If several turns pass with the same position and nothing changing, you are stuck: try a different direction, press_b to close a hidden menu, or read the screenshot again.
+Overall goal: beat the game.
 
 Available actions (strings, exactly): press_a, press_b, press_start, press_select, walk_up, walk_down, walk_left, walk_right, hold_a_30, wait_60, a_until_dialog_end.
 
@@ -60,7 +56,7 @@ ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk
            "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 
 # Provenance (BENCHMARK-SPEC.md §2b — same prompt, same rules, public receipts).
-PROMPT_VERSION = "v16"          # bump whenever SYSTEM changes; old runs keep their version (v16 = __IDENTITY__ template; Qwen's rendered text is byte-identical to v15)
+PROMPT_VERSION = "v17"          # bump whenever SYSTEM changes; old runs keep their version (v17 = coaching removed: no opening walkthrough, battle tips, unstick advice, or position-specific instructions; v16 = __IDENTITY__ template)
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
@@ -375,10 +371,6 @@ def build_map(state, warps=()):
             else: line.append("#")  # RAM says walkable but no route from @ (fenced/ledged off): show it as blocked, she treated `~` as a target (v4)
         out.append(f"{r+1:2d} " + " ".join(line))
     out.append("@ you  . reachable  # blocked  D door (inside<->outside)  S warp to another map (stairs/cave/far side of a gate)  v ledge (hop DOWN over it; one-way)")
-    if (pr, pc) in doors and not outdoors:
-        # a mat on the map's top row (gate houses' north exits, y == 0) is walked UP through; every other mat is on the bottom wall
-        step = "walk_up" if ppos.get("y") == 0 else "walk_down"
-        out.append(f"★ YOU ARE STANDING ON THE EXIT MAT (a D is under @). {step} once more, into the wall, to go through.")
     out.append("up=row-1 down=row+1 left=col-1 right=col+1")
     return "\n".join(out)
 
@@ -458,7 +450,6 @@ def main():
 
     notes = "(no notes yet)"
     history = []
-    last_pos = None; same_pos = 0
     in_game_name = ""; rival_name = ""  # captured once she names herself / the rival
     # `turn` only advances on a real decision: a pause, an unreachable server, or a model/Ollama outage re-runs
     # the same turn number (test run 7: the 2 AM appdata backup stopped Ollama and 41 turns burned on
@@ -485,7 +476,7 @@ def main():
             # T168/T229: she walked onto cells shown blocked once the box cleared). She cannot walk
             # while a box is up anyway, so hide the map until it is cleared instead of showing a lie.
             if frame.get("screen_text"):
-                amap = "(map hidden: a text box is open. Clear it with a_until_dialog_end, then the map is shown again.)"
+                amap = "(map hidden while text is on screen)"
             else:
                 amap = build_map(state, frame.get("warps") or ()) or frame.get("ascii") or "(no map: in battle or menu)"
             png_bytes = base64.b64decode(frame["screenshot_b64"])
@@ -503,10 +494,6 @@ def main():
             img = shrink_png(png_bytes)
         except Exception as e:
             print(f"[turn {turn}] server not reachable ({e}); retrying"); turn -= 1; time.sleep(5); continue
-        pos = ((state.get("map") or {}).get("map_id"), json.dumps((state.get("player") or {}).get("position")))
-        ui_now = (frame.get("screen_text") or "") != "" or ((state.get("battle") or {}).get("in_battle"))
-        same_pos = 0 if ui_now else (same_pos + 1 if pos == last_pos else 0)  # menus/dialog/battle do not move you
-        last_pos = pos
         _pl = state.get("player") or {}
         if _pl.get("name"): in_game_name = _pl["name"]
         if _pl.get("rival_name"): rival_name = _pl["rival_name"]
@@ -525,9 +512,8 @@ def main():
         if "beat_brock" in tracker.first_turn:
             print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
             break
-        stuck = f"\nWARNING: position unchanged for {same_pos} turns. Do something different." if same_pos >= 3 else ""
         user = (f"YOUR PRIOR NOTES (you wrote these on earlier turns; they are plans and guesses, NOT verified observations — the STATE, map and screenshot below are the truth):\n{notes}\n\nRECENT TURNS:\n" + "\n".join(history[-12:]) +
-                f"\n\nSTATE:\n{compact(state)}\n\nSCREEN TEXT (words on screen right now):\n{screen_text}\n\nWALKABILITY MAP (you are @ at E5):\n{amap}{stuck}\n\nThe screenshot is attached. Take your turn.")
+                f"\n\nSTATE:\n{compact(state)}\n\nSCREEN TEXT (words on screen right now):\n{screen_text}\n\nWALKABILITY MAP (you are @ at E5):\n{amap}\n\nThe screenshot is attached. Take your turn.")
         t0 = time.time()
         retried = False
         try:

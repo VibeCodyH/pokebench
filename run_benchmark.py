@@ -275,7 +275,6 @@ def run(model, provider, server, budget=1000, run_name="run"):
     identity = (f"You are {name}, an AI playing Pokémon Red live on stream." if name
                 else resolve_identity(model["api_model_id"], model["provider"]))
     system_prompt = render_system(identity)
-    last_pos, same_pos = None, 0
     turn = 0
     save_name = None
     acted = False
@@ -300,7 +299,7 @@ def run(model, provider, server, budget=1000, run_name="run"):
                 # Warps render exit/door tiles as D/S (a door shown as a plain . once cost ~95 turns);
                 # a text box overwrites tilemap rows and paints false # walls, so hide the map instead.
                 if frame.get("screen_text"):
-                    amap = "(map hidden: a text box is open. Clear it with a_until_dialog_end, then the map is shown again.)"
+                    amap = "(map hidden while text is on screen)"
                 else:
                     amap = build_map(state, frame.get("warps") or ()) or frame.get("ascii") or "(no map: in battle or menu)"
                 img = shrink_png(base64.b64decode(frame["screenshot_b64"]))
@@ -309,19 +308,12 @@ def run(model, provider, server, budget=1000, run_name="run"):
                 time.sleep(5)
                 continue
 
-            pos = ((state.get("map") or {}).get("map_id"),
-                   json.dumps((state.get("player") or {}).get("position")))
-            ui_now = (frame.get("screen_text") or "") != "" or bool((state.get("battle") or {}).get("in_battle"))
-            same_pos = 0 if ui_now else (same_pos + 1 if pos == last_pos else 0)  # menus/dialog/battle do not move you
-            last_pos = pos
             if record_milestones(server, tracker, state, turn):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
                 break
-            stuck = (f"\nWARNING: position unchanged for {same_pos} turns. Do something different."
-                     if same_pos >= 3 else "")
             head = f"NOTES:\n{notes or '(no notes yet)'}\n\nRECENT TURNS:\n"
             tail = (f"\n\nSTATE:\n{compact(state)}\n\nSCREEN TEXT (words on screen right now):\n{screen_text}"
-                    f"\n\nWALKABILITY MAP (you are @ at E5):\n{amap}{stuck}"
+                    f"\n\nWALKABILITY MAP (you are @ at E5):\n{amap}"
                     "\n\nThe screenshot is attached. Take your turn.")
             anchor = milestone_anchor_turn(tracker, MILESTONE_WINDOW)
             windowed = [h for h, t in zip(history, history_turns) if t >= anchor]
@@ -406,6 +398,9 @@ def run(model, provider, server, budget=1000, run_name="run"):
                 output.write(json.dumps({
                     "turn": turn, "state": compact(state), "thinking": thinking,
                     "plan": plan, "result": result, "model_s": elapsed, "tokens": tokens,
+                    # what the model was shown + what came back, so a run can be audited after the fact
+                    "screen_text": screen_text, "map": amap, "feedback": history[-1], "steps": steps,
+                    "state_after": compact(state_after) if isinstance(state_after, dict) else None,
                 }) + "\n")
             # A milestone map can be entered and left inside one 6-action batch; the per-step RAM
             # poses expose those transient map_ids the pre/post-turn states miss (map rungs only —
