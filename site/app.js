@@ -190,7 +190,7 @@
       <div class="card-inner"><div class="card-face card-front" aria-hidden="false">${ribbon}
       ${run.uid === localHero ? '<div class="hero-ribbon">★ LOCAL HERO · FURTHEST LOCAL RUN</div>' : ''}
       <div class="card-body"><h3 class="model-name">${escape(modelName(run))}</h3><p class="provider">${escape(textValue(run.provider))}${run.run_name ? ' / '+escape(run.run_name) : ''}</p>
-      ${run.in_game_name ? `<p class="ingame-name">plays as <b>${escape(run.in_game_name)}</b>${run.rival_name ? ` &middot; rival <b>${escape(run.rival_name)}</b>` : ''}</p>` : ''}
+      ${run.in_game_name ? `<p class="ingame-name">plays as <b class="player-name">${escape(run.in_game_name)}</b>${run.rival_name ? ` &middot; rival <b class="rival-name">${escape(run.rival_name)}</b>` : ''}</p>` : ''}
       <div class="card-tags"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="tag">${escape(textValue(run.family))}</span><span class="tag">GEN 1 · RED</span></div>
       <p class="furthest"><b>${run.furthest_index+1}/10</b> ${escape(milestoneLabel(run))}</p>${stats(run)}
       ${full ? facts([['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]]) : ''}

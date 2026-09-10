@@ -140,8 +140,10 @@ button:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visib
 .card-body { padding: 17px; }
 .model-name { font: 900 21px/1.25 var(--mono); letter-spacing: -.9px; }
 .provider { font-size: 11px; color: var(--muted); margin-top: 5px; }
-.ingame-name { font: 700 11px/1.4 var(--mono); color: var(--cyan); margin-top: 4px; }
-.ingame-name b { color: var(--gold); }
+.ingame-name { font: 700 11px/1.4 var(--mono); color: var(--muted); margin-top: 4px; }
+/* Gen 1 canon: the player is Red, the rival is Blue, whatever a model names them. */
+.ingame-name .player-name { color: #b3261e; }
+.ingame-name .rival-name { color: #1d4ed8; }
 .card-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .tag { display: inline-flex; padding: 2px 5px; border: 1px solid #748379; border-radius: 3px; font: 800 8px/1.5 var(--mono); }
 .tag.local { background: #d9edbf; }
