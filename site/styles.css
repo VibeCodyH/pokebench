@@ -41,11 +41,12 @@ button:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visib
 .social-button:hover { background: var(--gold); }
 .social-button:active, .live-pill:active { box-shadow: 0 0 0 var(--ink); transform: translate(3px, 3px); }
 .social-icon { width: 16px; height: 16px; fill: currentColor; }
-.live-pill { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 12px 0 10px; border: 2px solid var(--ink); border-radius: 17px; background: #d9f7e6; box-shadow: 4px 4px 0 var(--ink); font: 900 11px var(--mono); letter-spacing: 1px; color: var(--ink); text-decoration: none; transition: transform .08s, box-shadow .08s; }
-.live-pill[hidden] { display: none; }
-.live-dot { width: 10px; height: 10px; border-radius: 50%; background: #16c05a; }
+.live-pill { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 12px 0 10px; border: 2px solid var(--ink); border-radius: 17px; background: #e9eade; box-shadow: 4px 4px 0 var(--ink); font: 900 11px var(--mono); letter-spacing: 1px; color: #4b5c53; text-decoration: none; transition: transform .08s, box-shadow .08s; }
+.live-pill.is-live { background: #d9f7e6; color: var(--ink); }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: #8f9a92; }
+.live-pill.is-live .live-dot { background: #16c05a; }
 @media (prefers-reduced-motion: no-preference) {
-  .live-dot { animation: live-pulse 1.6s ease-out infinite; }
+  .live-pill.is-live .live-dot { animation: live-pulse 1.6s ease-out infinite; }
   @keyframes live-pulse { from { box-shadow: 0 0 0 0 rgba(22, 192, 90, .7); } to { box-shadow: 0 0 0 9px rgba(22, 192, 90, 0); } }
 }
 .header-controls { display: flex; align-items: center; gap: 22px; }
