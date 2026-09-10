@@ -281,13 +281,16 @@ def run(model, provider, server, budget=1000, run_name="run"):
     acted = False
     blackouts = []
     try:
-        # Keep qwen_red's polling, retry delays, and attempt-based turn accounting.
-        for turn in range(1, budget + 1):
+        # A turn is one model plan that reached the emulator. Pauses, server hiccups and
+        # provider errors retry the same turn number so outages never eat the model's budget.
+        while turn < budget:
+            turn += 1
             try:
                 control = requests.get(f"{server}/control", timeout=10).json().get("state", "running")
             except Exception:
                 control = "running"
             if control == "paused":
+                turn -= 1
                 time.sleep(3)
                 continue
             if control == "stopped":
@@ -307,6 +310,7 @@ def run(model, provider, server, budget=1000, run_name="run"):
                 img = shrink_png(base64.b64decode(frame["screenshot_b64"]))
             except Exception as exc:
                 print(f"[turn {turn}] server not reachable ({exc}); retrying", flush=True)
+                turn -= 1
                 time.sleep(5)
                 continue
 
@@ -329,7 +333,10 @@ def run(model, provider, server, budget=1000, run_name="run"):
                 if status in (401, 402, 403):  # auth/quota: retrying will not help, abort the run
                     print(f"[turn {turn}] non-retryable provider error {status}, aborting: {exc}", flush=True)
                     break
-                print(f"[turn {turn}] model error: {exc}", flush=True)
+                print(f"[turn {turn}] model error: {exc}; retrying the same turn", flush=True)
+                with open(log_path, "a") as output:
+                    output.write(json.dumps({"turn": turn, "model_error": str(exc), "turn_not_counted": True}) + "\n")
+                turn -= 1
                 time.sleep(5)
                 continue
             elapsed = time.time() - started
