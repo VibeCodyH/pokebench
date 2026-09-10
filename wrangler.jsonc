@@ -4,11 +4,8 @@
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
   "name": "pokebench",
   "compatibility_date": "2025-10-01",
-  // Custom domains on the same account: deploy creates the DNS records and certificates.
-  "routes": [
-    { "pattern": "pokebench.tv", "custom_domain": true },
-    { "pattern": "www.pokebench.tv", "custom_domain": true }
-  ],
+  // pokebench.tv and www are attached as Custom Domains in the dashboard (Worker → Settings →
+  // Domains & Routes). Declaring them here stalled Workers Builds, so they stay out of config.
   "assets": {
     "directory": "./site",
     "html_handling": "auto-trailing-slash",
