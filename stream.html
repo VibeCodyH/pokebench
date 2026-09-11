@@ -127,7 +127,7 @@
 <div id="app">
   <header id="masthead">
     <div class="brand">
-      <div><div class="wordmark">Pok<span>é</span>Bench</div><div class="tagline">LOCAL LLM · POKÉMON RED</div></div>
+      <div><div class="wordmark">Pok<span>é</span>Bench</div><div class="tagline" id="tagline">LOCAL LLM · POKÉMON RED</div></div>
     </div>
     <span class="model-kicker" id="model">qwen3.8:27b · local · 64K ctx</span>
     <div class="mast-right">
@@ -288,7 +288,7 @@ async function pollMeta(){
       fetch('/milestones').then(r=>r.json()).catch(()=>null),
       fetch('/run_meta').then(r=>r.json()).catch(()=>null)
     ]);
-    if(rm&&rm.model){ const ctxTxt = rm.ctx ? ` · ${Math.round(rm.ctx/1024)}K ctx` : ''; $('model').textContent=`${rm.model} · ${rm.route||'local'}${ctxTxt}`; if(rm.model!==lastModel){ lastModel=rm.model; applyFamily(rm.model); } }
+    if(rm&&rm.model){ const ctxTxt = rm.ctx ? ` · ${Math.round(rm.ctx/1024)}K ctx` : ''; $('tagline').textContent=`${rm.route==='api'?'API':'LOCAL'} LLM · POKÉMON RED`; $('model').textContent=`${rm.model} · ${rm.route||'local'}${ctxTxt}`; if(rm.model!==lastModel){ lastModel=rm.model; applyFamily(rm.model); } }
     const p=s.player||{}, map=s.map||{}, pos=p.position||{}, fl=s.flags||{};
     $('rLoc').textContent=map.map_name||'—';
     $('rCell').textContent=(s.collision&&s.collision.player_cell)||'E5';
