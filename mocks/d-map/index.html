@@ -86,7 +86,7 @@ img { max-width: 100%; }
 /* phone: sliced band blocks */
 .stage-phone { display: none; }
 .phone-band { border-bottom: 3px solid var(--ink); }
-.phone-band-img { width: 100%; border-bottom: 2px solid var(--ink); }
+.phone-band-img { position: relative; width: 100%; border-bottom: 2px solid var(--ink); }
 .phone-band-svg { display: block; width: 100%; height: 100%; shape-rendering: crispEdges; }
 .phone-band-cards { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 20px; }
 .phone-band-heading { font: 850 10px/1.5 var(--mono); letter-spacing: .05em; padding: 10px 16px 0; color: #34492f; }
@@ -211,6 +211,17 @@ dialog#run-modal::backdrop { background: #101c20c9; }
 .receipt-note { font: 650 8px/1.6 var(--mono); color: var(--muted); margin: 8px 0 10px; }
 .run-details .provenance { grid-template-columns: 58px minmax(0,1fr) 47px minmax(0,1fr); gap: 4px 8px; font-size: 9px; border-top: 1px solid #bdc9b9; padding-top: 8px; }
 .trophy { width: 25px; height: 28px; display: inline-block; flex: none; shape-rendering: crispEdges; }
+
+/* podium (§ hidden winners' podium, drawn into the brock scene) — invisible hit targets that
+   sit on top of the podium art (which lives inside the map SVG and can't be focused directly
+   through a <use> clone), positioned by percentage so they track the scaling map image. */
+.podium-hit { position: absolute; border: 0; margin: 0; padding: 0; background: transparent; cursor: pointer; }
+
+/* hidden Mew, peeking from behind a Viridian Forest pine */
+.mew-peek { transition: transform .3s ease; transform-box: fill-box; transform-origin: center; }
+.mew:hover .mew-peek, .mew:focus-visible .mew-peek { transform: translateX(-4px); }
+.mew-blink { opacity: 0; animation: mew-blink 9s steps(1,end) infinite; }
+@keyframes mew-blink { 0%, 96%, 100% { opacity: 0; } 97%, 99% { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .001ms !important; animation: none !important; }
@@ -423,6 +434,90 @@ const fence=(x,y,count)=>`<g fill="#e0d0a0" stroke="#526951" stroke-width="3"><p
 const cloud=(x,y,s=1)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M0 22h20V11h30V0h39v12h30v11h23v16H0z" fill="#f4f3cf" opacity=".52"/>`;
 const STATIONS = ['brock','pewter','forest','viridian','route','pallet'];
 const GROUND_COLORS = {brock:'#38443c',pewter:'#c4dda4',forest:'#80b879',viridian:'#b4dfab',route:'#c6dc90',pallet:'#c8df9f'};
+
+// ---- winners' podium (§1): three-step podium drawn into the brock-ground layer, rebuilt from
+// live RUNS data every time the map art regenerates (see mapArtSVG/boot). ----
+const ORDINAL = {1:'1st',2:'2nd',3:'3rd'};
+const PODIUM_BASE_Y = 500;
+const PODIUM_COLS = [
+  {rank:2, x:130, w:120, h:50, base:'#b8c0b6', dark:'#8d988e'},
+  {rank:1, x:250, w:120, h:78, base:'#d9b95a', dark:'#a9863c'},
+  {rank:3, x:370, w:120, h:36, base:'#b98a5c', dark:'#8c6140'}
+];
+function truncateName(name, max) {
+  const s = String(name || '');
+  return s.length > max ? s.slice(0, max - 1) + '…' : s;
+}
+function jacketColor(run) {
+  if (local(run)) return '#3f8f52';
+  const p = String(run.provider || '').toLowerCase();
+  if (p.includes('openai')) return '#1f8f86';
+  if (p.includes('anthropic')) return '#c1694a';
+  if (p.includes('google')) return '#3b82c4';
+  if (p.includes('xai')) return '#1c2733';
+  return '#c9a227';
+}
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const adj = v => Math.max(0, Math.min(255, Math.round(v + amt)));
+  return '#' + [adj(r), adj(g), adj(b)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+// Same trainer paths as #art-trainer, emitted inline (not <use>) so the cap/jacket fill can be
+// swapped per model. Skin, shorts and shoes keep their original colours.
+function trainerFor(run, cx, footY) {
+  const scale = 34 / 32, cap = jacketColor(run), sleeve = shade(cap, -30);
+  const tx = (cx - 16 * scale).toFixed(2), ty = (footY - 46 * scale).toFixed(2);
+  return `<g transform="translate(${tx} ${ty}) scale(${scale.toFixed(4)})">`
+    + `<path d="M5 41h25v5H5z" fill="#122b3c55"/>`
+    + `<path d="M8 4h16v4h5v9H4V9h4z" fill="${cap}"/>`
+    + `<path d="M9 5h11v4H9z" fill="#ffd2a0"/>`
+    + `<path d="M9 17h17v12H9z" fill="#edc18e"/>`
+    + `<path d="M7 18h6v9H7z" fill="#334b47"/>`
+    + `<path d="M7 29h18v11H7z" fill="#d7d9b4"/>`
+    + `<path d="M5 30h6v9H5zM23 30h5v9h-5z" fill="${sleeve}"/>`
+    + `<path d="M9 40h6v6H9zM20 40h6v6h-6z" fill="#243e50"/>`
+    + `</g>`;
+}
+function podiumStep(x, w, topY, baseY, base, dark, numeral) {
+  const topH = 6, frontY = topY + topH, frontH = baseY - frontY, cx = x + w / 2;
+  return `<rect x="${x}" y="${topY}" width="${w}" height="${topH}" fill="${base}" stroke="#101c20" stroke-width="2"/>`
+    + `<rect x="${x}" y="${frontY}" width="${w}" height="${frontH}" fill="${dark}" stroke="#101c20" stroke-width="2"/>`
+    + `<text x="${cx}" y="${frontY + frontH / 2 + 10}" text-anchor="middle" font-family="ui-monospace,Consolas,monospace" font-weight="900" font-size="28" fill="#101c20" opacity=".5">${numeral}</text>`;
+}
+function podiumPlaque(x, w, run) {
+  const y = 505, h = 40, cx = x + w / 2;
+  const name = run ? truncateName(modelName(run), 14) : '—';
+  const turnLine = run ? `· turn ${number(run.turns_used)}` : '';
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#101c20" stroke="#101c20" stroke-width="2"/>`
+    + `<text x="${cx}" y="${y + 18}" text-anchor="middle" font-family="ui-monospace,Consolas,monospace" font-weight="800" font-size="11" fill="#f8f7eb">${escape(name)}</text>`
+    + (turnLine ? `<text x="${cx}" y="${y + 32}" text-anchor="middle" font-family="ui-monospace,Consolas,monospace" font-weight="800" font-size="11" fill="#f8f7eb">${escape(turnLine)}</text>` : '');
+}
+function podiumMarkup() {
+  const winners = RUNS.filter(won).sort((a, b) => a.turns_used - b.turns_used);
+  const byRank = {1: winners[0], 2: winners[1], 3: winners[2]};
+  return `<g class="podium">` + PODIUM_COLS.map(col => {
+    const run = byRank[col.rank], topY = PODIUM_BASE_Y - col.h;
+    return podiumStep(col.x, col.w, topY, PODIUM_BASE_Y, col.base, col.dark, col.rank)
+      + (run ? trainerFor(run, col.x + col.w / 2, topY) : '')
+      + podiumPlaque(col.x + 5, col.w - 10, run);
+  }).join('') + `</g>`;
+}
+
+// ---- hidden Mew (§2): a small pink shape peeking out from behind a forest pine. Purely
+// decorative — no click behaviour, no visible page text naming it. ----
+function mewArt(x, y) {
+  return `<g class="mew" role="img" tabindex="0" aria-label="…?"><title>…?</title>`
+    + `<g class="mew-peek" transform="translate(${x} ${y})">`
+    + `<path d="M0 19h3v2H0zM1 22h3v2H1zM3 24h3v2H3z" fill="#c88fa8"/>`
+    + `<path d="M5 0h3v3H5zM11 0h3v3h-3z" fill="#e4bfcf"/>`
+    + `<path d="M3 3h15v3H3zM1 6h19v13H1zM3 19h15v3H3z" fill="#e4bfcf"/>`
+    + `<path d="M1 13h9v6H1zM3 19h7v3H3z" fill="#c88fa8"/>`
+    + `<path d="M6 10h2v2H6zM12 10h2v2h-2z" fill="#101c20"/>`
+    + `<rect class="mew-blink" x="5.5" y="9.5" width="3" height="1.4" fill="#e4bfcf"/>`
+    + `<rect class="mew-blink" x="11.5" y="9.5" width="3" height="1.4" fill="#e4bfcf"/>`
+    + `</g></g>`;
+}
+
 const art = {
 'brock-far':cloud(120,41,1.4)+cloud(653,95,.75)+`<path d="M0 310V254h55v-36h58v-42h55v-37h49v46h51v48h58v37h49v55h59v-47h65v-51h49v-30h46v-39h63v55h48v40h73v-58h54v-67h51V79h52v39h37v46h56v46h55v-31h57v-45h68v37h69v47h46v92z" fill="#87b0a1"/><path d="M0 348v-31h63v-34h61v-33h54v36h45v-23h48v47h61v-13h67v28h67v-69h56v-30h45v61h50v22h49v-43h55v-36h72v-70h51v-28h45v82h49v48h55v-32h57v24h67v-34h62v66h52v37z" fill="#6c998c"/>`,
 'brock-ground':`<path d="M0 430h130v-28h142v30h141v-19h121v29h151v-39h162v-25h169v-20h184v312H0z" fill="#92ad87"/><path d="M0 586h279v-19h444v-15h248v-22h229v140H0z" fill="#bfc497"/>`+trail('M600 550V520H784V529')+tile('gym',830,303,315,244)+tile('rock',774,522,84,59)+tile('rock',1081,537,113,79)+grass(30,574,5,2,'#6b946f')+trees([[1116,399,.8],[1160,434,1.1]],'roundtree'),
@@ -430,8 +525,8 @@ const art = {
 'pewter-ground':trail('M600 0V84H445V315H600V550')+tile('house',70,190,170,142)+tile('house',235,262,110,92)+tile('center',871,65,184,154)+tile('mart',1058,95,138,125)+fence(857,237,9)+grass(25,397,7,2)+walker(506,282,33,50)+tile('lamp',369,183,31,89)+tile('rock',925,369,77,54)+tile('rock',999,384,49,34),
 'pewter-near':trees([[-66,229,1.7],[1088,285,1.5],[1165,343,1.6]],'roundtree'),
 'forest-far':trees([[-5,-40,1.3],[88,-55,1.4],[185,-49,1.2],[279,-32,1.1],[735,-50,1.3],[842,-60,1.5],[960,-43,1.4],[1090,-61,1.4],[1023,107,1.1],[1,118,1.3],[108,124,1.1],[220,114,1]]),
-'forest-ground':`<path d="M0 75h224v67h111v93H202v122h140v143H0zM1200 82H896v90H780v65h242v102h178z" fill="#366852" opacity=".6"/>`+trail('M600 0V105H420V256H534V419H600V550','#b9b585')+grass(235,279,4,3,'#759764')+grass(740,123,4,3,'#83a369')+trees([[323,70,.9],[857,279,1],[970,342,1.1],[208,384,.8],[658,380,.85]])+walker(458,231,34,51)+tile('rock',330,340,60,42)+`<g fill="#e7df8f"><path d="M313 196h4v4h-4zM729 332h4v4h-4zM851 213h4v4h-4zM372 376h4v4h-4z"/></g>`,
-'forest-near':trees([[-56,211,1.9],[53,307,1.6],[-17,408,1.5],[1103,227,1.7],[1007,389,1.45],[1150,414,1.7]]),
+'forest-ground':`<path d="M0 75h224v67h111v93H202v122h140v143H0zM1200 82H896v90H780v65h242v102h178z" fill="#366852" opacity=".6"/>`+trail('M600 0V105H420V256H534V419H600V550','#b9b585')+grass(235,279,4,3,'#759764')+grass(740,123,4,3,'#83a369')+trees([[323,70,.9],[857,279,1],[970,342,1.1],[208,384,.8],[658,380,.85]])+walker(458,231,34,51)+tile('rock',330,340,60,42)+`<g fill="#e7df8f"><path d="M313 196h4v4h-4zM729 332h4v4h-4zM851 213h4v4h-4zM372 376h4v4h-4z"/></g>`+mewArt(974,355),
+'forest-near':trees([[-56,211,1.9],[53,307,1.6],[-17,408,1.5],[1103,227,1.7],[1007,389,1.45],[1150,414,1.7]])+tile('pine',940,260,100,130),
 'viridian-far':trees([[8,-35,1.1],[112,-49,1.2],[235,-31,.9],[871,-23,.9],[970,-14,1.2],[1103,-24,1.3]],'roundtree')+`<path d="M0 444h168v-16h187v25h362v-31h213v26h270v52H0z" fill="#b29269" opacity=".7"/>`,
 'viridian-ground':trail('M600 0V160H724V359H600V550','#dfb882')+tile('center',116,92,235,196)+tile('mart',892,216,222,185)+fence(861,425,11)+grass(34,322,3,3,'#7c8959')+tile('lamp',644,212,32,91)+tile('lamp',762,329,32,91),
 'viridian-near':trees([[-69,233,1.6],[1147,73,1.5],[26,397,1.25],[1098,392,1.2]],'roundtree'),
@@ -447,7 +542,11 @@ const art = {
 // instead of being clipped at its own scene's edge.
 function mapArtSVG() {
   const bg = STATIONS.map((s,i) => `<rect x="0" y="${550*i}" width="1200" height="550" fill="${GROUND_COLORS[s]}"/>`).join('');
-  const layer = name => STATIONS.map((s,i) => `<g transform="translate(0 ${550*i})">${art[s+'-'+name] || ''}</g>`).join('');
+  const layer = name => STATIONS.map((s,i) => {
+    let content = art[s+'-'+name] || '';
+    if (name === 'ground' && s === 'brock') content += podiumMarkup();
+    return `<g transform="translate(0 ${550*i})">${content}</g>`;
+  }).join('');
   return bg + layer('far') + layer('ground') + layer('near');
 }
 document.getElementById('map-art').innerHTML = mapArtSVG();
@@ -820,6 +919,40 @@ function bandRuns(place) {
   return RUNS.filter(r => placeForRun(r) === place).sort(rankSort);
 }
 
+// The podium's pixel art lives inside the map SVG's <symbol>, only ever shown through a <use>
+// clone — a clone's inner nodes can't receive focus, so the actual clickable/keyboard target is
+// this transparent overlay button, sized and positioned by percentage over the podium's art.
+function podiumHitboxHTML(col, run, totalH) {
+  if (!run) return '';
+  const topY = PODIUM_BASE_Y - col.h, boxTop = topY - 55, boxBottom = 545;
+  const left = (col.x / 1200 * 100).toFixed(3), width = (col.w / 1200 * 100).toFixed(3);
+  const top = (boxTop / totalH * 100).toFixed(3), height = ((boxBottom - boxTop) / totalH * 100).toFixed(3);
+  const label = `${ORDINAL[col.rank]} · ${modelName(run)} · turn ${number(run.turns_used)}`;
+  return `<button type="button" class="podium-hit" data-uid="${escape(run.uid)}" style="left:${left}%;top:${top}%;width:${width}%;height:${height}%" aria-label="${escape(label)}"></button>`;
+}
+function wirePodiumButtons(container) {
+  container.querySelectorAll('.podium-hit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const run = RUNS.find(r => r.uid === btn.dataset.uid);
+      if (run) openModal(run, btn);
+    });
+  });
+}
+function renderPodiumHitboxes() {
+  const winners = RUNS.filter(won).sort((a, b) => a.turns_used - b.turns_used);
+  const byRank = {1: winners[0], 2: winners[1], 3: winners[2]};
+  const mapCol = $('map-col');
+  mapCol.querySelectorAll('.podium-hit').forEach(el => el.remove());
+  mapCol.insertAdjacentHTML('beforeend', PODIUM_COLS.map(col => podiumHitboxHTML(col, byRank[col.rank], MAP_NAT_H)).join(''));
+  wirePodiumButtons(mapCol);
+  const gymImg = document.querySelector('.phone-band-img[data-band="gym"]');
+  if (gymImg) {
+    gymImg.querySelectorAll('.podium-hit').forEach(el => el.remove());
+    gymImg.insertAdjacentHTML('beforeend', PODIUM_COLS.map(col => podiumHitboxHTML(col, byRank[col.rank], 550)).join(''));
+    wirePodiumButtons(gymImg);
+  }
+}
+
 function renderDesktop() {
   const ranks = winnerRankMap();
   const leftEl = $('gutter-left'), rightEl = $('gutter-right');
@@ -930,11 +1063,13 @@ async function boot() {
     return;
   }
   $('data-state').hidden = true;
+  document.getElementById('map-art').innerHTML = mapArtSVG(); // regenerate now that RUNS/podium data is real
   $('stage-desktop').hidden = false;
   $('stage-phone').hidden = false;
   renderRail();
   renderDesktop();
   renderPhone();
+  renderPodiumHitboxes();
   observePlaces();
   layoutDesktopBands();
   document.querySelector('.rail-dot').classList.add('is-current');
