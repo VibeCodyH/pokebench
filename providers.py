@@ -18,10 +18,17 @@ def _plan(content: str) -> dict:
     try:
         plan = json.loads(content)
     except (TypeError, ValueError) as exc:
-        raise ValueError("Provider did not return a valid JSON plan") from exc
+        raise _plan_error("Provider did not return a valid JSON plan", content) from exc
     if not isinstance(plan, dict):
-        raise ValueError("Provider plan must be a JSON object")
+        raise _plan_error("Provider plan must be a JSON object", content)
     return plan
+
+
+def _plan_error(message: str, content) -> ValueError:
+    """Carry the raw model output on the error so the run log can show empty vs malformed."""
+    error = ValueError(message)
+    error.raw_output = (content if isinstance(content, str) else repr(content))[:2000]
+    return error
 
 
 def _schema_for(schema: dict, provider: str) -> dict:

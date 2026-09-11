@@ -343,3 +343,17 @@ class StateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PlanErrorTests(unittest.TestCase):
+    def test_invalid_plan_error_carries_raw_output(self):
+        import providers
+        for content, expect in (("", ""), ("{oops", "{oops"), (None, "None"), ("[1]", "[1]")):
+            with self.assertRaises(ValueError) as caught:
+                providers._plan(content)
+            self.assertEqual(caught.exception.raw_output, expect)
+
+    def test_door_rule_does_not_contradict_exit_mat_rule(self):
+        text = qwen_red.SYSTEM
+        self.assertNotIn("entrances/exits", text)
+        self.assertIn("EXIT MAT", text)

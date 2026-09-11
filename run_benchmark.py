@@ -361,6 +361,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
                 body = (getattr(response, "text", None) or "")[:500]
                 with open(log_path, "a") as output:
                     output.write(json.dumps({"turn": turn, "model_error": str(exc), "error_body": body,
+                                             "raw_output": getattr(exc, "raw_output", None),
                                              "turn_not_counted": True, **observation}) + "\n")
                 errors_in_a_row += 1
                 first_error_at = first_error_at or time.time()
