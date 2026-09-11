@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PokéBench — Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4eed8; --card: #fbf7e8; --ink: #1e1b16; --gold: #f7d45c; --green: #d7e6bf; --blue: #cfe8f0;
+    --muted: #4a4539; --progress: #7f9e6c; --track: #e2cf7a; --stuck: #ece5cc; --offline: #c9c1a6; --teal: #7fb5a3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 'IBM Plex Mono', ui-monospace, monospace; }
+  .page { max-width: 1040px; margin: 0 auto; padding: 28px 20px 60px; display: grid; gap: 22px; }
+  .box { background: var(--card); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); }
+  .btn { font: inherit; font-weight: 700; background: var(--card); color: var(--ink); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 6px 12px; cursor: pointer; }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn[aria-pressed="true"] { background: var(--gold); }
+  .label { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .logo { width: 40px; height: 40px; background: var(--teal); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); display: grid; place-items: center; font-weight: 700; font-size: 18px; }
+  .brand { display: grid; }
+  .brand h1 { margin: 0; font-size: 22px; line-height: 1.1; }
+  .brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .status { margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border: 3px solid var(--ink); background: var(--card); box-shadow: 3px 3px 0 var(--ink); font-weight: 700; font-size: 12px; letter-spacing: .1em; }
+  .status .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--offline); border: 2px solid var(--ink); }
+  .status.live .dot { background: #e0524a; }
+  .banner { background: var(--gold); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); padding: 8px 14px; font-weight: 700; font-size: 12px; letter-spacing: .12em; text-align: center; }
+
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: end; }
+  .pod { display: grid; }
+  .pod .body { padding: 16px 16px 14px; display: grid; gap: 6px; }
+  .pod .place { font-size: 12px; font-weight: 700; letter-spacing: .12em; color: var(--muted); }
+  .pod .name { font-size: 18px; font-weight: 700; line-height: 1.15; }
+  .pod .meta { color: var(--muted); font-size: 13px; }
+  .pod .result { font-weight: 700; margin-top: 4px; }
+  .pod .foot { padding: 8px 16px; border-top: 3px solid var(--ink); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .pod.first { background: var(--gold); }
+  .pod.first .body { padding-top: 28px; }
+  .pod.first .place, .pod.first .meta { color: var(--ink); }
+  .pod.first .foot { background: var(--ink); color: var(--gold); }
+  .foot.local { background: var(--green); }
+  .foot.api { background: var(--blue); }
+
+  .race { padding: 18px 20px 22px; display: grid; gap: 14px; }
+  .track { position: relative; height: 12px; background: var(--track); border: 3px solid var(--ink); margin: 20px 4px 44px; }
+  .stops { position: absolute; inset: -3px; display: flex; justify-content: space-between; align-items: center; }
+  .stop { position: relative; width: 14px; height: 14px; padding: 0; background: var(--card); border: 3px solid var(--ink); cursor: pointer; }
+  .stop.filled { background: var(--ink); }
+  .stop[aria-pressed="true"] { background: var(--gold); }
+  .stop span { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 84px; text-align: center; font-size: 10px; font-weight: 700; line-height: 1.2; color: var(--muted); }
+  .stop[aria-pressed="true"] span { color: var(--ink); }
+
+  .rank-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .rank-head h2 { margin: 0; font-size: 16px; }
+  .rank-head .count { color: var(--muted); font-size: 13px; }
+  .filters { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; background: var(--gold); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 4px 8px 4px 10px; font-size: 12px; font-weight: 700; }
+  .chip button { all: unset; cursor: pointer; font-weight: 700; font-size: 14px; line-height: 1; padding: 0 2px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 22px; }
+  .card { display: grid; grid-template-rows: 1fr auto; }
+  .card .body { padding: 14px; display: grid; gap: 10px; }
+  .card .top { display: flex; align-items: center; gap: 10px; }
+  .rank { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border: 3px solid var(--ink); font-weight: 700; font-size: 13px; background: var(--card); }
+  .rank.top3 { background: var(--gold); }
+  .card .name { font-size: 16px; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat .label { font-size: 10px; }
+  .stat .value { font-size: 20px; font-weight: 700; line-height: 1.1; }
+  .tagrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .tag { font-size: 11px; font-weight: 700; letter-spacing: .1em; padding: 2px 6px; border: 2px solid var(--ink); }
+  .tag.local { background: var(--green); } .tag.api { background: var(--blue); }
+  .bar { width: 96px; height: 10px; border: 2px solid var(--ink); background: var(--card); }
+  .bar i { display: block; height: 100%; background: var(--progress); }
+  .card .foot { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-top: 3px solid var(--ink); font-size: 12px; font-weight: 700; background: var(--stuck); }
+  .card .foot.won { background: var(--gold); }
+  .sq { width: 10px; height: 10px; flex: none; border: 2px solid var(--ink); background: var(--green); }
+  .foot.won .sq { background: var(--ink); }
+  .empty { grid-column: 1 / -1; border: 3px dashed var(--ink); padding: 36px; text-align: center; color: var(--muted); font-weight: 700; }
+
+  @media (max-width: 720px) {
+    .podium { grid-template-columns: 1fr; }
+    .pod.first { order: -1; }
+    .stop span { display: none; }
+    .stop[aria-pressed="true"] span { display: block; }
+    .track { margin-bottom: 36px; }
+    .filters { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <div class="logo" aria-hidden="true">P</div>
+    <div class="brand">
+      <h1>PokéBench_</h1>
+      <p>Billions of parameters vs. one old man.</p>
+    </div>
+    <div class="status" id="status"><span class="dot"></span><span id="status-text">OFFLINE</span></div>
+  </header>
+
+  <div class="banner" id="banner" hidden>SAMPLE DATA · NOT REAL RESULTS</div>
+
+  <section>
+    <div class="section-head"><span class="label">Overall podium</span><span class="label">The road to Brock</span></div>
+    <div class="podium" id="podium" style="margin-top:12px"></div>
+  </section>
+
+  <section class="box race">
+    <span class="label">The whole race</span>
+    <div class="track"><div class="stops" id="stops"></div></div>
+  </section>
+
+  <section>
+    <div class="rank-head">
+      <h2>Trainer rankings</h2>
+      <span class="count" id="count"></span>
+      <div class="filters" id="filters"></div>
+    </div>
+    <div class="grid" id="grid" style="margin-top:16px"></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const escape = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const finite = v => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+const number = v => finite(v) ? v.toLocaleString('en-US') : '—';
+const local = run => String(run.provider || '').toLowerCase().includes('ollama');
+const won = run => run.furthest_index === STOPS.length - 1;
+const price = run => local(run) ? 'FREE' : finite(run.cost_usd) ? '$' + run.cost_usd.toFixed(2) : '—';
+const rankSort = (a, b) => b.furthest_index - a.furthest_index || a.turns_used - b.turns_used;
+
+const STOPS = [
+  {key:'left_house', label:'Left the house', short:'Left house'},
+  {key:'got_starter', label:'Got a starter', short:'Got starter'},
+  {key:'route_1', label:'Reached Route 1', short:'Route 1'},
+  {key:'viridian_city', label:'Reached Viridian City', short:'Viridian City'},
+  {key:'got_parcel', label:"Got Oak's Parcel", short:'Parcel'},
+  {key:'got_pokedex', label:'Got the Pokédex', short:'Pokédex'},
+  {key:'viridian_forest', label:'Entered Viridian Forest', short:'Viridian Forest'},
+  {key:'pewter_city', label:'Reached Pewter City', short:'Pewter City'},
+  {key:'pewter_gym', label:"Entered Brock's Gym", short:'Entered gym'},
+  {key:'beat_brock', label:'Beat Brock (Boulder Badge)', short:'Beat Brock'}
+];
+const stopLabel = run => STOPS[run.furthest_index]?.short || 'No milestone';
+
+const state = { runs: [], type: 'all', stop: null, sample: true, live: false };
+const typeMatch = run => state.type === 'all' || (state.type === 'local') === local(run);
+const visible = () => state.runs.filter(run => typeMatch(run) && (state.stop === null || run.furthest_index === state.stop));
+
+function podiumMarkup(run, place) {
+  if (!run) return '';
+  const cls = place === 1 ? 'first' : '';
+  const foot = place === 1 ? 'Champion' : local(run) ? 'Local' : 'API';
+  const footCls = place === 1 ? '' : local(run) ? 'local' : 'api';
+  return `<article class="box pod ${cls}">
+    <div class="body">
+      <span class="place">${['1st','2nd','3rd'][place - 1]}</span>
+      <span class="name">${escape(run.model)}</span>
+      <span class="meta">${number(run.turns_used)} turns · ${price(run)}</span>
+      <span class="result">${escape(stopLabel(run))}</span>
+    </div>
+    <div class="foot ${footCls}">${foot}</div>
+  </article>`;
+}
+
+function cardMarkup(run, rank) {
+  const done = won(run);
+  const width = Math.round((run.furthest_index + 1) / STOPS.length * 100);
+  return `<article class="box card">
+    <div class="body">
+      <div class="top"><span class="rank ${rank <= 3 ? 'top3' : ''}">${rank}</span><span class="name">${escape(run.model)}</span></div>
+      <div class="stats">
+        <div class="stat"><div class="label">Turns</div><div class="value">${number(run.turns_used)}</div></div>
+        <div class="stat"><div class="label">Run cost</div><div class="value">${price(run)}</div></div>
+      </div>
+      <div class="tagrow"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="bar" title="${width}%"><i style="width:${width}%"></i></span></div>
+    </div>
+    <div class="foot ${done ? 'won' : ''}"><span class="sq"></span>${escape(stopLabel(run))}</div>
+  </article>`;
+}
+
+function render() {
+  const ranked = [...state.runs].sort(rankSort);
+  $('podium').innerHTML = [ranked[1], ranked[0], ranked[2]].map((run, i) => podiumMarkup(run, [2, 1, 3][i])).join('');
+
+  const rankOf = new Map(ranked.map((run, i) => [run, i + 1]));
+  const shown = visible().sort(rankSort);
+  $('grid').innerHTML = shown.length ? shown.map(run => cardMarkup(run, rankOf.get(run))).join('')
+    : '<div class="empty">No trainers match this filter.</div>';
+  $('count').textContent = `${shown.length} of ${state.runs.length} models`;
+
+  $('stops').innerHTML = STOPS.map((s, i) =>
+    `<button class="stop ${state.stop === null ? 'filled' : ''}" aria-pressed="${state.stop === i}" data-stop="${i}" aria-label="${escape(s.label)}"><span>${escape(s.short)}</span></button>`).join('');
+
+  const counts = { all: state.runs.length, local: state.runs.filter(local).length, api: state.runs.filter(r => !local(r)).length };
+  const chip = state.stop === null ? '' :
+    `<span class="chip">Stop: ${escape(STOPS[state.stop].short)}<button data-clear aria-label="Clear stop filter">×</button></span>`;
+  $('filters').innerHTML = chip + ['all', 'local', 'api'].map(t =>
+    `<button class="btn" data-type="${t}" aria-pressed="${state.type === t}">${t === 'all' ? 'All' : t === 'local' ? 'Local' : 'API'} (${counts[t]})</button>`).join('');
+
+  $('banner').hidden = !state.sample;
+  $('status').classList.toggle('live', state.live);
+  $('status-text').textContent = state.live ? 'LIVE' : 'OFFLINE';
+}
+
+document.addEventListener('click', e => {
+  const stop = e.target.closest('[data-stop]');
+  const type = e.target.closest('[data-type]');
+  if (stop) { const i = +stop.dataset.stop; state.stop = state.stop === i ? null : i; }
+  else if (type) state.type = type.dataset.type;
+  else if (e.target.closest('[data-clear]')) state.stop = null;
+  else return;
+  render();
+});
+
+fetch('../mock-runs.json').then(r => r.json()).then(runs => {
+  state.runs = runs.filter(run => finite(run.furthest_index));
+  render();
+}).catch(err => { $('grid').innerHTML = `<div class="empty">Could not load runs: ${escape(err.message)}</div>`; });
+</script>
+</body>
+</html>
