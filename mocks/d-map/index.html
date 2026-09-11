@@ -217,11 +217,13 @@ dialog#run-modal::backdrop { background: #101c20c9; }
    through a <use> clone), positioned by percentage so they track the scaling map image. */
 .podium-hit { position: absolute; border: 0; margin: 0; padding: 0; background: transparent; cursor: pointer; }
 
-/* hidden Mew, peeking from behind a Viridian Forest pine */
-.mew-peek { transition: transform .3s ease; transform-box: fill-box; transform-origin: center; }
-.mew:hover .mew-peek, .mew:focus-visible .mew-peek { transform: translateX(-4px); }
-.mew-blink { opacity: 0; animation: mew-blink 9s steps(1,end) infinite; }
-@keyframes mew-blink { 0%, 96%, 100% { opacity: 0; } 97%, 99% { opacity: 1; } }
+/* hidden Missingno, peeking from behind a Viridian Forest pine */
+.glitch-peek { transition: transform .3s ease; transform-box: fill-box; transform-origin: center; }
+.glitch:hover .glitch-peek, .glitch:focus-visible .glitch-peek { transform: translateX(6px); }
+.glitch-b { opacity: 0; animation: glitch-flicker 7s steps(1,end) infinite; }
+.glitch-a { animation: glitch-flicker-a 7s steps(1,end) infinite; }
+@keyframes glitch-flicker { 0%, 94%, 100% { opacity: 0; } 95%, 96%, 98% { opacity: 1; } 97% { opacity: 0; } }
+@keyframes glitch-flicker-a { 0%, 94%, 100% { opacity: 1; } 95%, 96%, 98% { opacity: 0; } 97% { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .001ms !important; animation: none !important; }
@@ -503,19 +505,24 @@ function podiumMarkup() {
   }).join('') + `</g>`;
 }
 
-// ---- hidden Mew (§2): a small pink shape peeking out from behind a forest pine. Purely
+// ---- hidden Missingno: a glitch-block shape peeking out from behind a forest pine. Purely
 // decorative — no click behaviour, no visible page text naming it. ----
-function mewArt(x, y) {
-  return `<g class="mew" role="img" tabindex="0" aria-label="…?"><title>…?</title>`
-    + `<g class="mew-peek" transform="translate(${x} ${y})">`
-    + `<path d="M0 19h3v2H0zM1 22h3v2H1zM3 24h3v2H3z" fill="#c88fa8"/>`
-    + `<path d="M5 0h3v3H5zM11 0h3v3h-3z" fill="#e4bfcf"/>`
-    + `<path d="M3 3h15v3H3zM1 6h19v13H1zM3 19h15v3H3z" fill="#e4bfcf"/>`
-    + `<path d="M1 13h9v6H1zM3 19h7v3H3z" fill="#c88fa8"/>`
-    + `<path d="M6 10h2v2H6zM12 10h2v2h-2z" fill="#101c20"/>`
-    + `<rect class="mew-blink" x="5.5" y="9.5" width="3" height="1.4" fill="#e4bfcf"/>`
-    + `<rect class="mew-blink" x="11.5" y="9.5" width="3" height="1.4" fill="#e4bfcf"/>`
-    + `</g></g>`;
+function glitchArt(x, y) {
+  // reversed-L of 3px cells: a 6x20 column on the right, a 6x6 base to its left. Two frames
+  // (a/b) with different noise so it flickers every few seconds.
+  const shades = ['#101c20', '#4c5f58', '#d7d9b4'];
+  const cells = [];
+  for (let r = 0; r < 20; r++) for (let c = 0; c < 12; c++) {
+    if (c < 6 && r < 14) continue;
+    cells.push([c, r]);
+  }
+  const frame = (seed, cls) => `<g class="${cls}">` + cells.map(([c, r]) => {
+    const h = (c * 7 + r * 13 + seed * 5) % 9;
+    const fill = shades[h < 4 ? 0 : h < 7 ? 1 : 2];
+    return `<rect x="${c * 3}" y="${r * 3}" width="3" height="3" fill="${fill}"/>`;
+  }).join('') + '</g>';
+  return `<g class="glitch" role="img" tabindex="0" aria-label="…?"><title>…?</title>`
+    + `<g class="glitch-peek" transform="translate(${x} ${y})">${frame(1, 'glitch-a')}${frame(2, 'glitch-b')}</g></g>`;
 }
 
 const art = {
@@ -525,7 +532,7 @@ const art = {
 'pewter-ground':trail('M600 0V84H445V315H600V550')+tile('house',70,190,170,142)+tile('house',235,262,110,92)+tile('center',871,65,184,154)+tile('mart',1058,95,138,125)+fence(857,237,9)+grass(25,397,7,2)+walker(506,282,33,50)+tile('lamp',369,183,31,89)+tile('rock',925,369,77,54)+tile('rock',999,384,49,34),
 'pewter-near':trees([[-66,229,1.7],[1088,285,1.5],[1165,343,1.6]],'roundtree'),
 'forest-far':trees([[-5,-40,1.3],[88,-55,1.4],[185,-49,1.2],[279,-32,1.1],[735,-50,1.3],[842,-60,1.5],[960,-43,1.4],[1090,-61,1.4],[1023,107,1.1],[1,118,1.3],[108,124,1.1],[220,114,1]]),
-'forest-ground':`<path d="M0 75h224v67h111v93H202v122h140v143H0zM1200 82H896v90H780v65h242v102h178z" fill="#366852" opacity=".6"/>`+trail('M600 0V105H420V256H534V419H600V550','#b9b585')+grass(235,279,4,3,'#759764')+grass(740,123,4,3,'#83a369')+trees([[323,70,.9],[857,279,1],[970,342,1.1],[208,384,.8],[658,380,.85]])+walker(458,231,34,51)+tile('rock',330,340,60,42)+`<g fill="#e7df8f"><path d="M313 196h4v4h-4zM729 332h4v4h-4zM851 213h4v4h-4zM372 376h4v4h-4z"/></g>`+mewArt(974,355),
+'forest-ground':`<path d="M0 75h224v67h111v93H202v122h140v143H0zM1200 82H896v90H780v65h242v102h178z" fill="#366852" opacity=".6"/>`+trail('M600 0V105H420V256H534V419H600V550','#b9b585')+grass(235,279,4,3,'#759764')+grass(740,123,4,3,'#83a369')+trees([[323,70,.9],[857,279,1],[970,342,1.1],[208,384,.8],[658,380,.85]])+walker(458,231,34,51)+tile('rock',330,340,60,42)+`<g fill="#e7df8f"><path d="M313 196h4v4h-4zM729 332h4v4h-4zM851 213h4v4h-4zM372 376h4v4h-4z"/></g>`+glitchArt(982,345),
 'forest-near':trees([[-56,211,1.9],[53,307,1.6],[-17,408,1.5],[1103,227,1.7],[1007,389,1.45],[1150,414,1.7]])+tile('pine',940,260,100,130),
 'viridian-far':trees([[8,-35,1.1],[112,-49,1.2],[235,-31,.9],[871,-23,.9],[970,-14,1.2],[1103,-24,1.3]],'roundtree')+`<path d="M0 444h168v-16h187v25h362v-31h213v26h270v52H0z" fill="#b29269" opacity=".7"/>`,
 'viridian-ground':trail('M600 0V160H724V359H600V550','#dfb882')+tile('center',116,92,235,196)+tile('mart',892,216,222,185)+fence(861,425,11)+grass(34,322,3,3,'#7c8959')+tile('lamp',644,212,32,91)+tile('lamp',762,329,32,91),
