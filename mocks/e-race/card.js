@@ -389,11 +389,9 @@ modal().addEventListener('close', () => {
   pauseReplay();
   if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
 });
-modal().addEventListener('click', e => {
-  const r = $('modal-content').getBoundingClientRect();
-  const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-  if (!inside) modal().close();
-});
+// Backdrop click = the dialog element itself is the target (content fills it). Measuring the
+// content rect instead broke on flip: the shorter face re-centres the dialog mid-event.
+modal().addEventListener('click', e => { if (e.target === modal()) modal().close(); });
 // Wired once on the stable #modal-content container (its innerHTML is replaced per open),
 // mirroring the live site's delegated click/keydown handler for .run-card + [data-replay].
 $('modal-content').addEventListener('click', event => {
