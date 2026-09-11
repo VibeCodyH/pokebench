@@ -24,7 +24,7 @@ models:
     params: null
     quant: null
     context: 200000 # TODO: verify supported context before a scored run.
-    think: low
+    think: high
     release_date: null # TODO: verify.
     input_cost_per_mtok: null # TODO: set the authoritative Haiku 4.5 rates before a scored run.
     output_cost_per_mtok: null
@@ -37,7 +37,7 @@ models:
     params: null
     quant: null
     context: 1000000 # TODO: verify supported context before a scored run.
-    think: low
+    think: high
     release_date: null # TODO: verify.
     input_cost_per_mtok: null # AI Studio route is free (GDP credits); set rates only if billed.
     output_cost_per_mtok: null
@@ -51,7 +51,7 @@ models:
     params: null
     quant: null
     context: 128000 # TODO: verify before a scored run.
-    think: low
+    think: high
     release_date: null
     input_cost_per_mtok: null
     output_cost_per_mtok: null
@@ -79,7 +79,7 @@ models:
     params: null
     quant: null
     context: 1000000
-    think: low
+    think: high
     release_date: null
     input_cost_per_mtok: null
     output_cost_per_mtok: null
@@ -92,7 +92,7 @@ models:
     params: null
     quant: null
     context: 1000000
-    think: low
+    think: high
     release_date: null
     input_cost_per_mtok: null
     output_cost_per_mtok: null
@@ -105,7 +105,7 @@ models:
     params: null
     quant: null
     context: 1000000
-    think: low
+    think: high
     release_date: null
     input_cost_per_mtok: null
     output_cost_per_mtok: null
@@ -120,7 +120,7 @@ models:
     params: null
     quant: null
     context: 1050000
-    think: low
+    think: high
     release_date: null
     input_cost_per_mtok: null
     output_cost_per_mtok: null
@@ -135,7 +135,7 @@ models:
     params: null
     quant: null
     context: 262144
-    think: low
+    think: high
     release_date: "2026-09-08"
     input_cost_per_mtok: 0.0
     output_cost_per_mtok: 0.0
