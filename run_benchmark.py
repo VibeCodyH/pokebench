@@ -197,10 +197,10 @@ def save_game(server, name):
 
 # Headroom (tokens) reserved on top of the measured text so the assembled request — system,
 # notes, state, map, screenshot, and the model's own output — never overflows the context.
-# A 480x432 PNG costs well under 1600 tokens on every provider we run; 8192 covers the
+# A 480x432 PNG costs well under 1600 tokens on every provider we run; 16384 covers the
 # largest output allowance.
 _IMAGE_TOKENS = 1600
-_OUTPUT_TOKENS = 8192
+_OUTPUT_TOKENS = 16384
 _SAFETY_TOKENS = 1024
 # How many milestone spans of history to keep. Anchor the prompt window at the start of the
 # Nth-from-newest milestone reached and drop everything older: stale pre-objective context

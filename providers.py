@@ -125,12 +125,14 @@ class Provider(ABC):
 class OllamaProvider(Provider):
     """The qwen_red.ask() wire contract, including its local defaults."""
 
-    def __init__(self, model: str, *, num_ctx: int = 65536, temperature: float = 0.6, max_tokens: int = 8192, **opts):
+    def __init__(self, model: str, *, num_ctx: int = 65536, temperature: float = 0.6, max_tokens: int = 16384, **opts):
         super().__init__(model, **opts)
         self.host = os.environ.get("OLLAMA_HOST", "http://<server-host>:11434").rstrip("/")
         self.num_ctx = num_ctx
         self.temperature = temperature
-        self.max_tokens = max_tokens  # num_predict; summary.json reports it as max_output_tokens
+        # num_predict; summary.json reports it as max_output_tokens. Ollama counts thinking against it:
+        # at think=high qwen3.8:27b burned all 8192 on thought and returned "" 11 times in 242 turns (2026-09-11).
+        self.max_tokens = max_tokens
 
     def chat(
         self, system: str, user: str, image_b64: str, schema: dict, think: str

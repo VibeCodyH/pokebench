@@ -469,7 +469,7 @@ class ProviderUsageTests(unittest.TestCase):
     def test_ollama_parse_failure_keeps_usage_and_reports_num_predict(self):
         import providers
         p = providers.OllamaProvider("m")
-        self.assertEqual(p.max_tokens, 8192)
+        self.assertEqual(p.max_tokens, 16384)
         with patch.object(p, "_post", return_value={"message": {"content": ""}, "prompt_eval_count": 500, "eval_count": 0}):
             with self.assertRaises(ValueError) as caught:
                 p.chat("s", "u", "", {}, "high")
