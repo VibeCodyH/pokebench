@@ -4,10 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#2dd4bf">
+  <meta name="theme-color" content="#f7d45c">
   <meta name="description" content="LLMs play Pokémon. One 1,000-turn budget. See how far each model gets on the road to Brock, compare runs, and check the video.">
   <title>PokéBench · Billions of parameters vs. one old man.</title>
   <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
 </head>
@@ -24,12 +26,12 @@
     <symbol id="art-trainer" viewBox="0 0 32 48"><path d="M5 41h25v5H5z" fill="#122b3c55"/><path d="M8 4h16v4h5v9H4V9h4z" fill="#e9765d"/><path d="M9 5h11v4H9z" fill="#ffd2a0"/><path d="M9 17h17v12H9z" fill="#edc18e"/><path d="M7 18h6v9H7z" fill="#334b47"/><path d="M7 29h18v11H7z" fill="#d7d9b4"/><path d="M5 30h6v9H5zM23 30h5v9h-5z" fill="#de795b"/><path d="M9 40h6v6H9zM20 40h6v6h-6z" fill="#243e50"/></symbol>
     <symbol id="art-lamp" viewBox="0 0 35 100"><path d="M16 20h5v75h-5zM9 95h19v5H9z" fill="#334746"/><path d="M7 5h25v23H7z" fill="#3a5350"/><path d="M11 10h17v13H11z" fill="#fbe6a0"/><path d="M13 0h14v5H13z" fill="#334746"/></symbol>
   <g id="art-trophy"><path d="M7 3h18v4h6v12h-5v5h-8v6h7v5H7v-5h7v-6H6v-5H1V7h6z" fill="#172a24"/><path d="M9 5h14v13l-4 4h-6l-4-4z" fill="#fff0a4"/><path d="M16 5h7v13l-4 4h-3z" fill="#d89125"/><path d="M4 10h3v7H4m21-7h3v7h-3M15 23h2v8h-2M9 32h14v1H9" fill="#ffdc69"/></g><pattern id="brick" width="100" height="48" patternUnits="userSpaceOnUse"><path d="M0 0h100M0 24h100M0 48h100M50 0v24M0 24v24M100 24v24" fill="none" stroke="#182f2b" stroke-width="3"/><path d="M4 4h40M54 28h40" stroke="#76816a" stroke-width="2" opacity=".24"/></pattern></defs></svg>
+<main class="page" id="main" tabindex="-1">
 <header class="masthead">
-  <a class="brand" href="#brock" aria-label="PokéBench, back to the championship wall">
+  <a class="brand" href="#" aria-label="PokéBench, back to top">
     <img src="pokebench-logo.png" width="48" height="48" alt="" class="brand-mark">
     <span><span class="wordmark">PokéBench<span>_</span></span><span class="tagline">Billions of parameters vs. one old man.</span></span>
   </a>
-  <nav class="page-nav" aria-label="About the benchmark"><a href="#methodology">Methodology</a><a href="#timeline">Timeline</a></nav>
   <div class="socials">
     <a id="live-pill" class="live-pill" href="https://www.twitch.tv/pokebenchtv" target="_blank" rel="noopener" title="PokeBenchTV on Twitch"><span class="live-dot" aria-hidden="true"></span><span id="live-text">OFFLINE</span></a>
     <a class="social-button" href="https://www.twitch.tv/pokebenchtv" target="_blank" rel="noopener" aria-label="PokéBench on Twitch" title="Twitch"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg></a>
@@ -38,63 +40,36 @@
     <a class="social-button" href="https://x.com/PokeBenchTV" target="_blank" rel="noopener" aria-label="PokéBench on X" title="X"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg></a>
     <a class="social-button" href="https://bsky.app/profile/pokebenchtv.bsky.social" target="_blank" rel="noopener" aria-label="PokéBench on Bluesky" title="Bluesky"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg></a>
   </div>
-  <div class="header-controls">
-    <button id="depth-toggle" class="depth-control" aria-pressed="true">DEPTH ON</button>
-    <div class="view-switch" role="group" aria-label="Leaderboard view">
-      <button id="journey-button" aria-pressed="true" aria-controls="journey-view"><span aria-hidden="true">↟</span> JOURNEY</button>
-      <button id="table-button" aria-pressed="false" aria-controls="table-view"><span aria-hidden="true">▦</span> TABLE</button>
-    </div>
-  </div>
 </header>
-<div id="sample-banner" class="sample-banner" hidden><strong>SAMPLE DATA — not real results</strong><span class="sample-badge">ILLUSTRATIVE DATA</span><button id="real-data" class="text-button">Back to real results ↗</button></div>
-<p id="card-flip-help" class="sr-only">Click the card or press Enter or Space to flip between results and the journey replay. Buttons and links work independently.</p>
-<main id="main" tabindex="-1">
-  <section id="data-state" class="data-state" aria-live="polite"><p>Checking the field…</p></section>
-  <div id="journey-view">
-    <section id="brock" class="station gym" aria-labelledby="brock-title" data-station="brock">
-      <div class="gym-art" aria-hidden="true"><svg class="far" viewBox="0 0 1440 1040" preserveAspectRatio="xMidYMid slice"><rect width="1440" height="1040" fill="#38443c"/><rect y="65" width="1440" height="665" fill="url(#brick)"/><path d="M0 129h1440M0 647h1440M0 663h1440" stroke="#73816b" stroke-width="8"/><path d="M0 654h1440" stroke="#1e312a" stroke-width="8"/><path d="M0 702h1440v338H0z" fill="#6e7861"/><path d="M0 711h1440M0 769h1440M0 853h1440M0 968h1440M0 702L-300 1040M240 702L60 1040M480 702l-60 338M720 702v338M960 702l65 338M1200 702l180 338" fill="none" stroke="#455b4d" stroke-width="3"/><path d="M526 713h364l182 327H358z" fill="#9b6148"/><path d="M550 716h312l174 324H386z" fill="#b87d54"/><path d="M573 716l-155 324M840 716l165 324" stroke="#e6bb77" stroke-width="5"/></svg></div>
-      <div class="gym-content">
-        <div class="hero-heading"><div><p class="station-kicker gold">SUITE 1 · GEN 1 · RED · THE CEILING</p><h1 id="brock-title">The Boulder<br>Badge Club.</h1><p class="station-lede">A thousand turns. Ten milestones. One rock guy.<br>LLMs play Pokémon. Getting here is the benchmark.</p><a class="journey-cta" href="#pewter">Follow the trail of stuck models ↓</a></div><aside class="leader-banner" aria-label="Gym leader Brock, the final boss">
-            <div class="banner-top">GYM LEADER NO. 01</div><div class="banner-body">
-              <svg class="portrait" viewBox="0 0 100 100" role="img" aria-label="Pixel portrait of Brock"><path d="M12 88V73h12V61h49v12h14v27H12z" fill="#213e38"/><path d="M30 62h12v20H27v18H12V75h18zM63 62h11v13h13v25H71V82h-8z" fill="#8da45e"/><path d="M37 52h28v28H37z" fill="#bd8054"/><path d="M26 20h48v38H63v9H39v-9H26z" fill="#dbaa6f"/><path d="M28 23h10v34H28zM40 58h23v8H40z" fill="#be8158"/><path d="M20 20V9h13V0h10v8h9V0h10v9h15v12h8v16H71V25H58v-8H42v10H29v13H19V20z" fill="#2e3931"/><path d="M36 39h12v4H36zM60 39h12v4H60z" fill="#41382f"/><path d="M48 53h15v3H48z" fill="#825d46"/><path d="M43 80h19v20H43z" fill="#ce8858"/><path d="M0 92h100v8H0z" fill="#193a36"/></svg>
-              <strong>BROCK</strong><small>ROCK SOLID.<br>REASONING OPTIONAL.</small>
-            </div><i class="banner-pin" aria-hidden="true"></i>
-          </aside></div>
-        <div class="wall-heading"><h2>THE CHAMPIONSHIP WALL</h2><p id="gym-tally">— / — RUNS BEAT BROCK</p></div>
-        <div id="winners-wall" class="winners"></div>
-        <div class="gym-bottom"><span><svg class="trophy" viewBox="0 0 32 37" aria-hidden="true"><use href="#art-trophy"/></svg> BADGE EARNED</span><span><b class="red">×</b> STUCK HERE</span><span>BEST ↑ · START ↓</span></div>
-      </div>
-    </section>
-    <div id="stations"></div>
-  </div>
-  <section id="table-view" class="table-view content-width" aria-labelledby="table-title" hidden>
-    <p class="eyebrow">SUITE 1 · GEN 1 · RED</p><h1 id="table-title">Every run.<br>On the record.</h1><p class="section-lede">The same adventure, with a little less walking.</p>
-    <div class="table-toolbar">
-      <div class="field"><label for="provider-filter">Provider</label><select id="provider-filter"><option value="all">All providers</option><option value="local">Local (Ollama)</option><option value="api">API</option></select></div>
-      <div class="field"><label for="family-filter">Family</label><select id="family-filter"><option value="all">All families</option></select></div>
-      <div class="field"><label for="sort">Sort by</label><select id="sort"><option value="milestone">Furthest milestone</option><option value="turns">Fewest turns</option><option value="cost">Lowest cost</option><option value="newest">Newest run</option></select></div>
-      <p id="run-count" role="status"></p>
+
+  <div class="banner" id="banner" hidden>SAMPLE DATA · NOT REAL RESULTS</div>
+  <section id="data-state" class="data-state" aria-live="polite" hidden></section>
+
+  <section>
+    <div class="section-head"><span class="label">Overall podium</span><span class="label">The road to Brock</span></div>
+    <div class="podium" id="podium"></div>
+  </section>
+
+  <section class="box race">
+    <span class="label">The whole race</span>
+    <div class="track"><div class="stops" id="stops"></div></div>
+  </section>
+
+  <section>
+    <div class="rank-head">
+      <h2>Trainer rankings</h2>
+      <span class="count" id="count"></span>
+      <div class="filters" id="filters"></div>
     </div>
-    <div id="table-cards" class="card-grid"></div>
-    <p class="table-footnote">Rank = furthest milestone, then fewer turns. Tokens, cost and time are reported, not scored. FREE means no API spend; local hardware and electricity are excluded. Unreported values stay “—”.</p>
+    <div class="grid" id="grid"></div>
   </section>
-  <section id="methodology" class="info-section content-width" aria-labelledby="methodology-title">
-    <p class="eyebrow">THE RULES OF THIS VERY SMALL MOUNTAIN</p><h2 id="methodology-title">Big brains. Same buttons.</h2>
-    <div class="method-grid"><div class="method-copy">
-      <p><strong>LLMs play Pokémon Red.</strong> Every model gets the same 1,000 turns. Score is the furthest milestone reached, and ties go to fewer turns. Beating Brock ends the run. Tokens, cost and time are shown, not scored.</p>
-      <p><strong>Trust the video over the score.</strong> Each run keeps its prompt version, settings, full turn log and VOD. Inspect run opens the video when there is one.</p>
-      <p><strong>Runs are not identical.</strong> Wild encounters and battle RNG vary, so compare runs on the same prompt version. Local and API only say where the model ran. Gen 1 is the first suite. More may follow.</p>
-    </div><div class="milestone-board"><p class="eyebrow">THE GEN 1 LADDER · START → CEILING</p><ol id="method-milestones"></ol><p>1 turn = up to 6 button presses.<br>The 1,000-turn limit applies to every model.</p></div></div>
-  </section>
-  <section id="timeline" class="info-section content-width" aria-labelledby="timeline-title">
-    <p class="eyebrow">THE FIELD NOTES</p><h2 id="timeline-title">One run at a time.</h2><p class="section-lede">Run dates, newest first. Each attempt keeps its own place in the record.</p><div id="timeline-list"></div>
-  </section>
-  <noscript><p class="data-state">Enable JavaScript to load runs.json and explore the leaderboard. The benchmark rules above are available without it.</p></noscript>
 </main>
-<nav id="progress-rail" class="progress-rail" aria-label="Journey milestones"><p class="rail-heading">YOU ARE HERE</p><p id="rail-station">Brock’s Gym</p><ol id="rail-list" reversed></ol><p class="rail-foot">BEST ↑ · START ↓</p></nav>
-<footer class="footer"><span class="footer-wordmark">PokéBench<span>_</span></span><p>Independent project. Not affiliated with Nintendo, Game Freak, or The Pokémon Company.</p><a href="#brock">Back to the badge club ↑</a></footer>
-<aside id="compare-tray" class="compare-tray" aria-label="Selected runs" hidden><div><strong id="compare-count">0 / 4 SELECTED</strong><div id="compare-chips"></div></div><div class="tray-actions"><button id="compare-clear" class="text-button">Clear</button><button id="compare-open" class="button" disabled>Compare runs →</button></div></aside>
-<dialog id="compare-dialog" aria-labelledby="compare-title"><div class="dialog-heading"><div><p class="eyebrow">SAME GAME · SIDE BY SIDE</p><h2 id="compare-title">Compare runs</h2></div><button id="compare-close" class="button" autofocus>Close ×</button></div><p id="compare-sample" class="sample-note" hidden>SAMPLE DATA — not real results</p><p class="dialog-note">Milestone first, fewer turns second. Efficiency is reported separately.</p><div id="compare-table" class="compare-table" tabindex="0" role="region" aria-label="Scrollable run comparison"></div></dialog>
-<p id="announcer" class="sr-only" role="status" aria-live="polite"></p>
+
+<p id="card-flip-help" class="sr-only">Click the card or press Enter or Space to flip between results and the journey replay. Escape closes the dialog.</p>
+<p id="announcer" class="sr-only" aria-live="polite"></p>
+<dialog id="run-modal" aria-describedby="card-flip-help">
+  <button class="modal-close" id="modal-close" aria-label="Close run details">×</button>
+  <div id="modal-content"></div>
+</dialog>
 </body>
 </html>
