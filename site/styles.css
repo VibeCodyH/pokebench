@@ -124,6 +124,7 @@ dialog#run-modal::backdrop { background: #101c20c9; }
 .receipt-note { font: 650 8px/1.6 var(--mono); color: var(--muted); margin: 8px 0 10px; }
 .run-details .provenance { grid-template-columns: 58px minmax(0,1fr) 47px minmax(0,1fr); gap: 4px 8px; font-size: 9px; border-top: 1px solid #bdc9b9; padding-top: 8px; }
 .trophy { width: 25px; height: 28px; display: inline-block; flex: none; shape-rendering: crispEdges; }
+@media (prefers-reduced-motion: reduce) {
   * { transition-duration: .001ms !important; animation: none !important; }
   html { scroll-behavior: auto; }
   .run-card .card-inner, .run-card.is-flipped .card-inner, .run-card .card-face { transform: none; }
