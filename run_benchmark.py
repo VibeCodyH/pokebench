@@ -113,7 +113,8 @@ def harness_fingerprint():
 
 def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
                   turns_used, budget, tokens, wall_s, notes, save_name,
-                  harness_git_sha=None, harness_files_sha=None, blackouts=()):
+                  harness_git_sha=None, harness_files_sha=None, blackouts=(),
+                  termination="budget", failed_attempts=None):
     """The qwen_red.write_summary JSON keys, with registry/adapter provenance."""
     provider_name = model["provider"]
     summary = {
@@ -142,10 +143,14 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         "artifacts": {"log": "log.jsonl", "save_state": save_name},
         "notes": notes,
         "budget_turns": budget,
-        "turns_used": turns_used,
+        "turns_used": turns_used,  # completed turns only: an attempt cut short by SIGINT is not a turn
+        # budget | beat_brock | interrupted | stopped | provider_error — a partial run is never a scored result
+        "termination_reason": termination,
         "wall_time_s": round(wall_s, 1),
         "tokens_in": tokens["prompt"],
         "tokens_out": tokens["completion"],
+        # retried attempts (bad JSON, refusals, empty replies): work the model did that tokens_in/out exclude
+        "failed_attempts": dict(failed_attempts or {"count": 0, "prompt": 0, "completion": 0}),
         "cost_usd": provider.cost(tokens),
         "youtube_url": None,
         "timestamp": time.strftime("%Y%m%d_%H%M%S"),
@@ -223,10 +228,13 @@ def milestone_anchor_turn(tracker, keep):
 def pose_of(st):
     sm = st.get("map") or {}
     sp = (st.get("player") or {}).get("position") or {}
-    return {"map_id": sm.get("map_id"), "map_name": sm.get("map_name"), "pos": [sp.get("x"), sp.get("y")]}
+    return {"map_id": sm.get("map_id"), "map_name": sm.get("map_name"), "pos": [sp.get("x"), sp.get("y")],
+            "loaded": sm.get("loaded", True)}
 
 
 def fmt_pose(p):
+    if p.get("loaded", True) is False:
+        return "no map (title/intro)"
     pos = p.get("pos") or [None, None]
     return f"{p.get('map_name') or 'Unknown'} ({pos[0]},{pos[1]})"
 
@@ -283,6 +291,9 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
                 else resolve_identity(model["api_model_id"], model["provider"]))
     system_prompt = render_system(identity)
     turn = 0
+    turns_done = 0  # turns whose plan reached the emulator; `turn` may be one ahead mid-attempt
+    termination = "budget"
+    failed_attempts = {"count": 0, "prompt": 0, "completion": 0}  # retried model calls: usage the totals exclude
     save_name = None
     acted = False
     blackouts = []
@@ -303,6 +314,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
                 continue
             if control == "stopped":
                 print("control = stopped, exiting", flush=True)
+                termination = "stopped"
                 break
 
             try:
@@ -328,6 +340,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
 
             if record_milestones(server, tracker, state, turn):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
+                termination = "beat_brock"
                 break
             head = f"NOTES:\n{notes or '(no notes yet)'}\n\nRECENT TURNS:\n"
             tail = (f"\n\nSTATE:\n{compact(state)}\n\nSCREEN TEXT (words on screen right now):\n{screen_text}"
@@ -345,6 +358,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
             observation = {"frame_file": frame_file, "collision": state.get("collision"),
                            "warps": frame.get("warps") or [], "party_count": len(state.get("party") or []),
                            "dialog_open": frame.get("dialog_open"), "menu_open": frame.get("menu_open"),
+                           "map_loaded": frame.get("map_loaded", True),
                            "in_battle": frame.get("in_battle"), "settle": frame.get("settle")}
             started = time.time()
             try:
@@ -359,9 +373,14 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
                 response = getattr(exc, "response", None)
                 status = getattr(response, "status_code", None)
                 body = (getattr(response, "text", None) or "")[:500]
+                usage = getattr(exc, "usage", None)  # adapters attach usage when the response arrived but the plan was bad
+                failed_attempts["count"] += 1
+                for key in ("prompt", "completion"):
+                    failed_attempts[key] += int((usage or {}).get(key, 0))
                 with open(log_path, "a") as output:
                     output.write(json.dumps({"turn": turn, "model_error": str(exc), "error_body": body,
                                              "raw_output": getattr(exc, "raw_output", None),
+                                             "model_s": time.time() - started, "tokens": usage,
                                              "turn_not_counted": True, **observation}) + "\n")
                 errors_in_a_row += 1
                 first_error_at = first_error_at or time.time()
@@ -370,9 +389,11 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
                 billing = any(word in body.lower() for word in BILLING_WORDS)
                 if status in (401, 402, 403) or billing:
                     print(f"[turn {turn}] non-retryable provider error {status}, aborting: {exc} {body}", flush=True)
+                    termination = "provider_error"
                     break
                 if time.time() - first_error_at > ERROR_WINDOW:
                     print(f"[turn {turn}] provider failing for {ERROR_WINDOW}s straight, aborting: {exc} {body}", flush=True)
+                    termination = "provider_error"
                     break
                 delay = min(5 * 2 ** (errors_in_a_row - 1), 300)
                 print(f"[turn {turn}] model error: {exc} {body}; retrying the same turn in {delay}s", flush=True)
@@ -409,7 +430,11 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
                 if steps:
                     start = steps[0].get("before") or start
                     end = next((st["after"] for st in reversed(steps) if st.get("after")), start)  # error steps have no pose
-                if start.get("map_id") != end.get("map_id"):
+                if start.get("loaded", True) is False and end.get("loaded", True):
+                    tail_parts.append(f" MAP LOADED {end.get('map_name')}")  # intro over, first real map
+                elif start.get("loaded", True) is False:
+                    pass  # still on the title/intro: no place to compare
+                elif start.get("map_id") != end.get("map_id"):
                     tail_parts.append(f" MAP CHANGED {start.get('map_name')} -> {end.get('map_name')}")
                 elif start.get("pos") == end.get("pos"):
                     ui_turn = bool(steps) and all(st.get("before", {}).get("ui") for st in steps if st.get("before"))
@@ -465,6 +490,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
                     **observation,
                     "state_after": compact(state_after) if isinstance(state_after, dict) else None,
                 }) + "\n")
+            turns_done = turn
             # A milestone map can be entered and left inside one 6-action batch; the per-step RAM
             # poses expose those transient map_ids the pre/post-turn states miss (map rungs only —
             # party/flags/badge rungs still resolve on the full state_after below).
@@ -484,16 +510,20 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
             # /action supplies RAM state: credit even a milestone on the last budgeted turn.
             if isinstance(state_after, dict) and record_milestones(server, tracker, state_after, turn):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
+                termination = "beat_brock"
                 break
             if turn % 25 == 0:
                 save_name = save_game(server, f"{run_id}-auto") or save_name
+    except KeyboardInterrupt:
+        termination = "interrupted"
+        raise
     finally:
         if acted:
             save_name = save_game(server, f"{run_id}-auto") or save_name
         summary_path = write_summary(
-            artifact_dir, run_id, model, provider, run_name, tracker, turn, budget,
+            artifact_dir, run_id, model, provider, run_name, tracker, turns_done, budget,
             total_tokens, time.time() - run_start, notes, save_name,
-            harness_git_sha, harness_files_sha, blackouts,
+            harness_git_sha, harness_files_sha, blackouts, termination, failed_attempts,
         )
     return summary_path
 

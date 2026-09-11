@@ -24,11 +24,21 @@ def _plan(content: str) -> dict:
     return plan
 
 
-def _plan_error(message: str, content) -> ValueError:
+def _plan_error(message: str, content, usage: dict | None = None) -> ValueError:
     """Carry the raw model output on the error so the run log can show empty vs malformed."""
     error = ValueError(message)
     error.raw_output = (content if isinstance(content, str) else repr(content))[:2000]
+    error.usage = usage  # the tokens this failed attempt still cost; the runner logs them
     return error
+
+
+def _plan_with_usage(content, usage: dict) -> dict:
+    """_plan(), but a parse failure keeps the usage the response reported."""
+    try:
+        return _plan(content)
+    except ValueError as exc:
+        exc.usage = usage
+        raise
 
 
 def _schema_for(schema: dict, provider: str) -> dict:
@@ -115,11 +125,12 @@ class Provider(ABC):
 class OllamaProvider(Provider):
     """The qwen_red.ask() wire contract, including its local defaults."""
 
-    def __init__(self, model: str, *, num_ctx: int = 65536, temperature: float = 0.6, **opts):
+    def __init__(self, model: str, *, num_ctx: int = 65536, temperature: float = 0.6, max_tokens: int = 8192, **opts):
         super().__init__(model, **opts)
         self.host = os.environ.get("OLLAMA_HOST", "http://<server-host>:11434").rstrip("/")
         self.num_ctx = num_ctx
         self.temperature = temperature
+        self.max_tokens = max_tokens  # num_predict; summary.json reports it as max_output_tokens
 
     def chat(
         self, system: str, user: str, image_b64: str, schema: dict, think: str
@@ -131,13 +142,11 @@ class OllamaProvider(Provider):
                 {"role": "system", "content": system},
                 {"role": "user", "content": user, "images": [image_b64]},
             ],
-            "options": {"num_ctx": self.num_ctx, "temperature": self.temperature, "num_predict": 8192},
+            "options": {"num_ctx": self.num_ctx, "temperature": self.temperature, "num_predict": self.max_tokens},
         })
         message = body["message"]
-        return _plan(message["content"]), message.get("thinking", "") or "", {
-            "prompt": int(body.get("prompt_eval_count", 0)),
-            "completion": int(body.get("eval_count", 0)),
-        }
+        usage = {"prompt": int(body.get("prompt_eval_count", 0)), "completion": int(body.get("eval_count", 0))}
+        return _plan_with_usage(message["content"], usage), message.get("thinking", "") or "", usage
 
     def cost(self, tokens: dict[str, int]) -> float:
         return 0.0
@@ -241,14 +250,14 @@ class OpenAIProvider(Provider):
             raise ValueError("OpenAI returned no choices")
         choice = choices[0]
         message = choice["message"]
-        if message.get("refusal") or choice.get("finish_reason") in {"length", "content_filter", "error"}:
-            raise ValueError("OpenAI refused or could not finish the JSON plan")
         usage = body.get("usage", {})
+        tokens = {"prompt": int(usage.get("prompt_tokens", 0)), "completion": int(usage.get("completion_tokens", 0))}
+        if message.get("refusal") or choice.get("finish_reason") in {"length", "content_filter", "error"}:
+            # name the finish_reason: "refused" and "ran out of output" are different failures to audit
+            raise _plan_error(f"OpenAI refused or could not finish the JSON plan (finish_reason={choice.get('finish_reason')})",
+                              message.get("content"), tokens)
         # Chat Completions omits reasoning; OpenRouter may return message.reasoning, so keep it.
-        return _plan(message.get("content")), message.get("reasoning") or "", {
-            "prompt": int(usage.get("prompt_tokens", 0)),
-            "completion": int(usage.get("completion_tokens", 0)),
-        }
+        return _plan_with_usage(message.get("content"), tokens), message.get("reasoning") or "", tokens
 
 
 class GoogleProvider(Provider):

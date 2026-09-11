@@ -11,7 +11,7 @@ models:
     params: "27B"
     quant: "Q4_K_M" # Matches the existing harness's recorded local configuration.
     context: 65536 # Configured harness context; not a claim about the model's maximum.
-    think: low
+    think: high
     release_date: null # TODO: verify the model release date; do not use the run date.
     input_cost_per_mtok: 0.0 # local inference: genuinely free
     output_cost_per_mtok: 0.0
@@ -66,7 +66,7 @@ models:
     params: "27B"
     quant: null
     context: 1000000
-    think: low
+    think: high
     release_date: null
     input_cost_per_mtok: null
     output_cost_per_mtok: null
@@ -148,7 +148,7 @@ models:
     params: null
     quant: null
     context: 262144
-    think: low
+    think: high
     release_date: "2026-09-08"
     input_cost_per_mtok: 0.0
     output_cost_per_mtok: 0.0

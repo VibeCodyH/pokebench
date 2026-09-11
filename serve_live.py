@@ -329,13 +329,32 @@ async def _locked_execute(action_str: str):
 S._execute_action = _locked_execute
 
 
+_MAP_HEADER = 0xD368  # wCurMapHeight, wCurMapWidth: both 0 until the first overworld map is loaded
+
+
+def _map_loaded() -> bool:
+    """False on the title screen and through Oak's intro/naming: wCurMap/wYCoord/wXCoord already hold
+    Red's House 2F (3,6) then (InitPlayerData), but no map header is loaded until the speech ends.
+    Measured 2026-09-11 on a fresh boot: h/w stay 0 through the whole intro, become 4/4 one A press
+    after wd732 bit 0 sets, and the player can move on the next press."""
+    return S._emulator.read_range(_MAP_HEADER, 2) != b"\x00\x00"
+
+
+def _state_dict() -> dict:
+    """S._get_state_dict() with map.loaded stamped, so the harness never reports intro coordinates as a place."""
+    state = S._get_state_dict()
+    if isinstance(state.get("map"), dict):
+        state["map"]["loaded"] = _map_loaded()
+    return state
+
+
 def _pose() -> dict:
     """Sync helper for /action/traced — run via S._run_sync."""
     mi = S._reader.read_map_info()  # {"map_id","map_name"}
     pl = S._reader.read_player()  # {"position":{"y","x"}, "facing", ...}
     pos = pl.get("position") or {}
     return {"map_id": mi.get("map_id"), "map_name": mi.get("map_name"), "pos": [pos.get("x"), pos.get("y")], "facing": pl.get("facing"),
-            "ui": _ui_open()}
+            "ui": _ui_open(), "loaded": _map_loaded()}
 
 
 @S.app.middleware("http")
@@ -445,7 +464,7 @@ async def traced_action(req: S.ActionRequest):
                 step["said"] = said  # the page a plain press left on screen (a_until carries its own transcript)
             steps.append(step)
             executed += 1
-        state_after = await S._run_sync(S._get_state_dict)
+        state_after = await S._run_sync(_state_dict)
         if S._active_session is not None and S._session_mgr is not None:
             s = S._active_session.stats
             s["actions"] = s.get("actions", 0) + executed
@@ -545,12 +564,12 @@ async def get_frame():
         settle = await _settle_screen(_FRAME_SETTLE_TICKS)
 
         def _build():
-            state = S._get_state_dict()
+            state = _state_dict()
             png = S._get_screenshot_bytes()
             b64 = base64.b64encode(png).decode("ascii")
             ascii_text = (state.get("collision") or {}).get("ascii")
             return {"state": state, "screenshot_b64": b64, "ascii": ascii_text, "screen_text": _screen_text(), "warps": _warps(),
-                    "dialog_open": _dialog_open(), "menu_open": _menu_open(),
+                    "dialog_open": _dialog_open(), "menu_open": _menu_open(), "map_loaded": (state.get("map") or {}).get("loaded", True),
                     "in_battle": S._emulator.read_u8(_red.ADDR_BATTLE_TYPE) != 0, "settle": settle}
         data = await S._run_sync(_build)
     return data

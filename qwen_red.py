@@ -56,7 +56,7 @@ ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk
            "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 
 # Provenance (BENCHMARK-SPEC.md §2b — same prompt, same rules, public receipts).
-PROMPT_VERSION = "v20"          # v20 = door rule no longer contradicts the exit-mat rule; v19 = map shows raw walkability, no reachability flood-fill; v18 = truthful warp/UI/party/feedback
+PROMPT_VERSION = "v21"          # v21 = STATE says "none loaded yet" on the title/intro instead of Red's House 2F (3,6); v20 = door rule no longer contradicts the exit-mat rule; v19 = map shows raw walkability, no reachability flood-fill; v18 = truthful warp/UI/party/feedback
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
@@ -120,8 +120,13 @@ def compact(state):
                  mv.get("name") if isinstance(mv, dict) else str(mv) for mv in m.get("moves", [])))
              for m in state.get("party", []) or []]
     b = state.get("battle") or {}
+    sm = state.get("map") or {}
+    # Title screen / Oak's intro: RAM already holds Red's House 2F (3,6) but no map is loaded yet.
+    # A run once cited that "location" as proof its save was corrupt, so say plainly there is none.
+    where = (f"map: {sm.get('map_name')}  pos {p.get('position')}  facing {p.get('facing')}" if sm.get("loaded", True)
+             else "map: none loaded yet (title screen or intro)  pos none")
     lines = [
-        f"map: {(state.get('map') or {}).get('map_name')}  pos {p.get('position')}  facing {p.get('facing')}  money {p.get('money')}  badges {p.get('badges')}",
+        f"{where}  money {p.get('money')}  badges {p.get('badges')}",
         "party: " + ("; ".join(party) if party else "none"),
         "bag: " + (", ".join(f"{i.get('item')}x{i.get('quantity')}" for i in state.get("bag", []) or []) or "empty"),
         f"in_battle: {b.get('in_battle')}",

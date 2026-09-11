@@ -357,3 +357,133 @@ class PlanErrorTests(unittest.TestCase):
         text = qwen_red.SYSTEM
         self.assertNotIn("entrances/exits", text)
         self.assertIn("EXIT MAT", text)
+
+
+class IntroAndAccountingTests(RunnerTests):
+    """2026-09-11 audit: intro coordinates presented as a place, SIGINT turn count, lost retry usage."""
+
+    def intro_frame(self):
+        frame = self.frame(map_loaded=False)
+        frame["state"]["map"] = {"map_id": 38, "map_name": "Red's House 2F", "loaded": False}
+        frame["state"]["player"]["position"] = {"x": 3, "y": 6}
+        return frame
+
+    def test_intro_state_has_no_place_and_no_map_change(self):
+        rows, _, provider = self.run_turn(self.intro_frame(), [{"action": "press_a",
+            "before": {"map_id": 0, "map_name": "Pallet Town", "pos": [0, 0], "ui": True, "loaded": False},
+            "after": {"map_id": 38, "map_name": "Red's House 2F", "pos": [3, 6], "ui": True, "loaded": False}}])
+        self.assertIn("map: none loaded yet (title screen or intro)", rows[0]["state"])
+        self.assertNotIn("Red's House", rows[0]["state"])
+        self.assertNotIn("MAP CHANGED", rows[0]["feedback"])
+        self.assertIn("no map (title/intro) did [press_a] -> no map (title/intro)", rows[0]["feedback"])
+        self.assertIs(rows[0]["map_loaded"], False)
+        self.assertNotIn("Red's House", provider.chat.call_args.args[1].split("STATE:")[1].split("SCREEN TEXT")[0])
+
+    def test_first_real_map_is_reported_as_loaded_not_changed(self):
+        rows, _, _ = self.run_turn(self.intro_frame(), [{"action": "a_until_dialog_end",
+            "before": {"map_id": 38, "map_name": "Red's House 2F", "pos": [3, 6], "ui": True, "loaded": False},
+            "after": {"map_id": 38, "map_name": "Red's House 2F", "pos": [3, 6], "ui": False, "loaded": True}}])
+        self.assertIn("MAP LOADED Red's House 2F", rows[0]["feedback"])
+        self.assertNotIn("MAP CHANGED", rows[0]["feedback"])
+
+    def test_loaded_map_state_is_unchanged(self):
+        rows, _, _ = self.run_turn(self.frame())
+        self.assertTrue(rows[0]["state"].startswith("map: Pewter City  pos {'x': 10, 'y': 16}"))
+        self.assertIs(rows[0]["map_loaded"], True)
+
+    def test_interrupt_counts_completed_turns_and_names_the_reason(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        provider = Mock()
+        plan = ({"thought": "t", "actions": ["wait_60"]}, "", {"prompt": 10, "completion": 1})
+        provider.chat.side_effect = [plan, plan, KeyboardInterrupt()]
+        frame = self.frame()
+        get = lambda url, **kw: Mock(json=lambda: frame if url.endswith("/frame") else {"state": "running"})
+        post = lambda url, **kw: Mock(json=lambda: {"actions_executed": 1, "steps": [], "state_after": frame["state"]})
+        model = {"key": "test", "api_model_id": "test", "provider": "ollama", "num_ctx": 65536, "think": "off"}
+        summary = Mock(return_value=None)
+        with patch.multiple(runner, RUNS_DIR=tmp.name, harness_fingerprint=Mock(return_value=(None, None)),
+                            record_milestones=Mock(return_value=False), save_game=Mock(return_value=None),
+                            write_summary=summary), \
+                patch.object(runner.requests, "get", side_effect=get), \
+                patch.object(runner.requests, "post", side_effect=post), \
+                patch.object(runner.time, "sleep"), contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaises(KeyboardInterrupt):
+                runner.run(model, provider, "http://unused", budget=10, no_frames=True)
+        args, kwargs = summary.call_args
+        self.assertEqual(args[6], 2)  # turns_used: the third attempt never reached the emulator
+        self.assertEqual(args[8], {"prompt": 20, "completion": 2})
+        self.assertEqual(args[-2], "interrupted")
+        self.assertEqual(args[-1], {"count": 0, "prompt": 0, "completion": 0})
+
+    def test_failed_attempt_usage_is_logged_and_totalled(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        provider = Mock()
+        bad = ValueError("Provider did not return a valid JSON plan")
+        bad.raw_output, bad.usage = "", {"prompt": 7, "completion": 0}
+        plan = ({"thought": "t", "actions": ["wait_60"]}, "", {"prompt": 10, "completion": 1})
+        provider.chat.side_effect = [bad, plan]
+        frame = self.frame()
+        get = lambda url, **kw: Mock(json=lambda: frame if url.endswith("/frame") else {"state": "running"})
+        post = lambda url, **kw: Mock(json=lambda: {"actions_executed": 1, "steps": [], "state_after": frame["state"]})
+        model = {"key": "test", "api_model_id": "test", "provider": "ollama", "num_ctx": 65536, "think": "off"}
+        summary = Mock(return_value=None)
+        with patch.multiple(runner, RUNS_DIR=tmp.name, harness_fingerprint=Mock(return_value=(None, None)),
+                            record_milestones=Mock(return_value=False), save_game=Mock(return_value=None),
+                            write_summary=summary), \
+                patch.object(runner.requests, "get", side_effect=get), \
+                patch.object(runner.requests, "post", side_effect=post), \
+                patch.object(runner.time, "sleep"), contextlib.redirect_stdout(io.StringIO()):
+            runner.run(model, provider, "http://unused", budget=1, no_frames=True)
+        artifact = next(Path(tmp.name).iterdir())
+        rows = [json.loads(line) for line in (artifact / "log.jsonl").read_text().splitlines()]
+        self.assertTrue(rows[0]["turn_not_counted"])
+        self.assertEqual(rows[0]["tokens"], {"prompt": 7, "completion": 0})
+        self.assertIn("model_s", rows[0])
+        args, _ = summary.call_args
+        self.assertEqual(args[6], 1)
+        self.assertEqual(args[8], {"prompt": 10, "completion": 1})  # totals still exclude the failed attempt
+        self.assertEqual(args[-2], "budget")
+        self.assertEqual(args[-1], {"count": 1, "prompt": 7, "completion": 0})
+
+    def test_summary_records_termination_and_failed_attempts(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        provider = Mock(max_tokens=8192, cost=Mock(return_value=0.0))
+        model = {"api_model_id": "m", "provider": "ollama", "family": "f", "think": "high", "num_ctx": 1,
+                 "temperature": 0.6}
+        tracker = Mock(summary=Mock(return_value={"furthest_key": None, "furthest_label": None, "furthest_index": -1}))
+        with contextlib.redirect_stdout(io.StringIO()):
+            path = runner.write_summary(tmp.name, "id", model, provider, "run", tracker, 734, 1000,
+                                        {"prompt": 1, "completion": 1}, 1.0, "", None,
+                                        termination="interrupted", failed_attempts={"count": 3, "prompt": 9, "completion": 0})
+        summary = json.loads(Path(path).read_text())
+        self.assertEqual(summary["turns_used"], 734)
+        self.assertEqual(summary["termination_reason"], "interrupted")
+        self.assertEqual(summary["failed_attempts"], {"count": 3, "prompt": 9, "completion": 0})
+        self.assertEqual(summary["max_output_tokens"], 8192)
+
+
+class ProviderUsageTests(unittest.TestCase):
+    def test_ollama_parse_failure_keeps_usage_and_reports_num_predict(self):
+        import providers
+        p = providers.OllamaProvider("m")
+        self.assertEqual(p.max_tokens, 8192)
+        with patch.object(p, "_post", return_value={"message": {"content": ""}, "prompt_eval_count": 500, "eval_count": 0}):
+            with self.assertRaises(ValueError) as caught:
+                p.chat("s", "u", "", {}, "high")
+        self.assertEqual(caught.exception.usage, {"prompt": 500, "completion": 0})
+        self.assertEqual(caught.exception.raw_output, "")
+
+    def test_openai_length_finish_keeps_usage_and_names_the_reason(self):
+        import providers
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test"}):
+            p = providers.OpenAIProvider("m")
+        body = {"choices": [{"message": {"content": "{\"thought\": \"tru"}, "finish_reason": "length"}],
+                "usage": {"prompt_tokens": 300, "completion_tokens": 8192}}
+        with patch.object(p, "_post", return_value=body):
+            with self.assertRaises(ValueError) as caught:
+                p.chat("s", "u", "", {}, "high")
+        self.assertIn("finish_reason=length", str(caught.exception))
+        self.assertEqual(caught.exception.usage, {"prompt": 300, "completion": 8192})
