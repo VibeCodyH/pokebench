@@ -268,7 +268,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
     harness_git_sha, harness_files_sha = harness_fingerprint()  # snapshot the code at run start
     try:  # tell the /stream dashboard which model is playing (branding, colors, ctx label)
         requests.post(f"{server}/run_meta", json={
-            "model": model["api_model_id"], "think": model["think"], "ctx": model["num_ctx"],
+            "model": model["api_model_id"], "display_name": model.get("display_name") or "", "think": model["think"], "ctx": model["num_ctx"],
             "route": ("local" if model["provider"] == "ollama" else "api"),
             "prompt_version": PROMPT_VERSION,
         }, timeout=10)
