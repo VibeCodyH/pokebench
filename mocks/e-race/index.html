@@ -6,6 +6,7 @@
 <title>PokéBench — Race</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="card.css">
 <style>
   :root {
     --bg: #f4eed8; --card: #fbf7e8; --ink: #1e1b16; --gold: #f7d45c; --green: #d7e6bf; --blue: #cfe8f0;
@@ -13,32 +14,40 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 'IBM Plex Mono', ui-monospace, monospace; }
+  button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+  a { color: inherit; }
+  button:focus-visible, a:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
   .page { max-width: 1040px; margin: 0 auto; padding: 28px 20px 60px; display: grid; gap: 22px; }
   .box { background: var(--card); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); }
-  .btn { font: inherit; font-weight: 700; background: var(--card); color: var(--ink); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 6px 12px; cursor: pointer; }
+  .btn { font-weight: 700; background: var(--card); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 6px 12px; }
   .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
   .btn[aria-pressed="true"] { background: var(--gold); }
   .label { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 
-  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-  .logo { width: 40px; height: 40px; background: var(--teal); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); display: grid; place-items: center; font-weight: 700; font-size: 18px; }
-  .brand { display: grid; }
+  /* masthead: logo + wordmark + socials, same links as the live site */
+  .masthead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .brand-mark { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; }
   .brand h1 { margin: 0; font-size: 22px; line-height: 1.1; }
   .brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
-  .status { margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border: 3px solid var(--ink); background: var(--card); box-shadow: 3px 3px 0 var(--ink); font-weight: 700; font-size: 12px; letter-spacing: .1em; }
-  .status .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--offline); border: 2px solid var(--ink); }
-  .status.live .dot { background: #e0524a; }
+  .socials { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .social-button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 3px solid var(--ink); background: var(--card); box-shadow: 3px 3px 0 var(--ink); }
+  .social-icon { width: 14px; height: 14px; fill: currentColor; }
+  .live-pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border: 3px solid var(--ink); background: var(--card); box-shadow: 3px 3px 0 var(--ink); font-weight: 700; font-size: 12px; letter-spacing: .1em; text-decoration: none; }
+  .live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--offline); border: 2px solid var(--ink); }
+  .live-pill.live .live-dot { background: #e0524a; }
   .banner { background: var(--gold); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); padding: 8px 14px; font-weight: 700; font-size: 12px; letter-spacing: .12em; text-align: center; }
 
   .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: end; }
-  .pod { display: grid; }
-  .pod .body { padding: 16px 16px 14px; display: grid; gap: 6px; }
+  .podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: end; margin-top: 12px; }
+  .pod { display: grid; padding: 0; text-align: left; position: relative; }
+  .pod .body { padding: 16px 92px 14px 16px; display: grid; gap: 6px; }
   .pod .place { font-size: 12px; font-weight: 700; letter-spacing: .12em; color: var(--muted); }
   .pod .name { font-size: 18px; font-weight: 700; line-height: 1.15; }
   .pod .meta { color: var(--muted); font-size: 13px; }
   .pod .result { font-weight: 700; margin-top: 4px; }
   .pod .foot { padding: 8px 16px; border-top: 3px solid var(--ink); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .pod-sprite { position: absolute; right: 14px; bottom: 50px; width: 56px; height: auto; shape-rendering: crispEdges; }
   .pod.first { background: var(--gold); }
   .pod.first .body { padding-top: 28px; }
   .pod.first .place, .pod.first .meta { color: var(--ink); }
@@ -49,9 +58,10 @@
   .race { padding: 18px 20px 22px; display: grid; gap: 14px; }
   .track { position: relative; height: 12px; background: var(--track); border: 3px solid var(--ink); margin: 20px 4px 44px; }
   .stops { position: absolute; inset: -3px; display: flex; justify-content: space-between; align-items: center; }
-  .stop { position: relative; width: 14px; height: 14px; padding: 0; background: var(--card); border: 3px solid var(--ink); cursor: pointer; }
-  .stop.filled { background: var(--ink); }
-  .stop[aria-pressed="true"] { background: var(--gold); }
+  .stop { position: relative; display: block; padding: 0; border: 0; background: transparent; }
+  .stop i { display: block; width: 14px; height: 14px; background: var(--card); border: 3px solid var(--ink); }
+  .stop.filled i { background: var(--ink); }
+  .stop[aria-pressed="true"] i { background: var(--gold); }
   .stop span { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 84px; text-align: center; font-size: 10px; font-weight: 700; line-height: 1.2; color: var(--muted); }
   .stop[aria-pressed="true"] span { color: var(--ink); }
 
@@ -62,53 +72,72 @@
   .chip { display: inline-flex; align-items: center; gap: 8px; background: var(--gold); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 4px 8px 4px 10px; font-size: 12px; font-weight: 700; }
   .chip button { all: unset; cursor: pointer; font-weight: 700; font-size: 14px; line-height: 1; padding: 0 2px; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 22px; }
-  .card { display: grid; grid-template-rows: 1fr auto; }
-  .card .body { padding: 14px; display: grid; gap: 10px; }
-  .card .top { display: flex; align-items: center; gap: 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 22px; margin-top: 16px; }
+  .trainer { display: grid; grid-template-rows: 1fr auto; padding: 0; text-align: left; width: 100%; }
+  .trainer:hover, .pod:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
+  .trainer .body { padding: 14px; display: grid; gap: 10px; }
+  .trainer .top { display: flex; align-items: center; gap: 10px; }
   .rank { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border: 3px solid var(--ink); font-weight: 700; font-size: 13px; background: var(--card); }
   .rank.top3 { background: var(--gold); }
-  .card .name { font-size: 16px; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .stat .label { font-size: 10px; }
-  .stat .value { font-size: 20px; font-weight: 700; line-height: 1.1; }
+  .trainer .name { font-size: 16px; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+  .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kv .label { font-size: 10px; }
+  .kv .value { font-size: 20px; font-weight: 700; line-height: 1.1; }
   .tagrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .tag { font-size: 11px; font-weight: 700; letter-spacing: .1em; padding: 2px 6px; border: 2px solid var(--ink); }
-  .tag.local { background: var(--green); } .tag.api { background: var(--blue); }
+  .ptag { font-size: 11px; font-weight: 700; letter-spacing: .1em; padding: 2px 6px; border: 2px solid var(--ink); }
+  .ptag.local { background: var(--green); } .ptag.api { background: var(--blue); }
   .bar { width: 96px; height: 10px; border: 2px solid var(--ink); background: var(--card); }
   .bar i { display: block; height: 100%; background: var(--progress); }
-  .card .foot { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-top: 3px solid var(--ink); font-size: 12px; font-weight: 700; background: var(--stuck); }
-  .card .foot.won { background: var(--gold); }
+  .trainer .foot { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-top: 3px solid var(--ink); font-size: 12px; font-weight: 700; background: var(--stuck); }
+  .trainer .foot.won { background: var(--gold); }
   .sq { width: 10px; height: 10px; flex: none; border: 2px solid var(--ink); background: var(--green); }
   .foot.won .sq { background: var(--ink); }
   .empty { grid-column: 1 / -1; border: 3px dashed var(--ink); padding: 36px; text-align: center; color: var(--muted); font-weight: 700; }
 
+  dialog#run-modal { width: min(560px, calc(100% - 32px)); max-height: 88dvh; overflow: auto; padding: 0; border: 3px solid var(--ink); background: #f8f7eb; box-shadow: 7px 7px 0 var(--ink); }
+  dialog#run-modal::backdrop { background: #1e1b16cc; }
+  .modal-close { position: absolute; top: 6px; right: 6px; z-index: 2; width: 30px; height: 30px; border: 2px solid #f8f7eb; border-radius: 5px; background: #101c20; color: #f8f7eb; font-weight: 700; font-size: 15px; }
+
   @media (max-width: 720px) {
+    .masthead { gap: 10px; }
+    .brand p { display: none; }
+    .socials { margin-left: auto; gap: 7px; }
+    .live-pill { padding: 0 8px; }
     .podium { grid-template-columns: 1fr; }
     .pod.first { order: -1; }
-    .stop span { display: none; }
-    .stop[aria-pressed="true"] span { display: block; }
-    .track { margin-bottom: 36px; }
+    .pod.first .body { padding-top: 16px; }
+    /* the track becomes a two-column list of labelled stops */
+    .track { height: auto; background: none; border: 0; margin: 4px 0 0; }
+    .stops { position: static; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stop { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 3px solid var(--ink); background: var(--card); box-shadow: 3px 3px 0 var(--ink); }
+    .stop[aria-pressed="true"] { background: var(--gold); }
+    .stop i { flex: none; }
+    .stop span { position: static; transform: none; width: auto; text-align: left; font-size: 11px; }
     .filters { margin-left: 0; }
   }
 </style>
 </head>
 <body>
 <main class="page">
-  <header>
-    <div class="logo" aria-hidden="true">P</div>
-    <div class="brand">
-      <h1>PokéBench_</h1>
-      <p>Billions of parameters vs. one old man.</p>
+  <header class="masthead">
+    <a class="brand" href="#" aria-label="PokéBench, back to top">
+      <img src="../pokebench-logo.png" width="44" height="44" alt="" class="brand-mark">
+      <span><h1>PokéBench_</h1><p>Billions of parameters vs. one old man.</p></span>
+    </a>
+    <div class="socials">
+      <a id="live-pill" class="live-pill" href="https://www.twitch.tv/pokebenchtv" target="_blank" rel="noopener" title="PokeBenchTV on Twitch"><span class="live-dot" aria-hidden="true"></span><span id="live-text">OFFLINE</span></a>
+    <a class="social-button" href="https://www.twitch.tv/pokebenchtv" target="_blank" rel="noopener" aria-label="PokéBench on Twitch" title="Twitch"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg></a>
+    <a class="social-button" href="https://www.youtube.com/@Pokebenchtv" target="_blank" rel="noopener" aria-label="PokéBench on YouTube" title="YouTube"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+    <a class="social-button" href="https://x.com/PokeBenchTV" target="_blank" rel="noopener" aria-label="PokéBench on X" title="X"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg></a>
+    <a class="social-button" href="https://bsky.app/profile/pokebenchtv.bsky.social" target="_blank" rel="noopener" aria-label="PokéBench on Bluesky" title="Bluesky"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg></a>
     </div>
-    <div class="status" id="status"><span class="dot"></span><span id="status-text">OFFLINE</span></div>
   </header>
 
   <div class="banner" id="banner" hidden>SAMPLE DATA · NOT REAL RESULTS</div>
 
   <section>
     <div class="section-head"><span class="label">Overall podium</span><span class="label">The road to Brock</span></div>
-    <div class="podium" id="podium" style="margin-top:12px"></div>
+    <div class="podium" id="podium"></div>
   </section>
 
   <section class="box race">
@@ -122,68 +151,103 @@
       <span class="count" id="count"></span>
       <div class="filters" id="filters"></div>
     </div>
-    <div class="grid" id="grid" style="margin-top:16px"></div>
+    <div class="grid" id="grid"></div>
   </section>
 </main>
 
+<p id="card-flip-help" class="sr-only">Click the card or press Enter or Space to flip between results and the journey replay. Escape closes the dialog.</p>
+<dialog id="run-modal" aria-describedby="card-flip-help">
+  <button class="modal-close" id="modal-close" aria-label="Close run details">×</button>
+  <div id="modal-content"></div>
+</dialog>
+
+<svg class="sprite-defs" width="0" height="0" aria-hidden="true"><defs>
+    <symbol id="art-badge" viewBox="0 0 32 32"><path d="M9 2h14v4h5v7h3v10h-6v6H8v-5H2V12h4V6h3z" fill="#759b96"/><path d="M10 4h11v4h5v13h-5v6H9v-6H5v-8h5z" fill="#d6e7ce"/><path d="M12 9h8v3h4v9h-7v5H9V15h3z" fill="#a8c9b7"/><path d="M11 5h10v3H11zM6 13h4v7H6z" fill="#fff5ce"/></symbol>
+    <symbol id="art-pine" viewBox="0 0 100 130"><path d="M20 113h66v9H20z" fill="#143c3b" opacity=".3"/><path d="M44 79h16v41H44z" fill="#645c3b"/><path d="M51 79h9v41h-9z" fill="#2e4738"/><path d="M38 3h24v13h12v14h10v16H73v7h17v18h10v27H0V77h10V60h14V46H13V30h13V17h12z" fill="#245348"/><path d="M38 3h14v17h12v14H52v13h19v13H49v15h26v13H9V77h10V60h14V43H23V30h13V17h2z" fill="#3c7960"/><path d="M38 17h12v8H38zM22 62h13v8H22zM11 80h16v8H11z" fill="#78a677"/></symbol>
+    <symbol id="art-roundtree" viewBox="0 0 100 110"><path d="M23 94h70v9H23z" fill="#163f3c" opacity=".25"/><path d="M42 55h17v45H42z" fill="#716244"/><path d="M51 62h8v38h-8z" fill="#3e5140"/><path d="M28 5h40v10h15v14h11v36H81v14H65v8H30V76H14V64H5V32h13V17h10z" fill="#335f4a"/><path d="M28 5h34v10h16v17H66v14H52v17H25V53H13V32h12V18h3z" fill="#60885c"/><path d="M28 15h26v8H28zM17 30h15v10H17z" fill="#a2b67c"/></symbol>
+    <symbol id="art-rock" viewBox="0 0 100 70"><path d="M6 53h92v12H6z" fill="#53655a" opacity=".3"/><path d="M0 28h10V14h15V4h43v9h17v16h12v29H0z" fill="#668379"/><path d="M10 28h10V17h19V8h25v15H50v16H32v14H5V32h5z" fill="#a7bba0"/><path d="M55 27h22v8H55zM38 44h15v8H38z" fill="#4b6a66"/></symbol>
+    <symbol id="art-house" viewBox="0 0 180 150"><path d="M31 129h145v17H31z" fill="#233f4038"/><path d="M18 59h107v72H18z" fill="#ebdca9"/><path d="M125 59h39v61l-39 11z" fill="#bda67b"/><path d="M4 48h10V36h12V24h13V12h99v12h12v12h14v12h11v20H4z" fill="#a4584b"/><path d="M4 49h11V37h12V25h13V13h70v12H99v12H88v13H76v12H4z" fill="#dc8b64"/><path d="M21 44h62v5H21zM34 30h62v5H34zM6 58h70v6H6z" fill="#f1b181"/><path d="M35 79h23v25H35zM83 79h24v25H83z" fill="#335b59"/><path d="M39 83h7v9h-7zM87 83h7v9h-7z" fill="#9dbdaa"/><path d="M63 90h20v41H63z" fill="#574f42"/><path d="M76 110h3v4h-3z" fill="#f7dda2"/><path d="M17 122h44v9H17zM86 122h39v9H86z" fill="#c4b78d"/></symbol>
+    <symbol id="art-gym" viewBox="0 0 240 185"><path d="M29 163h208v16H29z" fill="#3f605244"/><path d="M13 57h181v107H13z" fill="#969b8c"/><path d="M194 57h36v95l-36 12z" fill="#6c7266"/><path d="M0 47h14V31h15V17h164v14h18v16h25v26H0z" fill="#43655f"/><path d="M13 47h15V34h18V22h127v15h-16v14H13z" fill="#658c79"/><path d="M15 68h176v10H15z" fill="#d1d7ae"/><path d="M24 89h26v65H24zM150 89h27v65h-27z" fill="#d6d9ae"/><path d="M36 90h7v65h-7zM162 90h7v65h-7z" fill="#879e88"/><path d="M91 91h58v73H91z" fill="#2a2f2c"/><path d="M97 96h23v59H97z" fill="#33403b"/><path d="M126 96h17v59h-17z" fill="#232c28"/><path d="M80 159h80v9H80zM68 168h104v8H68z" fill="#bfcaaa"/><use href="#art-badge" x="108" y="28" width="24" height="24"/></symbol>
+    <symbol id="art-center" viewBox="0 0 180 150"><path d="M18 129h145v13H18z" fill="#233f4038"/><path d="M14 55h153v70H14z" fill="#ebdca9"/><path d="M0 48h14V36h152v12h14v20H0z" fill="#a4584b"/><path d="M6 53h168v9H6z" fill="#dc8b64"/><path d="M45 76h35v49H45zM100 76h35v49H100z" fill="#574f42"/><path d="M49 80h27v41H49zM104 80h27v41H104z" fill="#9dbdaa"/><path d="M82 76h16v49H82z" fill="#574f42"/><circle cx="90" cy="44" r="15" fill="#ebdca9" stroke="#233f40" stroke-width="4"/><path d="M75 44A15 15 0 0 1 105 44z" fill="#a4584b"/><path d="M76 44h28" stroke="#233f40" stroke-width="3"/><circle cx="90" cy="44" r="4.5" fill="#ebdca9" stroke="#233f40" stroke-width="2.5"/><path d="M0 122h180v11H0z" fill="#c4bd9e"/></symbol>
+    <symbol id="art-mart" viewBox="0 0 150 130"><path d="M14 111h122v12H14z" fill="#233f4038"/><path d="M10 50h130v58H10z" fill="#ebdca9"/><path d="M0 44h12V32h126v12h12v18H0z" fill="#2f5f86"/><path d="M4 48h142v8H4z" fill="#4a83ab"/><path d="M20 36h110v11H20z" fill="#101c20"/><path d="M26 39h98v6H26z" fill="#d9dfc4"/><path d="M35 69h35v39H35zM80 69h35v39H80z" fill="#574f42"/><path d="M39 73h27v31H39zM84 73h27v31H84z" fill="#9dbdaa"/><path d="M0 105h150v11H0z" fill="#c4bd9e"/></symbol>
+    <symbol id="art-lab" viewBox="0 0 260 110"><path d="M20 91h220v12H20z" fill="#233f4038"/><path d="M14 46h232v45H14z" fill="#f2f1e4"/><path d="M0 40h14V28h232v12h14v14H0z" fill="#7c8577"/><path d="M6 42h248v7H6z" fill="#9aa294"/><path d="M200 10h14v22h-14z" fill="#7c8577"/><path d="M204 6h6v8h-6z" fill="#4b5147"/><path d="M40 56h32v28H40zM188 56h32v28h-32z" fill="#4b5147"/><path d="M44 60h24v20H44zM192 60h24v20h-24z" fill="#9dbdaa"/><path d="M113 56h34v35h-34z" fill="#4b5147"/><path d="M118 60h24v31h-24z" fill="#2f342c"/><path d="M0 86h260v10H0z" fill="#c4bd9e"/></symbol>
+    <symbol id="art-grass" viewBox="0 0 50 30"><path d="M4 14h5v7h7V9h6v12h7v-7h5v13H4zM33 4h5v7h7V0h5v18H33z" fill="currentColor"/></symbol>
+    <symbol id="art-trainer" viewBox="0 0 32 48"><path d="M5 41h25v5H5z" fill="#122b3c55"/><path d="M8 4h16v4h5v9H4V9h4z" fill="#e9765d"/><path d="M9 5h11v4H9z" fill="#ffd2a0"/><path d="M9 17h17v12H9z" fill="#edc18e"/><path d="M7 18h6v9H7z" fill="#334b47"/><path d="M7 29h18v11H7z" fill="#d7d9b4"/><path d="M5 30h6v9H5zM23 30h5v9h-5z" fill="#de795b"/><path d="M9 40h6v6H9zM20 40h6v6h-6z" fill="#243e50"/></symbol>
+    <symbol id="art-lamp" viewBox="0 0 35 100"><path d="M16 20h5v75h-5zM9 95h19v5H9z" fill="#334746"/><path d="M7 5h25v23H7z" fill="#3a5350"/><path d="M11 10h17v13H11z" fill="#fbe6a0"/><path d="M13 0h14v5H13z" fill="#334746"/></symbol>
+  <g id="art-trophy"><path d="M7 3h18v4h6v12h-5v5h-8v6h7v5H7v-5h7v-6H6v-5H1V7h6z" fill="#172a24"/><path d="M9 5h14v13l-4 4h-6l-4-4z" fill="#fff0a4"/><path d="M16 5h7v13l-4 4h-3z" fill="#d89125"/><path d="M4 10h3v7H4m21-7h3v7h-3M15 23h2v8h-2M9 32h14v1H9" fill="#ffdc69"/></g><pattern id="brick" width="100" height="48" patternUnits="userSpaceOnUse"><path d="M0 0h100M0 24h100M0 48h100M50 0v24M0 24v24M100 24v24" fill="none" stroke="#182f2b" stroke-width="3"/><path d="M4 4h40M54 28h40" stroke="#76816a" stroke-width="2" opacity=".24"/></pattern>
+  <symbol id="art-flag" viewBox="0 0 24 24"><path d="M5 2h2v20H5z" fill="#334746"/><path d="M7 3h13l-4 5 4 5H7z" fill="#ff7661"/></symbol>
+  <symbol id="art-pin" viewBox="0 0 24 24"><path d="M12 2c-4 0-7 3-7 7 0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z" fill="#e9765d"/><circle cx="12" cy="9" r="3" fill="#f8f7eb"/></symbol>
+</defs></svg>
+
+<script src="card.js"></script>
 <script>
-const $ = id => document.getElementById(id);
-const escape = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const finite = v => typeof v === 'number' && Number.isFinite(v) && v >= 0;
-const number = v => finite(v) ? v.toLocaleString('en-US') : '—';
-const local = run => String(run.provider || '').toLowerCase().includes('ollama');
-const won = run => run.furthest_index === STOPS.length - 1;
-const price = run => local(run) ? 'FREE' : finite(run.cost_usd) ? '$' + run.cost_usd.toFixed(2) : '—';
-const rankSort = (a, b) => b.furthest_index - a.furthest_index || a.turns_used - b.turns_used;
+function jacketColor(run) {
+  if (local(run)) return '#3f8f52';
+  const p = String(run.provider || '').toLowerCase();
+  if (p.includes('openai')) return '#1f8f86';
+  if (p.includes('anthropic')) return '#c1694a';
+  if (p.includes('google')) return '#3b82c4';
+  if (p.includes('xai')) return '#1c2733';
+  return '#c9a227';
+}
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const adj = v => Math.max(0, Math.min(255, Math.round(v + amt)));
+  return '#' + [adj(r), adj(g), adj(b)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+// Same trainer paths as #art-trainer, emitted inline (not <use>) so the cap/jacket fill can be
+// swapped per model. Skin, shorts and shoes keep their original colours.
+function trainerFor(run, cx, footY) {
+  const scale = 34 / 32, cap = jacketColor(run), sleeve = shade(cap, -30);
+  const tx = (cx - 16 * scale).toFixed(2), ty = (footY - 46 * scale).toFixed(2);
+  return `<g transform="translate(${tx} ${ty}) scale(${scale.toFixed(4)})">`
+    + `<path d="M5 41h25v5H5z" fill="#122b3c55"/>`
+    + `<path d="M8 4h16v4h5v9H4V9h4z" fill="${cap}"/>`
+    + `<path d="M9 5h11v4H9z" fill="#ffd2a0"/>`
+    + `<path d="M9 17h17v12H9z" fill="#edc18e"/>`
+    + `<path d="M7 18h6v9H7z" fill="#334b47"/>`
+    + `<path d="M7 29h18v11H7z" fill="#d7d9b4"/>`
+    + `<path d="M5 30h6v9H5zM23 30h5v9h-5z" fill="${sleeve}"/>`
+    + `<path d="M9 40h6v6H9zM20 40h6v6h-6z" fill="#243e50"/>`
+    + `</g>`;
+}
+const rankSort = (a, b) => b.furthest_index - a.furthest_index || a.turns_used - b.turns_used || String(a.model).localeCompare(String(b.model));
+const stopLabel = run => milestoneList[run.furthest_index]?.short || 'No milestone';
 
-const STOPS = [
-  {key:'left_house', label:'Left the house', short:'Left house'},
-  {key:'got_starter', label:'Got a starter', short:'Got starter'},
-  {key:'route_1', label:'Reached Route 1', short:'Route 1'},
-  {key:'viridian_city', label:'Reached Viridian City', short:'Viridian City'},
-  {key:'got_parcel', label:"Got Oak's Parcel", short:'Parcel'},
-  {key:'got_pokedex', label:'Got the Pokédex', short:'Pokédex'},
-  {key:'viridian_forest', label:'Entered Viridian Forest', short:'Viridian Forest'},
-  {key:'pewter_city', label:'Reached Pewter City', short:'Pewter City'},
-  {key:'pewter_gym', label:"Entered Brock's Gym", short:'Entered gym'},
-  {key:'beat_brock', label:'Beat Brock (Boulder Badge)', short:'Beat Brock'}
-];
-const stopLabel = run => STOPS[run.furthest_index]?.short || 'No milestone';
-
-const state = { runs: [], type: 'all', stop: null, sample: true, live: false };
+const state = { runs: [], type: 'all', stop: null, sample: true, live: false, selected: new Set() };
 const typeMatch = run => state.type === 'all' || (state.type === 'local') === local(run);
 const visible = () => state.runs.filter(run => typeMatch(run) && (state.stop === null || run.furthest_index === state.stop));
 
 function podiumMarkup(run, place) {
   if (!run) return '';
-  const cls = place === 1 ? 'first' : '';
   const foot = place === 1 ? 'Champion' : local(run) ? 'Local' : 'API';
   const footCls = place === 1 ? '' : local(run) ? 'local' : 'api';
-  return `<article class="box pod ${cls}">
+  return `<button type="button" class="box pod ${place === 1 ? 'first' : ''}" data-uid="${escape(run.uid)}" aria-label="${escape(run.model)}, ${['1st','2nd','3rd'][place - 1]} place, open run details">
     <div class="body">
       <span class="place">${['1st','2nd','3rd'][place - 1]}</span>
       <span class="name">${escape(run.model)}</span>
       <span class="meta">${number(run.turns_used)} turns · ${price(run)}</span>
       <span class="result">${escape(stopLabel(run))}</span>
     </div>
+    <svg class="pod-sprite" viewBox="0 0 34 51" aria-hidden="true">${trainerFor(run, 17, 51)}</svg>
     <div class="foot ${footCls}">${foot}</div>
-  </article>`;
+  </button>`;
 }
 
 function cardMarkup(run, rank) {
   const done = won(run);
-  const width = Math.round((run.furthest_index + 1) / STOPS.length * 100);
-  return `<article class="box card">
+  const width = Math.round((run.furthest_index + 1) / milestoneList.length * 100);
+  return `<button type="button" class="box trainer" data-uid="${escape(run.uid)}" aria-label="${escape(run.model)}, rank ${rank}, ${escape(stopLabel(run))}, open run details">
     <div class="body">
       <div class="top"><span class="rank ${rank <= 3 ? 'top3' : ''}">${rank}</span><span class="name">${escape(run.model)}</span></div>
-      <div class="stats">
-        <div class="stat"><div class="label">Turns</div><div class="value">${number(run.turns_used)}</div></div>
-        <div class="stat"><div class="label">Run cost</div><div class="value">${price(run)}</div></div>
+      <div class="kv">
+        <div><div class="label">Turns</div><div class="value">${number(run.turns_used)}</div></div>
+        <div><div class="label">Run cost</div><div class="value">${price(run)}</div></div>
       </div>
-      <div class="tagrow"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="bar" title="${width}%"><i style="width:${width}%"></i></span></div>
+      <div class="tagrow"><span class="ptag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="bar" title="${width}%"><i style="width:${width}%"></i></span></div>
     </div>
     <div class="foot ${done ? 'won' : ''}"><span class="sq"></span>${escape(stopLabel(run))}</div>
-  </article>`;
+  </button>`;
 }
 
 function render() {
@@ -196,32 +260,34 @@ function render() {
     : '<div class="empty">No trainers match this filter.</div>';
   $('count').textContent = `${shown.length} of ${state.runs.length} models`;
 
-  $('stops').innerHTML = STOPS.map((s, i) =>
-    `<button class="stop ${state.stop === null ? 'filled' : ''}" aria-pressed="${state.stop === i}" data-stop="${i}" aria-label="${escape(s.label)}"><span>${escape(s.short)}</span></button>`).join('');
+  $('stops').innerHTML = milestoneList.map((s, i) =>
+    `<button type="button" class="stop ${state.stop === null ? 'filled' : ''}" aria-pressed="${state.stop === i}" data-stop="${i}" aria-label="${escape(s.label)}"><i></i><span>${escape(s.short)}</span></button>`).join('');
 
   const counts = { all: state.runs.length, local: state.runs.filter(local).length, api: state.runs.filter(r => !local(r)).length };
   const chip = state.stop === null ? '' :
-    `<span class="chip">Stop: ${escape(STOPS[state.stop].short)}<button data-clear aria-label="Clear stop filter">×</button></span>`;
+    `<span class="chip">Stop: ${escape(milestoneList[state.stop].short)}<button type="button" data-clear aria-label="Clear stop filter">×</button></span>`;
   $('filters').innerHTML = chip + ['all', 'local', 'api'].map(t =>
-    `<button class="btn" data-type="${t}" aria-pressed="${state.type === t}">${t === 'all' ? 'All' : t === 'local' ? 'Local' : 'API'} (${counts[t]})</button>`).join('');
+    `<button type="button" class="btn" data-type="${t}" aria-pressed="${state.type === t}">${t === 'all' ? 'All' : t === 'local' ? 'Local' : 'API'} (${counts[t]})</button>`).join('');
 
   $('banner').hidden = !state.sample;
-  $('status').classList.toggle('live', state.live);
-  $('status-text').textContent = state.live ? 'LIVE' : 'OFFLINE';
+  $('live-pill').classList.toggle('live', state.live);
+  $('live-text').textContent = state.live ? 'LIVE' : 'OFFLINE';
 }
 
-document.addEventListener('click', e => {
+document.querySelector('.page').addEventListener('click', e => {
   const stop = e.target.closest('[data-stop]');
   const type = e.target.closest('[data-type]');
+  const open = e.target.closest('[data-uid]');
   if (stop) { const i = +stop.dataset.stop; state.stop = state.stop === i ? null : i; }
   else if (type) state.type = type.dataset.type;
   else if (e.target.closest('[data-clear]')) state.stop = null;
+  else if (open) { const run = state.runs.find(r => r.uid === open.dataset.uid); if (run) openModal(run, open); return; }
   else return;
   render();
 });
 
-fetch('../mock-runs.json').then(r => r.json()).then(runs => {
-  state.runs = runs.filter(run => finite(run.furthest_index));
+fetch('../mock-runs.json').then(r => r.json()).then(rows => {
+  state.runs = rows.filter(run => finite(run.furthest_index)).map((r, i) => ({ ...r, uid: r.run_id || 'run-' + i }));
   render();
 }).catch(err => { $('grid').innerHTML = `<div class="empty">Could not load runs: ${escape(err.message)}</div>`; });
 </script>
