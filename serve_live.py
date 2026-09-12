@@ -384,6 +384,7 @@ _AUDIO_RING_SECONDS = 0.5
 _audio_lock = threading.Lock()
 _audio_ring = bytearray()
 _audio_info: dict = {}  # sample_rate / channels / sample_format / bytes_per_sample, filled on the first tick
+_audio_stats = {"captured_bytes": 0, "held_bytes": 0, "dropped_bytes": 0}  # producer vs consumer health, see /audio/info
 
 
 def _audio_capture(emu) -> None:
@@ -403,7 +404,9 @@ def _audio_capture(emu) -> None:
     cap = int(_audio_info["sample_rate"] * _audio_info["channels"] * _audio_info["bytes_per_sample"] * _AUDIO_RING_SECONDS)
     with _audio_lock:
         _audio_ring.extend(chunk)
+        _audio_stats["captured_bytes"] += len(chunk)
         if len(_audio_ring) > cap:
+            _audio_stats["dropped_bytes"] += len(_audio_ring) - cap
             del _audio_ring[:len(_audio_ring) - cap]
 
 
@@ -411,10 +414,10 @@ def _wrap_tick(emu):
     """Make every emulator tick (idle ticker AND /action presses) stream frames at ~30 fps, paced to real time."""
     orig = emu.tick
     last_shot = [0.0]
+    deadline = [0.0]  # absolute frame schedule: loop overhead is absorbed instead of accumulating (audio needs 60.00 fps)
 
     def tick(frames: int = 1) -> None:
         for _ in range(frames):
-            t0 = time.time()
             orig(1)
             _audio_capture(emu)
             now = time.time()
@@ -429,7 +432,12 @@ def _wrap_tick(emu):
                     print(f"[stream] {e}")
             # pace to real time (1/60 s per frame) only while someone is watching
             if S._ws_clients:
-                time.sleep(max(0.0, 1 / 60 - (time.time() - t0)))
+                now = time.time()
+                if deadline[0] < now - 0.5:  # first frame, or a stall (save/load, no viewers): resync, don't sprint
+                    deadline[0] = now
+                deadline[0] += 1 / 60
+                if deadline[0] > now:
+                    time.sleep(deadline[0] - now)
 
     emu.tick = tick
     return emu
@@ -468,7 +476,7 @@ async def audio_info():
     """Raw PCM parameters for /audio.pcm (503 until the emulator has ticked once)."""
     if not _audio_info:
         raise HTTPException(503, "no audio yet")
-    return dict(_audio_info)
+    return {**_audio_info, **_audio_stats, "ring_bytes": len(_audio_ring)}
 
 
 @S.app.get("/audio.pcm")
@@ -481,6 +489,13 @@ async def audio_pcm():
         _audio_ring.clear()
 
     async def gen():
+        prefill = int(rate * 0.06) * frame_bytes  # ~60 ms head start absorbs producer jitter without underruns
+        for _ in range(50):
+            with _audio_lock:
+                if len(_audio_ring) >= prefill:
+                    break
+            await asyncio.sleep(0.02)
+        last = bytes(frame_bytes)  # on underrun repeat the last stereo frame: a hold, not a step down to zero (that clicks)
         start, sent = time.time(), 0
         while True:
             await asyncio.sleep(0.02)
@@ -491,8 +506,11 @@ async def audio_pcm():
             with _audio_lock:
                 take = bytes(_audio_ring[:need])
                 del _audio_ring[:need]
+            if take:
+                last = take[-frame_bytes:]
             if len(take) < need:
-                take += bytes(need - len(take))
+                _audio_stats["held_bytes"] += need - len(take)
+                take += last * ((need - len(take)) // frame_bytes)
             sent += due
             yield take
 
