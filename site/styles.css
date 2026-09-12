@@ -120,6 +120,8 @@ dialog#run-modal::backdrop { background: #101c20c9; }
 .receipt-list em { display: block; font-style: normal; color: #795110; font-size: 8px; }
 .receipt-list .unreached { color: #798170; }
 .receipt-note { font: 650 8px/1.6 var(--mono); color: var(--muted); margin: 8px 0 10px; }
+.run-caveat { font: 650 8px/1.6 var(--mono); color: #795110; background: #f6e9c2; border: 1px solid #d9bf7a; padding: 6px 8px; margin: 8px 0 10px; }
+.run-caveat b { display: block; letter-spacing: .06em; }
 .run-details .provenance { grid-template-columns: 58px minmax(0,1fr) 47px minmax(0,1fr); gap: 4px 8px; font-size: 9px; border-top: 1px solid #bdc9b9; padding-top: 8px; }
 .trophy { width: 25px; height: 28px; display: inline-block; flex: none; shape-rendering: crispEdges; }
 @media (prefers-reduced-motion: reduce) {

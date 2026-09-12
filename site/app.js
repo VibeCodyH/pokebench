@@ -155,6 +155,7 @@ function card(run, full = false) {
     <div class="card-tags"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="tag">${escape(textValue(run.family))}</span><span class="tag">GEN 1 · RED</span></div>
     <p class="furthest"><b>${run.furthest_index+1}/10</b> ${escape(milestoneLabel(run))}</p>${stats(run)}
     ${full ? facts([['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]]) : ''}
+    ${full && run.caveat ? `<p class="run-caveat"><b>CAVEAT</b> ${escape(run.caveat)}</p>` : ''}
     <p class="flip-hint">↻ Flip for the journey replay<span>10 rungs. Every recorded turn.</span></p>
     <div class="card-actions">${inspect(run)}</div>${videoURL(run) ? '' : '<p class="vod-note">No VOD attached</p>'}</div></div>
     <div class="card-face card-back" aria-hidden="true" inert>${ribbon}<div class="replay-heading"><h3>${escape(modelName(run))} · Journey</h3><button class="text-button" data-replay="flip">Front ↶</button></div>${runReplay(run,rungs)}</div></div></article>`;

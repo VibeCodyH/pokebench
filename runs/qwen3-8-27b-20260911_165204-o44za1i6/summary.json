@@ -1,0 +1,86 @@
+{
+  "run_id": "qwen3-8-27b-20260911_165204-o44za1i6",
+  "model": "qwen3.8:27b",
+  "provider": "ollama",
+  "family": "qwen",
+  "run_name": "qwen-v21-test2",
+  "prompt_version": "v21",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "25359d3",
+  "harness_files_sha": "e33896ff5a77d00e",
+  "max_output_tokens": 16384,
+  "caveat": "Server 1 ran harness 25359d3, before output ceilings were removed in 966b2bf, so this run carried max_output_tokens 16384. Seven turns (250, 302, 501, 726, 865, 888, 963) hit that ceiling and had their reply truncated.",
+  "execution_route": "ollama-local",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "temperature": 0.6,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-12",
+  "model_release_date": null,
+  "model_params": "27B",
+  "quant": "Q4_K_M",
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "qwen3-8-27b-20260911_165204-o44za1i6-auto"
+  },
+  "notes": "STUCK in Route 22 south lane (x2,y14). West walled, hedge (v) blocks north (one-way down only). PLAN: Walk east back to Viridian City, re-enter Route 22 from north side (lands y6-9 east end), then walk WEST along north lane to find Pallet Town warp. North lane west wall is at x36 (not x2), so Pallet warp should be accessible from north lane. Charmander L8 HP15/26. Have Oak's Parcel. Money 3175.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 63450.2,
+  "tokens_in": 14068270,
+  "tokens_out": 167687,
+  "failed_attempts": {
+    "count": 11,
+    "prompt": 169602,
+    "completion": 155700
+  },
+  "cost_usd": 0.0,
+  "youtube_url": null,
+  "timestamp": "20260912_102934",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 20
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 453
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 513
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 580
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 768
+    }
+  ],
+  "furthest_key": "got_parcel",
+  "furthest_label": "Got Oak's Parcel",
+  "furthest_index": 4,
+  "beat_brock": false
+}
