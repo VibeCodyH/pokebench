@@ -12,6 +12,7 @@ import argparse
 import asyncio
 import base64
 import os
+import threading
 import time
 
 import uvicorn
@@ -376,6 +377,35 @@ async def _busy_guard(request, call_next):
 
 _wrapped_emu = None
 
+# --- game audio: PyBoy fills a stereo sample buffer every frame (window="null" still emulates the APU).
+# Every tick appends it to a small ring; /audio.pcm drains the ring at wall-clock rate so the recorder's
+# FFmpeg gets a continuous PCM stream (silence-padded when the game idles, oldest dropped on overrun).
+_AUDIO_RING_SECONDS = 0.5
+_audio_lock = threading.Lock()
+_audio_ring = bytearray()
+_audio_info: dict = {}  # sample_rate / channels / sample_format / bytes_per_sample, filled on the first tick
+
+
+def _audio_capture(emu) -> None:
+    try:
+        snd = emu._pyboy.sound
+        if not _audio_info:
+            fmt = snd.raw_buffer_format
+            _audio_info.update(sample_rate=snd.sample_rate, channels=2,
+                               sample_format={"b": "s8", "h": "s16le"}[fmt], bytes_per_sample={"b": 1, "h": 2}[fmt])
+        head = snd.raw_buffer_head
+        if head <= 0:
+            return
+        chunk = bytes(snd.raw_buffer[:head])
+    except Exception as e:
+        print(f"[audio] {e}")
+        return
+    cap = int(_audio_info["sample_rate"] * _audio_info["channels"] * _audio_info["bytes_per_sample"] * _AUDIO_RING_SECONDS)
+    with _audio_lock:
+        _audio_ring.extend(chunk)
+        if len(_audio_ring) > cap:
+            del _audio_ring[:len(_audio_ring) - cap]
+
 
 def _wrap_tick(emu):
     """Make every emulator tick (idle ticker AND /action presses) stream frames at ~30 fps, paced to real time."""
@@ -386,6 +416,7 @@ def _wrap_tick(emu):
         for _ in range(frames):
             t0 = time.time()
             orig(1)
+            _audio_capture(emu)
             now = time.time()
             if S._ws_clients and S._loop is not None and now - last_shot[0] >= 1 / 30:
                 last_shot[0] = now
@@ -421,7 +452,7 @@ async def _ticker():
         await asyncio.sleep(max(0.0, TICK_PERIOD - (time.time() - t0)))
 
 
-from fastapi.responses import FileResponse  # noqa: E402
+from fastapi.responses import FileResponse, StreamingResponse  # noqa: E402
 
 _STREAM_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stream.html")
 
@@ -430,6 +461,42 @@ _STREAM_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stream.
 async def stream_page():
     """Fixed-size OBS-friendly view: canvas fed by the WebSocket frames + Qwen's narration."""
     return FileResponse(_STREAM_HTML, media_type="text/html", headers={"Cache-Control": "no-store"})
+
+
+@S.app.get("/audio/info")
+async def audio_info():
+    """Raw PCM parameters for /audio.pcm (503 until the emulator has ticked once)."""
+    if not _audio_info:
+        raise HTTPException(503, "no audio yet")
+    return dict(_audio_info)
+
+
+@S.app.get("/audio.pcm")
+async def audio_pcm():
+    """Endless raw PCM of the game audio, paced to wall clock (feed FFmpeg with -f <sample_format> -ar -ac)."""
+    if not _audio_info:
+        raise HTTPException(503, "no audio yet")
+    rate, frame_bytes = _audio_info["sample_rate"], _audio_info["channels"] * _audio_info["bytes_per_sample"]
+    with _audio_lock:  # start fresh so the stream sits as close to the video as the ring allows
+        _audio_ring.clear()
+
+    async def gen():
+        start, sent = time.time(), 0
+        while True:
+            await asyncio.sleep(0.02)
+            due = int((time.time() - start) * rate) - sent
+            if due <= 0:
+                continue
+            need = due * frame_bytes
+            with _audio_lock:
+                take = bytes(_audio_ring[:need])
+                del _audio_ring[:need]
+            if len(take) < need:
+                take += bytes(need - len(take))
+            sent += due
+            yield take
+
+    return StreamingResponse(gen(), media_type="application/octet-stream", headers={"Cache-Control": "no-store"})
 
 
 @S.app.get("/events/recent")

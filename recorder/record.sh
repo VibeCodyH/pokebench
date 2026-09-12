@@ -214,17 +214,33 @@ async function main() {
   for (const url of rtmpTargets) {
     outputs += `|[f=fifo:onfail=ignore:fifo_format=flv:queue_size=120:drop_pkts_on_overflow=1:attempt_recovery=1:recover_any_error=1:recovery_wait_time=5:restart_with_keyframe=1:format_opts=rw_timeout=5000000]${url}`;
   }
+  // Game audio: serve_live streams the emulator's PCM at /audio.pcm (parameters at /audio/info).
+  // Older servers lack it; fall back to a silent track so the recording still runs.
+  let audioInput = ['-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000'];
+  let audioFilter = [];
+  try {
+    const reply = await fetch(new URL('/audio/info', streamURL));
+    if (!reply.ok) throw new Error(`HTTP ${reply.status}`);
+    const info = await reply.json();
+    audioInput = ['-f', info.sample_format, '-ar', String(info.sample_rate), '-ac', String(info.channels),
+      '-thread_queue_size', '1024', '-i', new URL('/audio.pcm', streamURL).href];
+    // PyBoy's mix is quiet (peaks ~10/127) and rides a DC offset: strip the DC, lift it, soft-limit the peaks.
+    audioFilter = ['-af', 'highpass=f=20,volume=4,alimiter=limit=0.9:level=false'];
+    log(`Game audio: ${info.sample_format} ${info.sample_rate} Hz from /audio.pcm.`);
+  } catch (error) {
+    log(`No game audio (${error.message}); encoding silence.`);
+  }
   encoder = child('ffmpeg', [
     '-hide_banner', '-loglevel', 'warning', '-nostdin',
     '-thread_queue_size', '8', '-f', 'image2pipe', '-framerate', String(fps),
     '-probesize', '1000000', '-analyzeduration', '0', '-vcodec', 'mjpeg', '-i', 'pipe:0',
-    '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000',
+    ...audioInput,
     '-map', '0:v:0', '-map', '1:a:0',
     '-vf', `scale=${width}:${height}:flags=fast_bilinear,format=yuv420p`,
     '-c:v', 'h264_nvenc', '-preset', 'p4', '-tune', 'll', '-rc', 'cbr',
     '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', res === '720p' ? '6000k' : '9000k',
     '-profile:v', 'high', '-g', '60', '-bf', '0', '-r', String(fps),
-    '-flags', '+global_header', '-c:a', 'aac', '-b:a', '160k', '-ar', '48000',
+    '-flags', '+global_header', ...audioFilter, '-c:a', 'aac', '-b:a', '160k', '-ar', '48000',
     '-shortest', '-f', 'tee', outputs
   ], ['pipe', 'ignore', 'pipe']);
   encoder.stdin.on('error', error => { if (!stopping) void shutdown(1, `Encoder input failed: ${error.code}`); });
