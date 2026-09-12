@@ -12,6 +12,10 @@ leaderboard and any audit read from; the PNGs are a convenience and are gitignor
 | `frames/turn-0001-error-<timestamp>.png` | A failed attempt's own image, kept separately so a retry cannot overwrite the frame that caused it |
 | `notes.md` | The model's own running notes, cleared per game and labeled unverified in the prompt |
 
+Two receipts predate the one history rewrite this repo has had, so their `harness_git_sha`
+names a commit that is no longer reachable. [docs/sha-rewrite-map.md](sha-rewrite-map.md) maps
+those two SHAs to the commits they became.
+
 ## The per-turn record
 
 Each `log.jsonl` line carries what the model saw, what it decided, and what actually happened:
