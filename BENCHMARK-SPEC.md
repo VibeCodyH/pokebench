@@ -31,8 +31,8 @@ Inspiration: BuseyBench (leaderboard of model runs) — but our scoring is **obj
   in 242 turns, which is a harness artifact, not a decision. In `run_benchmark.py` Ollama sends
   `num_predict: -1`, and OpenAI and Google omit their cap fields entirely, unless a model's row
   sets `max_output_tokens`. Two exceptions, both real: the Anthropic Messages API *requires*
-  `max_tokens`, so that adapter sends a deliberately high 32,000 as headroom rather than a
-  ceiling; and `qwen_red.py`, the local entry point in the README, still hard-codes
+  `max_tokens`, so that adapter sends a high default of 32,000, which is still an
+  enforced cap; and `qwen_red.py`, the local entry point in the README, still hard-codes
   `NUM_PREDICT = 8192`. The 600s per-turn timeout is the real backstop.
 - **Naming is the model's choice.** The prompt describes both the preset names and the letter grid
   and takes no side. What a model names itself and its rival is part of the run, not a harness rule.
@@ -83,8 +83,9 @@ what was built, kept here because the rules depend on it.
 - **Factual-history fix (shipped):** history stores `pose → actions → pose → result`, NOT the
   model's own narration. Stops the fixation loop where a model re-reads and re-commits to its
   own wrong theory. `run_benchmark.py` windows history back to the first-hit turn of the second
-  most recent milestone, then keeps the newest whole entries that still fit 64K ctx after
-  reserving room for the image, the output and the rest of the prompt. `qwen_red.py` keeps a
+  most recent milestone, then keeps the newest whole entries that still fit the model's
+  configured context, 64K by default, after reserving room for the image, the output and
+  the rest of the prompt. `qwen_red.py` keeps a
   flat last 12.
 - **Determinism caveat (methodology):** in-game RNG (wild encounters, crits) is not fully
   controllable. Fix everything we can — same harness version, same prompt, same budget, same
