@@ -1,0 +1,110 @@
+{
+  "run_id": "gemini-3-8-flash-20260912_181852-sid5a1mf",
+  "model": "gemini-3.8-flash",
+  "provider": "google",
+  "family": "gemini",
+  "run_name": "gemini-flash-vertex-run1",
+  "prompt_version": "v21",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "bc7b3c9",
+  "harness_files_sha": "2a80577b0a99082e",
+  "max_output_tokens": null,
+  "execution_route": "vertex-express",
+  "think_level": "high",
+  "num_ctx": 1000000,
+  "temperature": 0.6,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-12",
+  "model_release_date": null,
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "gemini-3-8-flash-20260912_181852-sid5a1mf-auto"
+  },
+  "notes": "Pewter Gym: Brock battle. Defeated Geodude, finishing off Onix with Bubble for BoulderBadge + TM34. Next: head east towards Route 3 / Mt. Moon.",
+  "budget_turns": 1000,
+  "turns_used": 279,
+  "termination_reason": "beat_brock",
+  "wall_time_s": 8214.5,
+  "tokens_in": 1793951,
+  "tokens_out": 627490,
+  "failed_attempts": {
+    "count": 0,
+    "prompt": 0,
+    "completion": 0
+  },
+  "cost_usd": 3.69855075,
+  "youtube_url": null,
+  "timestamp": "20260912_203546",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 13
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 20
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 42
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 59
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 66
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pok\u00e9dex",
+      "turn": 83
+    },
+    {
+      "key": "viridian_forest",
+      "label": "Entered Viridian Forest",
+      "turn": 149
+    },
+    {
+      "key": "pewter_city",
+      "label": "Reached Pewter City",
+      "turn": 221
+    },
+    {
+      "key": "pewter_gym",
+      "label": "Entered Brock's Gym",
+      "turn": 240
+    },
+    {
+      "key": "beat_brock",
+      "label": "Beat Brock (Boulder Badge)",
+      "turn": 279
+    }
+  ],
+  "furthest_key": "beat_brock",
+  "furthest_label": "Beat Brock (Boulder Badge)",
+  "furthest_index": 9,
+  "beat_brock": true
+}
