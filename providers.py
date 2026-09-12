@@ -323,12 +323,24 @@ class OpenRouterProvider(OpenAIProvider):
     base_url = "https://openrouter.ai/api/v1"
 
 
+class BedrockProvider(OpenAIProvider):
+    """Amazon Bedrock's OpenAI-compatible endpoint, authenticated with a Bedrock API key
+    (bearer token, not SigV4). Note this is NOT bedrock-runtime: it is a separate endpoint
+    with its own quota allocation, and on a new account bedrock-runtime can sit at zero
+    while this one serves fine. Model ids are dotted, e.g. 'qwen.qwen3-vl-235b-a22b-instruct'.
+    reasoning_effort is enforced here, but the vision models are -instruct (non-thinking)
+    variants, so think=high is accepted and has no effect on them."""
+
+    api_key_env = "AWS_BEARER_TOKEN_BEDROCK"
+    base_url = "https://bedrock-mantle.us-west-2.api.aws/v1"
+
+
 def get_provider(provider_name: str, model: str, **opts) -> Provider:
     """Construct an adapter; opts are constructor settings and registry token rates."""
     providers = {
         "ollama": OllamaProvider, "anthropic": AnthropicProvider,
         "openai": OpenAIProvider, "google": GoogleProvider,
-        "openrouter": OpenRouterProvider,
+        "openrouter": OpenRouterProvider, "bedrock": BedrockProvider,
     }
     try:
         provider = providers[provider_name.strip().lower()]

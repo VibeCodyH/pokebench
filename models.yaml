@@ -153,3 +153,68 @@ models:
     release_date: "2026-09-08"
     input_cost_per_mtok: 0.0
     output_cost_per_mtok: 0.0
+
+  # --- Amazon Bedrock (bedrock-mantle OpenAI-compatible endpoint, AWS_BEARER_TOKEN_BEDROCK).
+  # NOT bedrock-runtime: separate quota allocation, which is why these work while
+  # bedrock-runtime sits at zero on a new account. Funded by AWS Free Tier credit, so
+  # rates stay null — the credit, not a per-token price, is what's actually being spent.
+  # Both are -instruct (non-thinking) variants: think: high is the spec parity request but
+  # is a no-op on them. context values are the models' published windows, not confirmed
+  # against Bedrock's own serving limit; the field is metadata only for non-ollama providers. ---
+  - key: bedrock-qwen3-vl-235b
+    provider: bedrock
+    api_model_id: qwen.qwen3-vl-235b-a22b-instruct
+    display_name: "Qwen3-VL 235B A22B"
+    family: qwen
+    params: "235B-A22B"
+    quant: null
+    context: 262144
+    think: high
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  - key: bedrock-gemma3-27b
+    provider: bedrock
+    api_model_id: google.gemma-3-27b-it
+    display_name: "Gemma 3 27B"
+    family: gemma
+    params: "27B"
+    quant: null
+    context: 131072
+    think: high
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  # Frontier-tier vision on Bedrock. Most "smart" Bedrock models (GLM-5, Kimi K2 Thinking,
+  # DeepSeek 3.2, MiniMax M2.5) are TEXT-ONLY and cannot play at all; these two are the
+  # strongest that actually accept an image. Both read a real intro frame correctly,
+  # including the dialog text and the continue arrow.
+  # ⚠️ kimi-k2.5 at think: high spends ~2,000 completion tokens/turn on reasoning (vs ~85
+  # at default) and 400s with finish_reason=length below a ~2k cap. The 8192 default holds.
+  - key: bedrock-kimi-k2.5
+    provider: bedrock
+    api_model_id: moonshotai.kimi-k2.5
+    display_name: "Kimi K2.5"
+    family: kimi
+    params: null
+    quant: null
+    context: 262144
+    think: high
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  - key: bedrock-mistral-large-3
+    provider: bedrock
+    api_model_id: mistral.mistral-large-3-675b-instruct
+    display_name: "Mistral Large 3"
+    family: mistral
+    params: "675B"
+    quant: null
+    context: 131072
+    think: high
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
