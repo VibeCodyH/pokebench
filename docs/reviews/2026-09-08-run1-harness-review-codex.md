@@ -18,11 +18,11 @@ Reviewed all 299 JSONL records, which cover turns **1–305**, plus the console 
 
    **Minimal fix:** explicitly distinguish observed facts from hypotheses and planned outcomes. Require a changed, settled map ID before recording entry into another map. Clarify that coordinates are map-relative while ASCII labels are screen-relative.
 
-   The screenshot pipeline itself does **RGB conversion plus exact 3× nearest-neighbor enlargement**, without cropping, rotation, blur, or added scenery ([qwen_red.py:90](qwen_red.py:90)). Nothing there explains a fence becoming a counter. Claims of a **“red roof”** in **T283–284** are further evidence of prior expectations overriding the supplied four-shade image. Historical screenshot acquisition errors remain unprovable without the images.
+   The screenshot pipeline itself does **RGB conversion plus exact 3× nearest-neighbor enlargement**, without cropping, rotation, blur, or added scenery ([qwen_red.py:90](../../qwen_red.py#L90)). Nothing there explains a fence becoming a counter. Claims of a **“red roof”** in **T283–284** are further evidence of prior expectations overriding the supplied four-shade image. Historical screenshot acquisition errors remain unprovable without the images.
 
 2. **HARNESS — Persistent notes preserve unverified claims; action history fails to correct them.**
 
-   Notes are accepted after execution without checking whether their claims occurred ([qwen_red.py:280](qwen_red.py:280)). The model demonstrably uses them as evidence in **T279 and T285**.
+   Notes are accepted after execution without checking whether their claims occurred ([qwen_red.py:280](../../qwen_red.py#L280)). The model demonstrably uses them as evidence in **T279 and T285**.
 
    Other examples:
 
@@ -43,7 +43,7 @@ Reviewed all 299 JSONL records, which cover turns **1–305**, plus the console 
    **T293:** **“The Eternally Green Paradise”** is still displayed.  
    **T294** requests the same remedy; **T295** finally appears at `(12,18)`.
 
-   This strongly implicates dialog execution, not navigation reasoning. The previous close/reopen bug documented in [serve_live.py:75](serve_live.py:75) explains it precisely. **The log does not record the running helper version or patch boundary**, so attributing the escape specifically to deployment of today’s rewrite remains an inference.
+   This strongly implicates dialog execution, not navigation reasoning. The previous close/reopen bug documented in [serve_live.py:75](../../serve_live.py#L75) explains it precisely. **The log does not record the running helper version or patch boundary**, so attributing the escape specifically to deployment of today’s rewrite remains an inference.
 
    The current rewrite has these edge cases:
 
@@ -78,7 +78,7 @@ Reviewed all 299 JSONL records, which cover turns **1–305**, plus the console 
    world coordinate = (player_x + column − 4, player_y + row − 4)
    ```
 
-   Thus the `+1` tile-row offset is intentional and agrees with the game’s standing-tile reference. The relevant collision sets match the [disassembly lists](https://raw.githubusercontent.com/pret/pokered/master/data/tilesets/collision_tile_ids.asm). See [collision.py:67](.venv/lib/python3.12/site-packages/pokemon_agent/collision.py:67).
+   Thus the `+1` tile-row offset is intentional and agrees with the game’s standing-tile reference. The relevant collision sets match the [disassembly lists](https://raw.githubusercontent.com/pret/pokered/master/data/tilesets/collision_tile_ids.asm). See collision.py:67.
 
    Actual limitations:
 
@@ -95,7 +95,7 @@ Reviewed all 299 JSONL records, which cover turns **1–305**, plus the console 
 
 5. **HARNESS — Observations can span different emulator moments, despite SYSTEM promising a paused game.**
 
-   SYSTEM says **“Between turns the game does not advance.”** The wrapper’s ticker advances it throughout inference ([serve_live.py:145](serve_live.py:145)). State, ASCII, and screenshot are fetched separately; their reads do not acquire the action/ticker lock.
+   SYSTEM says **“Between turns the game does not advance.”** The wrapper’s ticker advances it throughout inference ([serve_live.py:145](../../serve_live.py#L145)). State, ASCII, and screenshot are fetched separately; their reads do not acquire the action/ticker lock.
 
    Evidence of unfinished transitions:
 
@@ -108,7 +108,7 @@ Reviewed all 299 JSONL records, which cover turns **1–305**, plus the console 
 
 6. **HARNESS — Batches keep executing after their assumptions fail, and “executed” hides the resulting drift.**
 
-   [server.py:678](.venv/lib/python3.12/site-packages/pokemon_agent/server.py:678) counts completed input calls, regardless of movement or dialog progress. The runner discards the returned `state_after`.
+   server.py:678 counts completed input calls, regardless of movement or dialog progress. The runner discards the returned `state_after`.
 
    Concrete examples:
 
@@ -124,7 +124,7 @@ Reviewed all 299 JSONL records, which cover turns **1–305**, plus the console 
 
 7. **HARNESS — The stuck counter counts repeated observations correctly, but misses oscillations and mislabels productive stationary play.**
 
-   `same_pos` is **0 on the first observation, then 1, 2, 3**; warning begins on the fourth observation ([qwen_red.py:241](qwen_red.py:241)). That correctly counts unchanged intervals.
+   `same_pos` is **0 on the first observation, then 1, 2, 3**; warning begins on the fourth observation ([qwen_red.py:241](../../qwen_red.py#L241)). That correctly counts unchanged intervals.
 
    **T15** reports nine unchanged turns since T6; **T294** reports seven since T287. The model sees the warning.
 

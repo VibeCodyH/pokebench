@@ -444,7 +444,9 @@ function trainerFor(run, cx, footY) {
     + `<path d="M9 40h6v6H9zM20 40h6v6h-6z" fill="#243e50"/>`
     + `</g>`;
 }
-const rankSort = (a, b) => b.furthest_index - a.furthest_index || a.turns_used - b.turns_used || String(a.model).localeCompare(String(b.model));
+// Spec tiebreaker: same furthest milestone -> fewer turns to REACH it. Every non-winner runs
+// to budget, so turns_used ties them all; the milestone's first-hit turn is the discriminator.
+const rankSort = (a, b) => b.furthest_index - a.furthest_index || furthestTurn(a) - furthestTurn(b) || String(a.model).localeCompare(String(b.model));
 const stopLabel = run => milestoneList[run.furthest_index]?.short || 'No milestone';
 
 const state = { runs: [], type: 'all', stop: null, live: false, selected: new Set() };

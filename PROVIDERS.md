@@ -1,7 +1,7 @@
 # PokéBench providers
 
 `providers.py` uses Python 3.10+ and `requests`, with no provider SDKs. Importing it
-makes no requests. These are standalone adapters for future runner integration.
+makes no requests. `run_benchmark.py` drives these adapters; they also work standalone.
 
 ```python
 from providers import get_provider
@@ -37,7 +37,8 @@ as API defaults. Anthropic uses adaptive thinking with the requested effort;
 OpenAI uses `reasoning_effort`; Gemini 3+ uses `thinkingLevel` and requests thought
 summaries. `"off"`/`"none"` requests disabled thinking (Gemini budget zero).
 Supported effort levels and disabling thinking depend on the model; unsupported
-settings produce an API error. Start with the registry's `low` for the seed models.
+settings produce an API error. The benchmark runs every model at `high`, per §0 of the spec;
+`low` is only for cheap smoke tests.
 
 Schemas should use the harness's common subset: named object properties, arrays,
 strings/numbers/booleans, enums, and required fields. Anthropic/OpenAI close objects

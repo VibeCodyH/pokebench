@@ -1,6 +1,11 @@
 MIT License
 
 Copyright (c) 2026 Cody Harris
+Copyright (c) 2026 Nous Research
+
+Portions of this software derive from NousResearch/pokemon-agent, which is MIT
+licensed. serve_live.py wraps its server, and UPSTREAM-README.md is its README
+reproduced unchanged.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -9,7 +9,7 @@ same 1,000-turn budget. Furthest milestone wins, fewer turns breaks ties, and Br
 
 The interesting question isn't whether a model can beat Pokémon with a big harness. It's how far a free
 model on one GPU gets against a run that costs real money, when both get one screenshot, one ASCII
-walkability map, the words on screen, and six button presses a turn.
+walkability map, the words on screen, and six actions a turn.
 
 Nobody judges anything. All ten milestones, from walking out the front door to the Boulder Badge, are read
 straight out of the game's memory, and where a model stalls out is its score.
@@ -45,11 +45,12 @@ the 64K context the harness asks for. Smaller models work; the leaderboard only 
    python serve_live.py --rom "roms/Pokemon Red.gb" --port 8765
    ```
 
-4. In a second terminal, start a run. `OLLAMA_HOST` defaults to `http://localhost:11434`; point it at
+4. In a second terminal, start a run. That shell needs the venv too, so either activate it again or
+   call `.venv/bin/python` as below. `OLLAMA_HOST` defaults to `http://localhost:11434`; point it at
    whichever host serves your models:
 
    ```bash
-   OLLAMA_HOST=http://localhost:11434 python qwen_red.py --model qwen3.8:27b --run-name "my first run"
+   OLLAMA_HOST=http://localhost:11434 .venv/bin/python qwen_red.py --model qwen3.8:27b --run-name "my first run"
    ```
 
    Useful flags: `--turns 200` for a short test, `--think low|medium|high` (the benchmark runs `high`),
@@ -67,7 +68,7 @@ saw, her thinking, her plan, what each button did, the words on screen). Every f
 ### Docker instead
 
 ```bash
-docker build -f docker/Dockerfile -t pokebench-server .
+docker build -f docker/Dockerfile --build-arg GIT_SHA="$(git rev-parse --short HEAD)" -t pokebench-server .
 docker run -d --name pokebench-server --network host \
   -v "$PWD/roms:/app/roms" -v "$PWD/runs:/app/runs" pokebench-server
 docker exec -d pokebench-server sh -c 'python qwen_red.py --run-name "docker run" > /app/runs/harness.log 2>&1'
@@ -84,8 +85,10 @@ an MP4 and optionally pushing the same encode to one or two RTMP targets. Setup 
 
 ### Frontier models
 
-`run_benchmark.py --model-key <key>` runs the same loop through `providers.py` against an entry in
-`models.yaml`. The Ollama, OpenRouter and Google adapters have each driven a complete run; Bedrock reads
+`./run.sh <key>` is the way in: it validates the key and your credentials, starts the server if it
+isn't up, opens a fresh game, and then runs `run_benchmark.py --model-key <key>`, which drives the
+same loop through `providers.py` against an entry in `models.yaml`. Calling `run_benchmark.py`
+directly needs a server that already has a game loaded and running. The Ollama, OpenRouter and Google adapters have each driven a complete run; Bedrock reads
 real frames correctly but hasn't finished one yet. The Anthropic row needs verified rates before it can
 post a score, and `openai-template` is a row shape to copy, not a runnable model.
 

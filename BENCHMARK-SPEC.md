@@ -7,8 +7,10 @@ Inspiration: BuseyBench (leaderboard of model runs) — but our scoring is **obj
 
 ## 0. Rules (LOCKED 2026-09-07)
 
-- **Gate = TURNS.** Every model gets the **same 1,000-turn budget** (1 turn = up to 6 button
-  presses). Turns measure *decision quality*, independent of GPU speed or verbosity.
+- **Gate = TURNS.** Every model gets the **same 1,000-turn budget** (1 turn = up to 6 actions).
+  Most actions are one button press; `a_until_dialog_end` is the exception, pressing A until the
+  text box closes (up to 100 presses) so that reading a speech costs one action, not thirty.
+  Turns measure *decision quality*, independent of GPU speed or verbosity.
 - **Score = furthest milestone reached** within budget. Ceiling = **beat Brock (Gym 1)**.
 - **Tiebreaker:** same furthest milestone → **fewer turns to reach it** wins.
 - **Reasoning level:** every model runs at its **recommended/max reasoning** (Qwen `high`;
@@ -23,8 +25,11 @@ Inspiration: BuseyBench (leaderboard of model runs) — but our scoring is **obj
 - **What the harness may fix:** anything that *misled the model about the game* (a map that
   showed unreachable tiles as walkable, dialog text she could not read, a skip-text action that
   quit early). Never what she should be tracking herself (quest step, where she has been, what
-  she already triggered). Game info yes, benchmark-step info no. Per-turn output is capped at
-  `num_predict` 8192 for every model; a reasoning runaway ends there, not at the 600s timeout.
+  she already triggered). Game info yes, benchmark-step info no. Per-turn output is **not**
+  capped (amended 2026-09-11): an 8192 ceiling made qwen3.8:27b spend the whole budget on
+  thinking and return an empty reply 11 times in 242 turns, which is a harness artifact, not a
+  decision. `num_predict` is -1 unless a model's row sets `max_output_tokens`, so a model stops
+  when it is done. The 600s per-turn timeout is the real backstop.
 - **Naming is the model's choice.** The prompt describes both the preset names and the letter grid
   and takes no side. What a model names itself and its rival is part of the run, not a harness rule.
 
@@ -55,9 +60,10 @@ Milestone map_ids come from pokemon-agent's Red memory reader; verify each again
 before trusting it (RAM-address confidence: currently *inferred*, must be *measured* per
 checkpoint). Store the turn number each milestone first fired.
 
-## 2. Harness generalization (the runner)
+## 2. Harness generalization (the runner) — SHIPPED
 
-Current `qwen_red.py` is Ollama-only. Generalize:
+`qwen_red.py` was Ollama-only. The registry runner now covers every provider; this section is
+what was built, kept here because the rules depend on it.
 
 - **Provider adapters** — one interface `(system, user, image_b64, schema) -> {thought, actions,...}`:
   - `ollama` (local, done)
@@ -67,12 +73,12 @@ Current `qwen_red.py` is Ollama-only. Generalize:
   - Config-driven model list (`models.yaml`: name, provider, family, api params, think level).
 - **Fixed budget loop:** stop at 1,000 turns OR Brock, whichever first.
 - **Milestone detector** module: each turn, check the ladder, record first-hit turn.
-- **Per-run summary JSON** (`runs/<model>-<timestamp>.json`): model, provider, family,
+- **Per-run summary JSON** (`runs/<run_id>/summary.json`): model, provider, family,
   harness_version, budget, milestones:[{name, turn}], furthest, turns_used, tokens_in/out,
   cost_usd, wall_time_s, youtube_url, final_screenshot, notes.
-- **Factual-history fix (PENDING, bake in here):** history stores
-  `action → position-delta → result`, NOT the model's own narration. Stops the fixation loop
-  where a model re-reads and re-commits to its own wrong theory. Keep ~8 turns, keep 64K ctx.
+- **Factual-history fix (shipped):** history stores `pose → actions → pose → result`, NOT the
+  model's own narration. Stops the fixation loop where a model re-reads and re-commits to its
+  own wrong theory. The last 12 turns are kept, at 64K ctx.
 - **Determinism caveat (methodology):** in-game RNG (wild encounters, crits) is not fully
   controllable. Fix everything we can — same harness version, same prompt, same budget, same
   start state — and document RNG as a known variance source. Consider N runs/model later.
@@ -84,7 +90,8 @@ A score is worthless without the evidence behind it. Every run preserves, and th
 - **Prompt version + hash** — the exact system prompt (versioned; runs are only apples-to-apples
   at the same `prompt_version`). Bump the version when the prompt changes; old runs keep theirs.
 - **Tool policy** — the allowed action set (press/walk/etc.) + harness_version.
-- **Settings** — think level, num_ctx, temperature, num_predict (per-turn output ceiling, 8192), turn budget.
+- **Settings** — think level, num_ctx, temperature, num_predict (per-turn output ceiling,
+  -1/uncapped unless the model's row sets one), turn budget.
 - **Execution route** — how the model was called: `ollama-local`, `anthropic-api`, `openai-api`,
   `google-api`, or `manual`. Labeled because surfaces behave differently (Busey's point).
 - **Dates** — run_date AND model_release_date (leaderboard "newest/oldest" sorts by *release*
@@ -107,10 +114,10 @@ BuseyBench-style, teal/blue brand to match the channels.
 - **Data:** reads `runs.json` (aggregate of the per-run summaries). Static — no backend.
 - **Leaderboard (default):** card per run — model, provider/family badge, furthest-milestone
   progress bar, turns / tokens / $ / time, "inspect run" → YouTube VOD, final-screenshot thumb.
-- **Sort:** furthest milestone, cost, tokens, time, date. **Filter:** provider, family,
-  local-vs-API. **Compare tray** (up to 4, like Busey).
-- **Pages:** Leaderboard · Methodology (the rules above) · Timeline (models over time).
-- **Host:** static (GitHub Pages / Vercel / Netlify). Domain: pokebench.* (TBD).
+- **Filter:** local-vs-API, and by the milestone a run stopped at. Ranking follows the
+  tiebreaker above. Sort-by-cost, the compare tray and a timeline page are not built.
+- **Host:** Cloudflare Workers, static assets plus one route for the Twitch live check.
+  Domain: pokebench.tv.
 
 ## 4. Infra / streaming (all on the Unraid box)
 

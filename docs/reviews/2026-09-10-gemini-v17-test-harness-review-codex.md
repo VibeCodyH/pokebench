@@ -2,7 +2,7 @@
 
 1. **HARNESS — Flood-fill turns traversable floor into apparent walls.**
 
-   [build_map()](qwen_red.py:312) conflates “no connection within this window” with “blocked terrain.” This is especially misleading around Pewter Gym: the door remains visible while its approach becomes `#`.
+   [build_map()](../../qwen_red.py#L312) conflates “no connection within this window” with “blocked terrain.” This is especially misleading around Pewter Gym: the door remains visible while its approach becomes `#`.
 
    Evidence:
    - **292 observations of `#`, across 43 turns and 53 world tiles, describe tiles subsequently entered successfully.** Of these, 284 observations are in Pewter City.
@@ -27,7 +27,7 @@
 
    These are internal extra confirmations, despite perfect agreement between top-level `plan.actions` and `steps`.
 
-   [_a_until_dialog_end()](serve_live.py:211) samples menu state around relatively long A holds and waits. **The precise missed detection point is unlogged**, so cursor timing is a plausible mechanism, not a proven one.
+   [_a_until_dialog_end()](../../serve_live.py#L211) samples menu state around relatively long A holds and waits. **The precise missed detection point is unlogged**, so cursor timing is a plausible mechanism, not a proven one.
 
    **Minimal fix:** stop on a reliably established choice/menu boundary before another A can register; verify both battle menus and replacement Yes/No prompts. Preserve the existing action contract.
 
@@ -43,7 +43,7 @@
 
    Successful counterparts are **153, 222, 316, 378**.
 
-   This is **not evidence of an E5 offset**: all 365 grids place `@` at E5, ordinary movement agrees with the coordinate transform, and observed working entrances align with their markers. The problem is that [warp overlays override collision classification](qwen_red.py:351).
+   This is **not evidence of an E5 offset**: all 365 grids place `@` at E5, ordinary movement agrees with the coordinate transform, and observed working entrances align with their markers. The problem is that [warp overlays override collision classification](../../qwen_red.py#L351).
 
    **Minimal fix:** preserve the distinction between a warp-table coordinate and a physically enterable warp tile. Validate the rendering against collision data; do not describe every marker as unconditionally walkable.
 
@@ -55,7 +55,7 @@
    - **18→19:** another **`capped`** settle. Turn 19 receives empty screen text and a map; **four walks are consumed by Blue’s dialogue**, then its helper advances it.
    - These are the **only two capped action settles** among 2,490 steps.
 
-   [Frame settling](serve_live.py:553) and [map suppression](run_benchmark.py:303) do not establish the same thing: an empty decoded string does not establish overworld control.
+   [Frame settling](../../serve_live.py#L553) and [map suppression](../../run_benchmark.py#L303) do not establish the same thing: an empty decoded string does not establish overworld control.
 
    Counts:
    - **124** “map hidden” observations.
@@ -63,7 +63,7 @@
    - **14 empty-text observations have `ui=true` at execution start:** **13, 19, 22, 76, 105, 160, 183, 244, 308, 325, 365, 424, 476, 498**. Eleven are battle observations; 365 is trainer interception. Only 13 and 19 demonstrate the misleading navigation consequence above.
    - Because frame-time UI flags are absent, these 14 cannot all be called “text boxes already open when photographed.”
 
-   Separately, **turn 2** receives an alphabet dump as `SCREEN TEXT` and consequently identifies a naming screen; **turn 3 is actually NEW GAME**. The [text reader’s UI gate](serve_live.py:181) still admits non-dialogue tile data during startup.
+   Separately, **turn 2** receives an alphabet dump as `SCREEN TEXT` and consequently identifies a naming screen; **turn 3 is actually NEW GAME**. The [text reader’s UI gate](../../serve_live.py#L181) still admits non-dialogue tile data during startup.
 
    **Minimal fix:** expose and use snapshot-time UI/transition validity, finish settling before presenting a playable observation, and suppress non-text startup tile decoding. No hints or automatic strategic actions are needed.
 
@@ -71,7 +71,7 @@
 
    - **418:** feedback says **“(no movement)”**, but steps show `(10,16) → (10,17) → (10,16)`. This is a return to the starting position.
    - **89 and 501:** helper transcripts reach the hard **30-entry truncation**. Turn 89’s stored transcript ends during Oak’s speech, while the next screen is already Blue discussing the Town Map. The promise that skipped dialogue is quoted back is incomplete without any truncation notice.
-   - **17 and 18’s pre-state:** `party: none` hides the pending starter slot even though turn 17 reports “RED received a SQUIRTLE!” and receives milestone credit. [compact()](qwen_red.py:114) silently drops level-zero slots.
+   - **17 and 18’s pre-state:** `party: none` hides the pending starter slot even though turn 17 reports “RED received a SQUIRTLE!” and receives milestone credit. [compact()](../../qwen_red.py#L114) silently drops level-zero slots.
 
    **Minimal fixes:** say “same ending position”; preserve complete helper transcripts or explicitly mark omissions; represent an initializing party slot as pending rather than “none.”
 

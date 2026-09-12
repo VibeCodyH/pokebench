@@ -9,6 +9,9 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 WORKDIR /app
 COPY serve_live.py qwen_red.py milestones.py stream.html /app/
+# Runs record the harness commit. The image has no .git, so the build passes it in.
+ARG GIT_SHA=""
+ENV POKEBENCH_GIT_SHA=$GIT_SHA
 ENV OLLAMA_HOST=http://localhost:11434
 EXPOSE 8765
 CMD ["python", "serve_live.py", "--rom", "/app/roms/Pokemon Red.gb"]
