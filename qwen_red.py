@@ -60,7 +60,9 @@ PROMPT_VERSION = "v21"          # v21 = STATE says "none loaded yet" on the titl
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
-NUM_PREDICT = 8192          # ceiling on thinking+answer tokens per turn; a runaway ends in ~1 min, not the 600s timeout
+NUM_PREDICT = None          # None = uncapped, matching providers.py. An 8192 ceiling made qwen3.8:27b
+                            # burn the whole budget on thinking and reply empty 11 times in 242 turns.
+                            # The 600s per-turn timeout is the backstop for a runaway.
 PROMPT_SHA = hashlib.sha256(SYSTEM.encode()).hexdigest()[:16]  # hashes the __IDENTITY__ template: name-independent "prompt design" fingerprint, stable across models
 
 # The opening identity sentence is the ONLY model-specific part of the prompt. Same framing for
@@ -157,7 +159,8 @@ def ask(model, think, system, user, image_b64):
         "model": model, "stream": False, "format": SCHEMA, "think": think, "keep_alive": "30m",
         "messages": [{"role": "system", "content": system},
                      {"role": "user", "content": user, "images": [image_b64]}],
-        "options": {"num_ctx": NUM_CTX, "temperature": TEMPERATURE, "num_predict": NUM_PREDICT},
+        "options": {"num_ctx": NUM_CTX, "temperature": TEMPERATURE,
+                    "num_predict": -1 if NUM_PREDICT is None else NUM_PREDICT},
     }, timeout=600)
     r.raise_for_status()
     body = r.json()
@@ -234,7 +237,8 @@ def ask_gemini(model, think, system, user, image_b64):
             {"inline_data": {"mime_type": "image/png", "data": image_b64}},
             {"text": user},
         ]}],
-        "generationConfig": {"responseMimeType": "application/json", "maxOutputTokens": NUM_PREDICT},
+        "generationConfig": {"responseMimeType": "application/json",
+                             **({} if NUM_PREDICT is None else {"maxOutputTokens": NUM_PREDICT})},
     }, timeout=600)
     r.raise_for_status()
     body = r.json()

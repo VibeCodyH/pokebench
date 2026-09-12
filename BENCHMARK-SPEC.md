@@ -30,10 +30,9 @@ Inspiration: BuseyBench (leaderboard of model runs) — but our scoring is **obj
   ceiling made qwen3.8:27b spend the whole budget on thinking and return an empty reply 11 times
   in 242 turns, which is a harness artifact, not a decision. In `run_benchmark.py` Ollama sends
   `num_predict: -1`, and OpenAI and Google omit their cap fields entirely, unless a model's row
-  sets `max_output_tokens`. Two exceptions, both real: the Anthropic Messages API *requires*
-  `max_tokens`, so that adapter sends a high default of 32,000, which is still an
-  enforced cap; and `qwen_red.py`, the local entry point in the README, still hard-codes
-  `NUM_PREDICT = 8192`. The 600s per-turn timeout is the real backstop.
+  sets `max_output_tokens`, and `qwen_red.py` does the same. One exception, and it is forced:
+  the Anthropic Messages API *requires* `max_tokens`, so that adapter sends a high default of
+  32,000, which is still an enforced cap. The 600s per-turn timeout is the real backstop.
 - **Naming is the model's choice.** The prompt describes both the preset names and the letter grid
   and takes no side. What a model names itself and its rival is part of the run, not a harness rule.
 
