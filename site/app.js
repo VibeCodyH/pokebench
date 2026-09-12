@@ -146,7 +146,7 @@ function runReplay(run, rungs) {
 }
 function card(run, full = false) {
   const selected = state.selected.has(run.uid), rungs = ladder(run);
-  const ribbon = `<div class="card-ribbon"><span>${won(run) ? trophy + 'BADGE EARNED' : '<b class="red" aria-hidden="true">×</b> STUCK HERE'} · #${displayRank(run)}</span>${state.sample ? '<span class="sample-badge">ILLUSTRATIVE DATA</span>' : ''}</div>`;
+  const ribbon = `<div class="card-ribbon"><span>${won(run) ? trophy + 'BADGE EARNED' : '<b class="red" aria-hidden="true">×</b> STUCK HERE'} · #${displayRank(run)}</span></div>`;
   return `<article class="run-card ${won(run) ? 'is-winner' : ''} ${full ? 'full-card' : 'compact-card'}" data-run="${run.uid}" data-furthest="${run.furthest_index}" tabindex="0" aria-expanded="false" aria-label="${escape(modelName(run))}, ${escape(milestoneLabel(run))}" aria-describedby="card-flip-help">
     <div class="card-inner"><div class="card-face card-front" aria-hidden="false">${ribbon}
     ${run.uid === localHero ? '<div class="hero-ribbon">★ LOCAL HERO · FURTHEST LOCAL RUN</div>' : ''}
@@ -446,7 +446,7 @@ function trainerFor(run, cx, footY) {
 const rankSort = (a, b) => b.furthest_index - a.furthest_index || a.turns_used - b.turns_used || String(a.model).localeCompare(String(b.model));
 const stopLabel = run => milestoneList[run.furthest_index]?.short || 'No milestone';
 
-const state = { runs: [], type: 'all', stop: null, sample: false, live: false, selected: new Set() };
+const state = { runs: [], type: 'all', stop: null, live: false, selected: new Set() };
 const typeMatch = run => state.type === 'all' || (state.type === 'local') === local(run);
 const visible = () => state.runs.filter(run => typeMatch(run) && (state.stop === null || run.furthest_index === state.stop));
 
@@ -501,7 +501,6 @@ function render() {
   $('filters').innerHTML = chip + ['all', 'local', 'api'].map(t =>
     `<button type="button" class="btn" data-type="${t}" aria-pressed="${state.type === t}">${t === 'all' ? 'All' : t === 'local' ? 'Local' : 'API'} (${counts[t]})</button>`).join('');
 
-  $('banner').hidden = !state.sample;
   $('live-pill').classList.toggle('live', state.live);
   $('live-text').textContent = state.live ? 'LIVE' : 'OFFLINE';
 }
@@ -519,47 +518,38 @@ document.querySelector('.page').addEventListener('click', e => {
 });
 
 
-// ---- data: runs.json (built by site/build_runs.py) with runs.sample.json as the fallback demo ----
+// ---- data: runs.json (built by site/build_runs.py) ----
 let requestId = 0;
 function renderDataState(html, error = false) {
   $('data-state').hidden = false;
   $('data-state').classList.toggle('error', error);
   $('data-state').innerHTML = html;
 }
-const sampleLink = text => `<a href="runs.sample.json" data-load-sample>${text}</a>`;
-async function loadRuns(sample = false) {
+async function loadRuns() {
   const id = ++requestId;
   try {
-    const response = await fetch(sample ? 'runs.sample.json' : 'runs.json', {cache: 'no-store'});
+    const response = await fetch('runs.json', {cache: 'no-store'});
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const rows = await response.json();
     if (!Array.isArray(rows)) throw new Error('Expected a JSON array');
     if (id !== requestId) return;
     const valid = rows.filter(run => run && typeof run === 'object' && Number.isInteger(run.furthest_index) && run.furthest_index >= -1 && run.furthest_index <= 9 && finite(run.turns_used));
     state.runs = valid.map((run, index) => ({...run, uid: `run-${index}`, milestones: Array.isArray(run.milestones) ? run.milestones.filter(m => m && typeof m === 'object') : []}));
-    state.sample = sample;
     state.stop = null;
     pauseReplay();
     if ($('run-modal').open) $('run-modal').close();
     render();
-    if (!rows.length) renderDataState(`<h2>No runs yet. Run the harness.</h2><p>The podium is waiting for its first contender.</p>${sampleLink('Load sample data →')}`);
-    else if (valid.length !== rows.length) renderDataState(`<p>${rows.length - valid.length} invalid ${rows.length - valid.length === 1 ? 'row was' : 'rows were'} skipped. ${valid.length} valid runs loaded. Check the source summaries.</p>${valid.length ? '' : sampleLink('Load sample data →')}`, true);
+    if (!rows.length) renderDataState(`<h2>No runs yet. Run the harness.</h2><p>The podium is waiting for its first contender.</p>`);
+    else if (valid.length !== rows.length) renderDataState(`<p>${rows.length - valid.length} invalid ${rows.length - valid.length === 1 ? 'row was' : 'rows were'} skipped. ${valid.length} valid runs loaded. Check the source summaries.</p>`, true);
     else $('data-state').hidden = true;
-    $('announcer').textContent = `${state.runs.length} ${sample ? 'illustrative sample' : 'real'} runs loaded.`;
+    $('announcer').textContent = `${state.runs.length} runs loaded.`;
   } catch (error) {
     if (id !== requestId) return;
-    if (sample) renderDataState(`<p>Sample data could not be loaded. Your current results are still shown.</p>${sampleLink('Try sample data again')}`, true);
-    else {
-      state.runs = []; state.sample = false; render();
-      renderDataState(`<h2>No runs yet. Run the harness.</h2><p>runs.json is unavailable or unreadable. Serve this folder over HTTP after running site/build_runs.py.</p>${sampleLink('Load sample data →')}`, true);
-    }
-    $('announcer').textContent = sample ? 'Sample data could not be loaded.' : 'No runs available.';
+    state.runs = []; render();
+    renderDataState(`<h2>No runs yet. Run the harness.</h2><p>runs.json is unavailable or unreadable. Serve this folder over HTTP after running site/build_runs.py.</p>`, true);
+    $('announcer').textContent = 'No runs available.';
   }
 }
-document.addEventListener('click', event => {
-  const link = event.target.closest('[data-load-sample]');
-  if (link) { event.preventDefault(); loadRuns(true); }
-});
 document.addEventListener('visibilitychange', () => { if (document.hidden) pauseReplay(); });
 
 // LIVE pill: the Worker answers /api/live from Twitch (worker.js). It reads OFFLINE until a poll says otherwise.

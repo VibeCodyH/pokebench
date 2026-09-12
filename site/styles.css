@@ -27,10 +27,8 @@ dialog#run-modal::backdrop { background: #101c20c9; }
 .run-card:focus-visible { outline-offset: 9px; }
 .card-ribbon { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 39px; padding: 7px 13px; background: var(--ink); color: #ffa48f; font: 850 9px/1.5 var(--mono); border-radius: 5px 5px 0 0; }
 .card-ribbon > span { display: inline-flex; align-items: center; gap: 7px; }
-.card-ribbon .sample-badge { color: var(--paper); font-size: 7px; }
 .is-winner .card-face { border-color: #202b21; box-shadow: 0 0 0 2px #ffe597, 6px 8px 0 #15221d; }
 .is-winner .card-ribbon { background: var(--gold); color: var(--ink); border-bottom: 2px solid var(--ink); }
-.is-winner .card-ribbon .sample-badge { color: var(--ink); }
 .hero-ribbon { padding: 6px 13px; background: var(--teal); border-bottom: 2px solid var(--ink); font: 850 9px/1.5 var(--mono); }
 .card-body { padding: 17px; }
 .model-name { font: 900 21px/1.25 var(--mono); letter-spacing: -.9px; }
@@ -162,7 +160,6 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--teal); outline-
 .live-pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border: 3px solid var(--ink); background: var(--card); box-shadow: 3px 3px 0 var(--ink); font-weight: 700; font-size: 12px; letter-spacing: .1em; text-decoration: none; }
 .live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--offline); border: 2px solid var(--ink); }
 .live-pill.live .live-dot { background: #e0524a; }
-.banner { background: var(--gold); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); padding: 8px 14px; font-weight: 700; font-size: 12px; letter-spacing: .12em; text-align: center; }
 
 .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: end; margin-top: 12px; }
