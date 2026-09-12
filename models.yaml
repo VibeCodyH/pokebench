@@ -16,6 +16,22 @@ models:
     input_cost_per_mtok: 0.0 # local inference: genuinely free
     output_cost_per_mtok: 0.0
 
+  # Meta's local-agent model, Apache 2.0, single tag `30b`. Picked for server 1 over another
+  # general 27B because run 1's failure was agentic, not visual: Qwen re-committed to a warp that
+  # did not exist for 277 turns. ollama.com badges this one vision + tools + thinking.
+  - key: "muse-glimmer:30b"
+    provider: ollama
+    api_model_id: "muse-glimmer:30b"
+    display_name: "Muse Glimmer 30B"
+    family: meta
+    params: "27.9B" # `ollama show` reports 27.9B; the tag and the vendor name both say 30B.
+    quant: "Q4_K_M"
+    context: 65536 # Same harness context as the incumbent, so the two are comparable (native max 131072).
+    think: high
+    release_date: null # TODO: verify; the library page gives only "updated 2 weeks ago".
+    input_cost_per_mtok: 0.0 # local inference: genuinely free
+    output_cost_per_mtok: 0.0
+
   - key: claude-haiku-4-5
     provider: anthropic
     api_model_id: claude-haiku-4-5-20251001 # verified: the id run in prior smoke tests
