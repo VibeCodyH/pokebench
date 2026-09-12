@@ -3,12 +3,24 @@
 
 import json
 from pathlib import Path
+import re
 import sys
+
+# Ranking floor. Prompt v19 (9c5a845) dropped the map reachability flood-fill, the last harness
+# feature that did spatial reasoning FOR the model; v17 had already removed prompt coaching.
+# Runs before v19 scored a different game and cannot sit on the same board.
+HARNESS_FLOOR = 19
+
+
+def prompt_number(run):
+    match = re.fullmatch(r"v(\d+)", str(run.get("prompt_version") or ""))
+    return int(match.group(1)) if match else None
 
 
 def main():
     root = Path(__file__).resolve().parent.parent
     runs = []
+    legacy = 0
     for path in sorted(root.glob("runs/*/summary.json")):
         try:
             run = json.loads(path.read_text(encoding="utf-8"))
@@ -21,6 +33,10 @@ def main():
             json.dumps(run, allow_nan=False)
         except (OSError, UnicodeError, ValueError) as exc:
             print(f"Warning: skipping {path.relative_to(root)}: {exc}", file=sys.stderr)
+            continue
+        version = prompt_number(run)
+        if version is None or version < HARNESS_FLOOR:
+            legacy += 1
             continue
         runs.append(run)
 
@@ -38,7 +54,8 @@ def main():
     output = root / "site" / "runs.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(runs, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-    print(f"Aggregated {len(runs)} runs into site/runs.json")
+    print(f"Aggregated {len(runs)} runs into site/runs.json "
+          f"({legacy} legacy runs below prompt v{HARNESS_FLOOR} excluded)")
 
 
 if __name__ == "__main__":
