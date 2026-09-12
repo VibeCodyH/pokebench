@@ -38,8 +38,8 @@ the 64K context the harness asks for. Smaller models work; the leaderboard only 
    python serve_live.py --rom "roms/Pokemon Red.gb" --port 8765
    ```
 
-4. In a second terminal, start a run. `OLLAMA_HOST` defaults to `http://<server-host>:11434` (our box); point it
-   at yours:
+4. In a second terminal, start a run. `OLLAMA_HOST` defaults to `http://localhost:11434`; point it at
+   whichever host serves your models:
 
    ```bash
    OLLAMA_HOST=http://localhost:11434 python qwen_red.py --model qwen3.8:27b --run-name "my first run"

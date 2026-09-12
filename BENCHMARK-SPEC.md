@@ -112,7 +112,7 @@ BuseyBench-style, teal/blue brand to match the channels.
 - **Pages:** Leaderboard · Methodology (the rules above) · Timeline (models over time).
 - **Host:** static (GitHub Pages / Vercel / Netlify). Domain: pokebench.* (TBD).
 
-## 4. Infra / streaming (all on Unraid <server-host>)
+## 4. Infra / streaming (all on the Unraid box)
 
 Goal: runs + recording live on the box; Cody's PC is only an on-demand viewer.
 

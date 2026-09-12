@@ -39,10 +39,10 @@ The normal stop path closes FFmpeg's input and waits for it to finish.
 
 ## Deploy through Unraid's GUI
 
-These steps target **Unraid <server-host> with the RTX 3090**. The dashboard server
+These steps target **the Unraid box with the RTX 3090**. The dashboard server
 must already be running on that box and publishing port 8765.
 
-1. Open `http://<server-host>` and check **Settings → NVIDIA Driver**. Install the
+1. Open the Unraid web UI and check **Settings → NVIDIA Driver**. Install the
    NVIDIA Driver plugin through **Apps** if needed, following its reboot prompt.
    Confirm the 3090 appears and copy its `GPU-…` UUID. The host needs the NVIDIA
    Docker runtime as well as the driver; the existing Jellyfin/Ollama setup may

@@ -288,4 +288,4 @@ The missing receipts that limit conclusions are narrow:
 
 **Verdict:** Beyond the three sibling defects, correct **silent invalid-action filtering** and **starter-preview ownership reporting** before treating another OpenRouter attempt as clean. No demonstrated evidence requires changing navigation maps or battle-helper behavior. The newly committed v21 changes are outside this audit.
 
-Record this run as **abandoned/interrupted, 672 completed turns**, preserving its valid partial achievement: **Viridian City, index 3, turn 274**. It reached neither the **1,000-turn endpoint nor Brock**, so it is not a completed comparable result under [BENCHMARK-SPEC.md](/path/to/pokebench/BENCHMARK-SPEC.md:10). The termination was the owner’s SIGINT, not model surrender.
+Record this run as **abandoned/interrupted, 672 completed turns**, preserving its valid partial achievement: **Viridian City, index 3, turn 274**. It reached neither the **1,000-turn endpoint nor Brock**, so it is not a completed comparable result under [BENCHMARK-SPEC.md](BENCHMARK-SPEC.md:10). The termination was the owner’s SIGINT, not model surrender.

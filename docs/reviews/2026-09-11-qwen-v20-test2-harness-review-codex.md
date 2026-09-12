@@ -18,7 +18,7 @@ I audited **737 records, 734 completed turns, and 2,241 action steps**, without 
 
    This establishes contamination of its reasoning, **not proof that correcting the header would have prevented failure**. Qwen invents the causal connection between the introduction and starter acquisition.
 
-   **Minimal fix:** establish whether overworld location is meaningful during startup; suppress or qualify initialized map/position fields in both STATE and history until then. Preserve the actual introduction and naming text. Relevant paths: [compact()](/path/to/pokebench/qwen_red.py:124), [feedback construction](/path/to/pokebench/run_benchmark.py:457), [/frame](/path/to/pokebench/serve_live.py:537).
+   **Minimal fix:** establish whether overworld location is meaningful during startup; suppress or qualify initialized map/position fields in both STATE and history until then. Preserve the actual introduction and naming text. Relevant paths: [compact()](qwen_red.py:124), [feedback construction](run_benchmark.py:457), [/frame](serve_live.py:537).
 
    This is distinct from the previously fixed alphabet dump and hidden-dialogue navigation defects.
 
@@ -71,7 +71,7 @@ I audited **737 records, 734 completed turns, and 2,241 action steps**, without 
 
    Both log and console contain exactly **turns 1–734**, with no gaps among completed plans. There is no executed turn 735.
 
-   The loop increments `turn` **before** fetching the observation/calling the model, then passes that counter directly to the final summary. [Increment](/path/to/pokebench/run_benchmark.py:295), [finally block](/path/to/pokebench/run_benchmark.py:490).
+   The loop increments `turn` **before** fetching the observation/calling the model, then passes that counter directly to the final summary. [Increment](run_benchmark.py:295), [finally block](run_benchmark.py:490).
 
    Consequently:
 
@@ -98,7 +98,7 @@ I audited **737 records, 734 completed turns, and 2,241 action steps**, without 
 
    Console explicitly records the **five-second retry** for each. These are **empty-response retries**, not double writes of successful plans. Failed attempts never reach `/action/traced`, append history, update NOTES or add tokens.
 
-   However, [OllamaProvider.chat()](/path/to/pokebench/providers.py:132) parses the plan before returning usage. A parse failure discards any usage and timing present in the Ollama response. Thus the totals describe **accepted responses**, not necessarily all inference work. There is no evidence of double-counting; unrecorded retry consumption is the concern.
+   However, [OllamaProvider.chat()](providers.py:132) parses the plan before returning usage. A parse failure discards any usage and timing present in the Ollama response. Thus the totals describe **accepted responses**, not necessarily all inference work. There is no evidence of double-counting; unrecorded retry consumption is the concern.
 
    A smaller provenance defect: summary reports **`max_output_tokens: null`**, although this adapter sends **`num_predict: 8192`**.
 
@@ -106,7 +106,7 @@ I audited **737 records, 734 completed turns, and 2,241 action steps**, without 
 
 5. **MODEL — The large prompts are explained by retained history, not duplicate records.**
 
-   This runner keeps history from the second-newest milestone. With only one milestone, its anchor remains zero. **No history entries are dropped in this run.** Turn 734 receives **733 history entries**, not approximately 12. [History policy](/path/to/pokebench/run_benchmark.py:200), [assembly](/path/to/pokebench/run_benchmark.py:332).
+   This runner keeps history from the second-newest milestone. With only one milestone, its anchor remains zero. **No history entries are dropped in this run.** Turn 734 receives **733 history entries**, not approximately 12. [History policy](run_benchmark.py:200), [assembly](run_benchmark.py:332).
 
    Input-token growth, with bars scaled to approximately 1,600 tokens:
 
@@ -187,7 +187,7 @@ I audited **737 records, 734 completed turns, and 2,241 action steps**, without 
    - Return-to-start feedback is accurate at **117, 146, 474, 511**.
    - `wait_60` dispatches 60 passive emulator frames; ordinary settling and the advertised live ticker can advance additional time. No substitute button action is evident.
 
-   **NOTES are model-authored, but not literally always verbatim:** [the runner truncates them at 600 characters](/path/to/pokebench/run_benchmark.py:453). This happens at **460: 626→600**, and **550: 617→600**. Otherwise it replaces or retains the model’s notes; it does not merge, rewrite or add assertions.
+   **NOTES are model-authored, but not literally always verbatim:** [the runner truncates them at 600 characters](run_benchmark.py:453). This happens at **460: 626→600**, and **550: 617→600**. Otherwise it replaces or retains the model’s notes; it does not merge, rewrite or add assertions.
 
    Belief chronology:
 
@@ -260,4 +260,4 @@ The remaining receipt limitations are narrow:
 
 **Verdict:** **(a)** Yes—correct startup location reporting and partial-run accounting before treating the next attempt as a clean benchmark. Preserve failed-attempt usage and output-ceiling metadata. The evidence does not justify navigation aids or changes to NOTES/history strategy.
 
-**(b)** Record this as an **abandoned/interrupted test**, with observed progress **left_house at turn 21, 734 completed turns**. The locked specification ends runs at **1,000 turns or Brock**, not a model’s surrender declaration; this run itself demonstrates that surrender can reverse. Its `think=low` setting also differs from the specification’s Qwen `high` requirement. The partial milestone is valid evidence, but this is not a completed comparable benchmark result. [Locked rules](/path/to/pokebench/BENCHMARK-SPEC.md:10).
+**(b)** Record this as an **abandoned/interrupted test**, with observed progress **left_house at turn 21, 734 completed turns**. The locked specification ends runs at **1,000 turns or Brock**, not a model’s surrender declaration; this run itself demonstrates that surrender can reverse. Its `think=low` setting also differs from the specification’s Qwen `high` requirement. The partial milestone is valid evidence, but this is not a completed comparable benchmark result. [Locked rules](BENCHMARK-SPEC.md:10).

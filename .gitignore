@@ -9,6 +9,7 @@ __pycache__/
 *.pyc
 # live run scratch (per-run artifacts under runs/<id>/ are kept as benchmark receipts)
 runs/harness.log
+runs/*/frames/
 qwen-log.jsonl
 zelda-log.jsonl
 qwen-run.log
@@ -20,3 +21,4 @@ screen-big.png
 model-view.png
 site/runs.json
 .playwright-cli/
+.wrangler/

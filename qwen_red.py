@@ -22,7 +22,7 @@ from PIL import Image
 from milestones import MilestoneTracker, MILESTONES
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OLLAMA = os.environ.get("OLLAMA_HOST", "http://<server-host>:11434")
+OLLAMA = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 RUNS_DIR = os.path.join(HERE, "runs")
 
 SYSTEM = """__IDENTITY__ You get the game state read from RAM, an ASCII walkability map, and a screenshot. The game keeps running in real time between turns (NPCs move, animations finish), so the screenshot is a moment in time; each turn only 1-6 button presses happen.

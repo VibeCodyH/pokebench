@@ -127,7 +127,7 @@ class OllamaProvider(Provider):
 
     def __init__(self, model: str, *, num_ctx: int = 65536, temperature: float = 0.6, max_tokens: int | None = None, **opts):
         super().__init__(model, **opts)
-        self.host = os.environ.get("OLLAMA_HOST", "http://<server-host>:11434").rstrip("/")
+        self.host = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
         self.num_ctx = num_ctx
         self.temperature = temperature
         # num_predict; summary.json reports it as max_output_tokens. Ollama counts thinking
