@@ -113,4 +113,4 @@ attached. Sample data on the site is labeled as sample data. Model behavior we t
 herself AAAAA, arguing with a sign) is left alone; the harness fixes things that misled her, never things she
 got wrong on her own. The line between the two is argued in `docs/reviews/`.
 
-MIT licensed. The ROM isn't ours and isn't included.
+MIT licensed; [NOTICE](NOTICE) credits the upstream code this builds on. The ROM isn't ours and isn't included.

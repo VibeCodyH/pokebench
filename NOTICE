@@ -1,0 +1,9 @@
+PokéBench
+Copyright (c) 2026 Cody Harris
+
+Portions of this software derive from NousResearch/pokemon-agent, which is MIT
+licensed and copyright (c) 2026 Nous Research. serve_live.py wraps its server,
+and UPSTREAM-README.md is its README reproduced unchanged.
+
+Both copyright holders are named in LICENSE, which is the MIT license this
+project is released under.
