@@ -263,3 +263,10 @@ dialog#run-modal .card-face[inert] { visibility: hidden; }
 .data-state a { font-weight: 700; }
 .data-state.error { border-color: #b3261e; }
 
+
+/* colophon: the rules + source, restated at the bottom of the board */
+.colophon { margin-top: 16px; padding-top: 20px; border-top: 3px solid var(--ink); display: grid; gap: 10px; color: var(--muted); font-size: 13px; }
+.colophon p { margin: 0; max-width: 60ch; }
+.colophon-links { display: flex; flex-wrap: wrap; gap: 18px; }
+.colophon-links a { color: var(--ink); font-weight: 700; text-underline-offset: 3px; }
+.colophon-fine { font-size: 12px; }

@@ -3,13 +3,20 @@
 A local 27B model plays Pokémon Red on stream. Frontier models get the same seat, the same prompt, and the
 same 1,000-turn budget. Furthest milestone wins, fewer turns breaks ties, and Brock is the ceiling.
 
+**[Watch live on Twitch](https://twitch.tv/pokebenchtv)** · **[VODs on YouTube](https://youtube.com/@pokebenchtv)** · **[Leaderboard at pokebench.tv](https://pokebench.tv)**
+
+![Gemini 3.8 Flash mid-run in Viridian Forest. The panel on the right shows the reasoning it wrote that turn: Squirtle has 17 HP, takes 1 poison damage every 4 steps, and the North Gate is straight up.](docs/img/stream.png)
+
 The interesting question isn't whether a model can beat Pokémon with a big harness. It's how far a free
 model on one GPU gets against a run that costs real money, when both get one screenshot, one ASCII
 walkability map, the words on screen, and six button presses a turn.
 
-- Live: [twitch.tv/pokebenchtv](https://twitch.tv/pokebenchtv) and [@pokebenchtv](https://youtube.com/@pokebenchtv)
-- Leaderboard: [pokebench.tv](https://pokebench.tv)
-- Rules: [BENCHMARK-SPEC.md](BENCHMARK-SPEC.md). Candidate models: [docs/model-corpus.md](docs/model-corpus.md).
+Nobody judges anything. All ten milestones, from walking out the front door to the Boulder Badge, are read
+straight out of the game's memory, and where a model stalls out is its score.
+
+[![The leaderboard at pokebench.tv: a podium, the ten-milestone race track, and a card per run.](docs/img/leaderboard.png)](https://pokebench.tv)
+
+Rules: [BENCHMARK-SPEC.md](BENCHMARK-SPEC.md). Candidate models: [docs/model-corpus.md](docs/model-corpus.md).
 
 Not affiliated with Nintendo, Game Freak, or The Pokémon Company. Bring your own ROM. This repo does not
 contain or download one, and `roms/` is gitignored.
@@ -51,10 +58,11 @@ the 64K context the harness asks for. Smaller models work; the leaderboard only 
 5. Watch at <http://localhost:8765/stream>. That page is what the recorder captures; it's a fixed 1280x720
    canvas scaled to the window. The upstream `/dashboard` still works for START / PAUSE / STOP.
 
-Each run writes `runs/<model>-<timestamp>/` with `log.jsonl` (every turn: the exact prompt she saw, her
-thinking, her plan, what each button did, the words on screen, a screenshot hash), `frames/`, `notes.md`, and
-`summary.json` (score, milestones with the turn they were hit, tokens, wall time, prompt and harness SHAs).
-`python site/build_runs.py` folds every `summary.json` into `site/runs.json` for the leaderboard.
+Each run writes its own directory under `runs/`, holding `summary.json` (the score: milestones with the turn
+each was hit, tokens, wall time, prompt and harness SHAs) and `log.jsonl` (every turn: the exact prompt she
+saw, her thinking, her plan, what each button did, the words on screen). Every field is spelled out in
+[docs/log-format.md](docs/log-format.md). `python site/build_runs.py` folds every `summary.json` into
+`site/runs.json` for the leaderboard.
 
 ### Docker instead
 
@@ -77,18 +85,9 @@ an MP4 and optionally pushing the same encode to one or two RTMP targets. Setup 
 ### Frontier models
 
 `run_benchmark.py --model-key <key>` runs the same loop through `providers.py` against an entry in
-`models.yaml`. The Anthropic, OpenAI and Google rows there are still placeholders and the adapters are
-unsmoked. Local Ollama runs are the only verified path today.
-
-The registry runner saves the exact input PNG to `frames/turn-0001.png` (four-digit turn number);
-`--no-frames` disables this. Each `log.jsonl` record includes `frame_file` (relative to the run
-directory, or null), raw `collision` and `warps`, `party_count`, and the snapshot's `dialog_open`,
-`menu_open`, `in_battle`, and `settle` (`cleared` or `capped`). Failed model attempts keep separate
-`turn-0001-error-<timestamp>.png` receipts so retries cannot overwrite their images.
-Helper steps include a `dialog.trace` entry per internal A press, with UI/textbox/menu flags,
-screen text and settling status after release. `dialog.stop_reason` is `closed`, `choice`, `menu`,
-or `capped`; collected helper text is retained in full, and shortened history quotes state how
-many lines were omitted.
+`models.yaml`. The Ollama, OpenRouter and Google adapters have each driven a complete run; Bedrock reads
+real frames correctly but hasn't finished one yet. The Anthropic row needs verified rates before it can
+post a score, and `openai-template` is a row shape to copy, not a runnable model.
 
 ## What's in here
 
@@ -96,6 +95,9 @@ many lines were omitted.
 |---|---|
 | `serve_live.py` | Wraps [NousResearch/pokemon-agent](https://github.com/NousResearch/pokemon-agent)'s server: real-time ticker, correct enemy species in wild battles, `a_until_dialog_end` that reads the text box from RAM and returns what it skipped, `/frame`, `/action/traced`, `/milestones`, and the `/stream` page |
 | `qwen_red.py` | The turn loop and the system prompt. `PROMPT_VERSION` changes whenever the prompt does; every run records it |
+| `run_benchmark.py` | The same loop, driven from the registry instead of a CLI flag. This is the path every non-Ollama run takes |
+| `providers.py` | One adapter per API. Each turns `(system, user, image, schema)` into a plan, so the loop never learns a provider's quirks |
+| `models.yaml` | The registry: every model's id, context, think level, and price. Unverified rates stay `null` on purpose, because an honest unknown beats a made-up number |
 | `milestones.py` | The 10-rung ladder, detected from RAM. No human judging |
 | `stream.html` | The dashboard the recorder captures |
 | `site/` | The leaderboard, static, data-driven from `runs.json` |
