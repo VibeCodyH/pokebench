@@ -125,13 +125,15 @@ class Provider(ABC):
 class OllamaProvider(Provider):
     """The qwen_red.ask() wire contract, including its local defaults."""
 
-    def __init__(self, model: str, *, num_ctx: int = 65536, temperature: float = 0.6, max_tokens: int = 16384, **opts):
+    def __init__(self, model: str, *, num_ctx: int = 65536, temperature: float = 0.6, max_tokens: int | None = None, **opts):
         super().__init__(model, **opts)
         self.host = os.environ.get("OLLAMA_HOST", "http://<server-host>:11434").rstrip("/")
         self.num_ctx = num_ctx
         self.temperature = temperature
-        # num_predict; summary.json reports it as max_output_tokens. Ollama counts thinking against it:
-        # at think=high qwen3.8:27b burned all 8192 on thought and returned "" 11 times in 242 turns (2026-09-11).
+        # num_predict; summary.json reports it as max_output_tokens. Ollama counts thinking
+        # against it, and a capped thinking model spends the cap on thought and returns "" --
+        # qwen3.8:27b did that 11 times in 242 turns at 8192 (2026-09-11). None sends -1, which
+        # is ollama's "unlimited", so a model stops when it is done rather than when we cut it off.
         self.max_tokens = max_tokens
 
     def chat(
@@ -144,7 +146,8 @@ class OllamaProvider(Provider):
                 {"role": "system", "content": system},
                 {"role": "user", "content": user, "images": [image_b64]},
             ],
-            "options": {"num_ctx": self.num_ctx, "temperature": self.temperature, "num_predict": self.max_tokens},
+            "options": {"num_ctx": self.num_ctx, "temperature": self.temperature,
+                        "num_predict": -1 if self.max_tokens is None else self.max_tokens},
         })
         message = body["message"]
         usage = {"prompt": int(body.get("prompt_eval_count", 0)), "completion": int(body.get("eval_count", 0))}
@@ -159,9 +162,14 @@ class AnthropicProvider(Provider):
 
     api_key_env = "ANTHROPIC_API_KEY"
 
-    def __init__(self, model: str, *, max_tokens: int = 8192, **opts):
+    # Unlike every other API here, Anthropic REQUIRES max_tokens, so it cannot be omitted to
+    # let the model use its own maximum. This is a high default rather than a real ceiling;
+    # models.yaml can raise it per row, and must, for a model that supports more.
+    DEFAULT_MAX_TOKENS = 32000
+
+    def __init__(self, model: str, *, max_tokens: int | None = None, **opts):
         super().__init__(model, **opts)
-        self.max_tokens = max_tokens
+        self.max_tokens = self.DEFAULT_MAX_TOKENS if max_tokens is None else max_tokens
 
     def chat(
         self, system: str, user: str, image_b64: str, schema: dict, think: str
@@ -218,7 +226,7 @@ class OpenAIProvider(Provider):
     api_key_env = "OPENAI_API_KEY"
     base_url = "https://api.openai.com/v1"
 
-    def __init__(self, model: str, *, max_tokens: int = 8192, **opts):
+    def __init__(self, model: str, *, max_tokens: int | None = None, **opts):
         super().__init__(model, **opts)
         self.max_tokens = max_tokens
 
@@ -226,7 +234,7 @@ class OpenAIProvider(Provider):
         self, system: str, user: str, image_b64: str, schema: dict, think: str
     ) -> ChatResult:
         payload = {
-            "model": self.model, "max_completion_tokens": self.max_tokens,
+            "model": self.model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": [
@@ -241,6 +249,9 @@ class OpenAIProvider(Provider):
                 "schema": _schema_for(schema, "openai"),
             }},
         }
+        # Omitted entirely when uncapped, which lets the model use its own maximum.
+        if self.max_tokens is not None:
+            payload["max_completion_tokens"] = self.max_tokens
         effort = think.strip().lower()
         if effort not in {"", "default"}:
             payload["reasoning_effort"] = "none" if effort == "off" else effort
@@ -267,7 +278,7 @@ class GoogleProvider(Provider):
 
     api_key_env = "GEMINI_API_KEY"
 
-    def __init__(self, model: str, *, max_tokens: int = 8192, temperature: float = 0.6, **opts):
+    def __init__(self, model: str, *, max_tokens: int | None = None, temperature: float = 0.6, **opts):
         super().__init__(model, **opts)
         self.max_tokens = max_tokens
         self.temperature = temperature
@@ -277,8 +288,10 @@ class GoogleProvider(Provider):
     ) -> ChatResult:
         config = {
             "responseMimeType": "application/json", "responseSchema": _schema_for(schema, "google"),
-            "maxOutputTokens": self.max_tokens, "temperature": self.temperature,
+            "temperature": self.temperature,
         }
+        if self.max_tokens is not None:
+            config["maxOutputTokens"] = self.max_tokens
         effort = think.strip().lower()
         if effort in {"off", "none"}:
             config["thinkingConfig"] = {"thinkingBudget": 0}

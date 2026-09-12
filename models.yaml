@@ -192,10 +192,10 @@ models:
   # strongest that actually accept an image. Both read a real intro frame correctly,
   # including the dialog text and the continue arrow.
   # ⚠️ kimi-k2.5 at think: high spends ~2,000 completion tokens/turn on reasoning (vs ~85
-  # at default). A live run measured this: at the adapters' 8192 default it still hit
-  # finish_reason=length on roughly every other turn, because the reasoning occasionally
-  # runs far past its own median and leaves no room for the JSON plan. 16384 is the
-  # ceiling that tested clean.
+  # at default), and its reasoning occasionally runs far past its own median. Capped at
+  # 8192 it hit finish_reason=length on roughly every other turn of a live test. It is
+  # uncapped now, like everything else here: a truncated plan is a harness artifact in the
+  # results, not a fact about the model.
   - key: bedrock-kimi-k2.5
     provider: bedrock
     api_model_id: moonshotai.kimi-k2.5
@@ -204,7 +204,6 @@ models:
     params: null
     quant: null
     context: 262144
-    max_output_tokens: 16384
     think: high
     release_date: null
     input_cost_per_mtok: null

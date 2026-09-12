@@ -469,7 +469,7 @@ class ProviderUsageTests(unittest.TestCase):
     def test_ollama_parse_failure_keeps_usage_and_reports_num_predict(self):
         import providers
         p = providers.OllamaProvider("m")
-        self.assertEqual(p.max_tokens, 16384)
+        self.assertIsNone(p.max_tokens)  # uncapped; the wire value is num_predict -1
         with patch.object(p, "_post", return_value={"message": {"content": ""}, "prompt_eval_count": 500, "eval_count": 0}):
             with self.assertRaises(ValueError) as caught:
                 p.chat("s", "u", "", {}, "high")
@@ -490,9 +490,10 @@ class ProviderUsageTests(unittest.TestCase):
 
 
 class MaxOutputTokensTests(unittest.TestCase):
-    """The registry can raise a model's output ceiling. Thinking models spend the adapters'
-    8192 default on reasoning and get truncated mid-plan (finish_reason=length), so the cap
-    has to be reachable from models.yaml rather than frozen in the constructor."""
+    """Models run uncapped by default: a truncated plan is a harness artifact in the results,
+    not a fact about the model. The providers that allow it simply omit the field; ollama
+    sends -1; Anthropic is the one API that requires a number. A row may still set a ceiling
+    explicitly, which is the only way to raise Anthropic's."""
 
     def write_registry(self, **overrides):
         row = {"key": "m", "provider": "openai", "api_model_id": "x", "family": "f", **overrides}
@@ -502,26 +503,72 @@ class MaxOutputTokensTests(unittest.TestCase):
         self.addCleanup(Path(handle.name).unlink)
         return handle.name
 
-    def test_absent_leaves_the_adapter_default(self):
+    def test_absent_means_uncapped(self):
         model = runner.load_model("m", self.write_registry())
         self.assertIsNone(model.get("max_output_tokens"))
         with patch.dict(runner.os.environ, {"OPENAI_API_KEY": "k"}):
-            self.assertEqual(runner.make_provider(model).max_tokens, 8192)
+            self.assertIsNone(runner.make_provider(model).max_tokens)
 
     def test_null_is_not_the_context_trap(self):
         # context: null raises, because the key is present and .get never sees the default.
-        # max_output_tokens has to treat an explicit null as "use the adapter's own value".
+        # max_output_tokens has to treat an explicit null as "no ceiling".
         model = runner.load_model("m", self.write_registry(max_output_tokens=None))
         with patch.dict(runner.os.environ, {"OPENAI_API_KEY": "k"}):
-            self.assertEqual(runner.make_provider(model).max_tokens, 8192)
+            self.assertIsNone(runner.make_provider(model).max_tokens)
 
-    def test_set_value_reaches_the_adapter(self):
+    def test_uncapped_openai_omits_the_field_entirely(self):
+        import providers
+        with patch.dict(runner.os.environ, {"OPENAI_API_KEY": "k"}):
+            p = providers.OpenAIProvider("m")
+        sent = {}
+        body = {"choices": [{"message": {"content": "{}"}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
+        with patch.object(p, "_post", side_effect=lambda url, payload, *a: sent.update(payload) or body):
+            p.chat("s", "u", "", {}, "high")
+        self.assertNotIn("max_completion_tokens", sent)
+
+    def test_uncapped_ollama_sends_minus_one(self):
+        import providers
+        p = providers.OllamaProvider("m")
+        sent = {}
+        body = {"message": {"content": "{}"}, "prompt_eval_count": 1, "eval_count": 1}
+        with patch.object(p, "_post", side_effect=lambda url, payload, *a: sent.update(payload) or body):
+            p.chat("s", "u", "", {}, "high")
+        self.assertEqual(sent["options"]["num_predict"], -1)
+
+    def test_anthropic_requires_a_number_so_it_keeps_a_default(self):
+        import providers
+        with patch.dict(runner.os.environ, {"ANTHROPIC_API_KEY": "k"}):
+            self.assertEqual(providers.AnthropicProvider("m").max_tokens,
+                             providers.AnthropicProvider.DEFAULT_MAX_TOKENS)
+            self.assertEqual(providers.AnthropicProvider("m", max_tokens=64000).max_tokens, 64000)
+
+    def test_set_value_reaches_the_wire_not_just_the_attribute(self):
         model = runner.load_model("m", self.write_registry(max_output_tokens=16384))
         with patch.dict(runner.os.environ, {"OPENAI_API_KEY": "k"}):
             provider = runner.make_provider(model)
         self.assertEqual(provider.max_tokens, 16384)
-        # summary.json reports the ceiling a run actually used.
-        self.assertEqual(getattr(provider, "max_tokens", None), 16384)
+        sent = {}
+        body = {"choices": [{"message": {"content": "{}"}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
+        with patch.object(provider, "_post",
+                          side_effect=lambda url, payload, *a: sent.update(payload) or body):
+            provider.chat("s", "u", "", {}, "high")
+        self.assertEqual(sent["max_completion_tokens"], 16384)
+
+    def test_google_set_value_reaches_the_wire(self):
+        import providers
+        with patch.dict(runner.os.environ, {"GEMINI_API_KEY": "k"}):
+            bounded = providers.GoogleProvider("m", max_tokens=16384)
+            unbounded = providers.GoogleProvider("m")
+        body = {"candidates": [{"content": {"parts": [{"text": "{}"}]}, "finishReason": "STOP"}],
+                "usageMetadata": {"promptTokenCount": 1, "candidatesTokenCount": 1}}
+        for provider, expected in ((bounded, 16384), (unbounded, None)):
+            sent = {}
+            with patch.object(provider, "_post",
+                              side_effect=lambda url, payload, *a: sent.update(payload) or body):
+                provider.chat("s", "u", "", {}, "high")
+            self.assertEqual(sent["generationConfig"].get("maxOutputTokens"), expected)
 
     def test_rejects_nonsense_before_a_run_starts(self):
         for bad in (0, -1, 1.5, "16k", True):
