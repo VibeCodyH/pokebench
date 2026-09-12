@@ -274,14 +274,33 @@ class OpenAIProvider(Provider):
 
 
 class GoogleProvider(Provider):
-    """Gemini generateContent with inline PNG data and responseSchema."""
+    """Gemini generateContent with inline PNG data and responseSchema.
 
-    api_key_env = "GEMINI_API_KEY"
+    Two routes, same request body. GEMINI_API_KEY is AI Studio; GOOGLE_API_KEY is a Vertex
+    Express key, which bills a Cloud project's credit instead. AI Studio wins when both are
+    set, because an explicitly-set key is the more specific instruction.
+
+    Vertex Express is Gemini-only and, measured 2026-09-12, Flash-only: publishers/anthropic
+    and every non-Google publisher 404, as do gemini-3.8-pro and gemini-3.8-ultra. Do not
+    plan a Model Garden run against this key.
+    """
+
+    api_key_env = ""  # resolved in __init__: either key is acceptable, so the base check is wrong
+    AI_STUDIO = "https://generativelanguage.googleapis.com/v1beta/models"
+    VERTEX_EXPRESS = "https://aiplatform.googleapis.com/v1/publishers/google/models"
 
     def __init__(self, model: str, *, max_tokens: int | None = None, temperature: float = 0.6, **opts):
         super().__init__(model, **opts)
         self.max_tokens = max_tokens
         self.temperature = temperature
+        studio = os.environ.get("GEMINI_API_KEY", "").strip()
+        express = os.environ.get("GOOGLE_API_KEY", "").strip()
+        if studio:
+            self.api_key, self.route, self.base_url = studio, "google-aistudio", self.AI_STUDIO
+        elif express:
+            self.api_key, self.route, self.base_url = express, "vertex-express", self.VERTEX_EXPRESS
+        else:
+            raise ValueError("GoogleProvider requires GEMINI_API_KEY (AI Studio) or GOOGLE_API_KEY (Vertex Express)")
 
     def chat(
         self, system: str, user: str, image_b64: str, schema: dict, think: str
@@ -299,7 +318,7 @@ class GoogleProvider(Provider):
             config["thinkingConfig"] = {"thinkingLevel": effort.upper(), "includeThoughts": True}
         model_id = quote(self.model.removeprefix("models/"), safe="")
         body = self._post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent",
+            f"{self.base_url}/{model_id}:generateContent",
             {
                 "systemInstruction": {"parts": [{"text": system}]},
                 "contents": [{"role": "user", "parts": [

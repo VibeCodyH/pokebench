@@ -139,7 +139,10 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         "harness_files_sha": harness_files_sha,
         # the model's actual output ceiling, recorded so it can't drift from the setting a run claims
         "max_output_tokens": getattr(provider, "max_tokens", None),
-        "execution_route": "ollama-local" if provider_name == "ollama" else f"{provider_name}-api",
+        # An adapter that serves more than one endpoint names the one it used (Google is
+        # AI Studio vs Vertex Express), so the summary records which credit pool paid.
+        "execution_route": ("ollama-local" if provider_name == "ollama"
+                            else getattr(provider, "route", None) or f"{provider_name}-api"),
         "think_level": model["think"],
         "num_ctx": model["num_ctx"],
         # Anthropic/OpenAI adapters leave temperature at the API default.
