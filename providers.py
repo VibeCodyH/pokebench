@@ -158,7 +158,7 @@ class OllamaProvider(Provider):
 
 
 class AnthropicProvider(Provider):
-    """Messages API with image blocks, JSON output schema, and adaptive thinking."""
+    """Messages API with image blocks, JSON output schema, and budget_tokens thinking."""
 
     api_key_env = "ANTHROPIC_API_KEY"
 

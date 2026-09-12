@@ -22,9 +22,9 @@ invalid JSON, refusals, and incomplete hosted responses raise clear errors.
 | Provider | Environment | Settings |
 | --- | --- | --- |
 | `ollama` | `OLLAMA_HOST`, optional; defaults to the existing harness host | `num_ctx=65536`, `temperature=0.6`; 30-minute keep-alive |
-| `anthropic` | `ANTHROPIC_API_KEY`, required | Messages API; `max_tokens=8192` |
-| `openai` | `OPENAI_API_KEY`, required | Chat Completions; `max_tokens=8192`; temperature omitted |
-| `google` | `GEMINI_API_KEY`, required | generateContent; `max_tokens=8192`, `temperature=0.6` |
+| `anthropic` | `ANTHROPIC_API_KEY`, required | Messages API; `max_tokens=32000` by default, because this API requires the field |
+| `openai` | `OPENAI_API_KEY`, required | Chat Completions; no output cap unless the row sets one; temperature omitted |
+| `google` | `GEMINI_API_KEY`, required | generateContent; no output cap unless the row sets one, `temperature=0.6` |
 
 All constructors accept `timeout=600`, `input_cost_per_mtok`, and
 `output_cost_per_mtok`. Cloud credentials are checked on construction. `cost()`
@@ -33,8 +33,10 @@ Both cloud rates must be supplied to calculate cost; Ollama always returns `0.0`
 This is a standard-rate estimate, without cache discounts or other billing tiers.
 
 Ollama forwards `think` unchanged. Hosted adapters interpret `""` or `"default"`
-as API defaults. Anthropic uses adaptive thinking with the requested effort;
-OpenAI uses `reasoning_effort`; Gemini 3+ uses `thinkingLevel` and requests thought
+as API defaults. Anthropic maps the effort onto extended thinking
+`budget_tokens` (low 2048, medium 4096, high 8192), because adaptive/effort
+thinking is rejected by Haiku 4.5 and kin; OpenAI uses `reasoning_effort`;
+Gemini 3+ uses `thinkingLevel` and requests thought
 summaries. `"off"`/`"none"` requests disabled thinking (Gemini budget zero).
 Supported effort levels and disabling thinking depend on the model; unsupported
 settings produce an API error. The benchmark runs every model at `high`, per §0 of the spec;

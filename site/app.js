@@ -51,7 +51,9 @@ function runDay(run) {
 const formatDay = day => day ? new Date(day + 'T12:00:00Z').toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'}) : 'Date not reported';
 // Spec tiebreaker: same furthest milestone -> fewer turns to REACH it. turns_used ties every
 // non-winner at budget, so rank on the furthest milestone's first-hit turn instead.
-const furthestTurn = run => { const m = (run.milestones || []).find(x => x && x.key === run.furthest_key); return m && finite(m.turn) ? m.turn : (finite(run.turns_used) ? run.turns_used : Infinity); };
+// Unknown arrival stays unknown: a receipt missing its furthest milestone's turn sorts last
+// rather than inheriting turns_used, which would invent a first-hit turn it never measured.
+const furthestTurn = run => { const m = (run.milestones || []).find(x => x && x.key === run.furthest_key); return m && finite(m.turn) ? m.turn : Infinity; };
 const displayRank = run => 1 + state.runs.filter(other => other.furthest_index > run.furthest_index || other.furthest_index === run.furthest_index && furthestTurn(other) < furthestTurn(run)).length;
 function videoURL(run) {
   if (typeof run.youtube_url !== 'string' || !run.youtube_url.trim()) return null;

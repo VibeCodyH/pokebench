@@ -25,11 +25,15 @@ Inspiration: BuseyBench (leaderboard of model runs) — but our scoring is **obj
 - **What the harness may fix:** anything that *misled the model about the game* (a map that
   showed unreachable tiles as walkable, dialog text she could not read, a skip-text action that
   quit early). Never what she should be tracking herself (quest step, where she has been, what
-  she already triggered). Game info yes, benchmark-step info no. Per-turn output is **not**
-  capped (amended 2026-09-11): an 8192 ceiling made qwen3.8:27b spend the whole budget on
-  thinking and return an empty reply 11 times in 242 turns, which is a harness artifact, not a
-  decision. `num_predict` is -1 unless a model's row sets `max_output_tokens`, so a model stops
-  when it is done. The 600s per-turn timeout is the real backstop.
+  she already triggered). Game info yes, benchmark-step info no. Per-turn output is
+  **uncapped wherever the API allows it** (amended 2026-09-11, corrected 2026-09-12): an 8192
+  ceiling made qwen3.8:27b spend the whole budget on thinking and return an empty reply 11 times
+  in 242 turns, which is a harness artifact, not a decision. In `run_benchmark.py` Ollama sends
+  `num_predict: -1`, and OpenAI and Google omit their cap fields entirely, unless a model's row
+  sets `max_output_tokens`. Two exceptions, both real: the Anthropic Messages API *requires*
+  `max_tokens`, so that adapter sends a deliberately high 32,000 as headroom rather than a
+  ceiling; and `qwen_red.py`, the local entry point in the README, still hard-codes
+  `NUM_PREDICT = 8192`. The 600s per-turn timeout is the real backstop.
 - **Naming is the model's choice.** The prompt describes both the preset names and the letter grid
   and takes no side. What a model names itself and its rival is part of the run, not a harness rule.
 
@@ -75,10 +79,13 @@ what was built, kept here because the rules depend on it.
 - **Milestone detector** module: each turn, check the ladder, record first-hit turn.
 - **Per-run summary JSON** (`runs/<run_id>/summary.json`): model, provider, family,
   harness_version, budget, milestones:[{name, turn}], furthest, turns_used, tokens_in/out,
-  cost_usd, wall_time_s, youtube_url, final_screenshot, notes.
+  cost_usd, wall_time_s, youtube_url, notes.
 - **Factual-history fix (shipped):** history stores `pose → actions → pose → result`, NOT the
   model's own narration. Stops the fixation loop where a model re-reads and re-commits to its
-  own wrong theory. The last 12 turns are kept, at 64K ctx.
+  own wrong theory. `run_benchmark.py` windows history back to the first-hit turn of the second
+  most recent milestone, then keeps the newest whole entries that still fit 64K ctx after
+  reserving room for the image, the output and the rest of the prompt. `qwen_red.py` keeps a
+  flat last 12.
 - **Determinism caveat (methodology):** in-game RNG (wild encounters, crits) is not fully
   controllable. Fix everything we can — same harness version, same prompt, same budget, same
   start state — and document RNG as a known variance source. Consider N runs/model later.
