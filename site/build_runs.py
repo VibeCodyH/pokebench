@@ -10,6 +10,17 @@ import sys
 # feature that did spatial reasoning FOR the model; v17 had already removed prompt coaching.
 # Runs before v19 scored a different game and cannot sit on the same board.
 HARNESS_FLOOR = 19
+# Only runs that reached the end of the game or the end of the budget are results. Smoke tests,
+# Ctrl-C'd runs and provider outages write partial summaries and stay off the board.
+FINISHED = {"budget", "beat_brock"}
+
+
+def finished(run):
+    reason = run.get("termination_reason")
+    if reason is not None:
+        return reason in FINISHED
+    # v19/v20 summaries predate termination_reason: infer it from the outcome.
+    return bool(run.get("beat_brock")) or run["turns_used"] >= (run.get("budget_turns") or 0) > 0
 
 
 def prompt_number(run):
@@ -20,7 +31,7 @@ def prompt_number(run):
 def main():
     root = Path(__file__).resolve().parent.parent
     runs = []
-    legacy = 0
+    legacy = unfinished = 0
     for path in sorted(root.glob("runs/*/summary.json")):
         try:
             run = json.loads(path.read_text(encoding="utf-8"))
@@ -37,6 +48,9 @@ def main():
         version = prompt_number(run)
         if version is None or version < HARNESS_FLOOR:
             legacy += 1
+            continue
+        if not finished(run):
+            unfinished += 1
             continue
         runs.append(run)
 
@@ -55,7 +69,7 @@ def main():
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(runs, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     print(f"Aggregated {len(runs)} runs into site/runs.json "
-          f"({legacy} legacy runs below prompt v{HARNESS_FLOOR} excluded)")
+          f"({legacy} legacy runs below prompt v{HARNESS_FLOOR}, {unfinished} unfinished runs excluded)")
 
 
 if __name__ == "__main__":
