@@ -487,3 +487,45 @@ class ProviderUsageTests(unittest.TestCase):
                 p.chat("s", "u", "", {}, "high")
         self.assertIn("finish_reason=length", str(caught.exception))
         self.assertEqual(caught.exception.usage, {"prompt": 300, "completion": 8192})
+
+
+class MaxOutputTokensTests(unittest.TestCase):
+    """The registry can raise a model's output ceiling. Thinking models spend the adapters'
+    8192 default on reasoning and get truncated mid-plan (finish_reason=length), so the cap
+    has to be reachable from models.yaml rather than frozen in the constructor."""
+
+    def write_registry(self, **overrides):
+        row = {"key": "m", "provider": "openai", "api_model_id": "x", "family": "f", **overrides}
+        handle = tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False)
+        with handle:
+            json.dump({"models": [row]}, handle)  # JSON is valid YAML
+        self.addCleanup(Path(handle.name).unlink)
+        return handle.name
+
+    def test_absent_leaves_the_adapter_default(self):
+        model = runner.load_model("m", self.write_registry())
+        self.assertIsNone(model.get("max_output_tokens"))
+        with patch.dict(runner.os.environ, {"OPENAI_API_KEY": "k"}):
+            self.assertEqual(runner.make_provider(model).max_tokens, 8192)
+
+    def test_null_is_not_the_context_trap(self):
+        # context: null raises, because the key is present and .get never sees the default.
+        # max_output_tokens has to treat an explicit null as "use the adapter's own value".
+        model = runner.load_model("m", self.write_registry(max_output_tokens=None))
+        with patch.dict(runner.os.environ, {"OPENAI_API_KEY": "k"}):
+            self.assertEqual(runner.make_provider(model).max_tokens, 8192)
+
+    def test_set_value_reaches_the_adapter(self):
+        model = runner.load_model("m", self.write_registry(max_output_tokens=16384))
+        with patch.dict(runner.os.environ, {"OPENAI_API_KEY": "k"}):
+            provider = runner.make_provider(model)
+        self.assertEqual(provider.max_tokens, 16384)
+        # summary.json reports the ceiling a run actually used.
+        self.assertEqual(getattr(provider, "max_tokens", None), 16384)
+
+    def test_rejects_nonsense_before_a_run_starts(self):
+        for bad in (0, -1, 1.5, "16k", True):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ValueError) as caught:
+                    runner.load_model("m", self.write_registry(max_output_tokens=bad))
+                self.assertIn("max_output_tokens", str(caught.exception))

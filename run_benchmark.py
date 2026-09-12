@@ -64,6 +64,12 @@ def load_model(model_key, registry_path=None):
     model["num_ctx"] = model.get("num_ctx", model.get("context", NUM_CTX))
     if type(model["num_ctx"]) is not int or model["num_ctx"] <= 0:
         raise ValueError(f"{model_key}: context/num_ctx must be a positive integer")
+    # Optional cap on the model's own output. Absent or null means the adapter's default,
+    # which is 8192 for the hosted APIs; thinking models spend that on reasoning and get
+    # truncated mid-plan, so they need a bigger ceiling than the default.
+    max_out = model.get("max_output_tokens")
+    if max_out is not None and (type(max_out) is not int or max_out <= 0):
+        raise ValueError(f"{model_key}: max_output_tokens must be a positive integer")
     model.setdefault("temperature", TEMPERATURE)
     temperature = model["temperature"]
     if (type(temperature) not in (int, float)
@@ -81,6 +87,9 @@ def make_provider(model):
     opts = {name: model.get(name) for name in (
         "input_cost_per_mtok", "output_cost_per_mtok",
     )}
+    # Only when set: the adapters' own defaults differ, and None would override them.
+    if model.get("max_output_tokens") is not None:
+        opts["max_tokens"] = model["max_output_tokens"]
     if model["provider"] == "ollama":
         opts["num_ctx"] = model["num_ctx"]
     if model["provider"] in {"ollama", "google"}:
