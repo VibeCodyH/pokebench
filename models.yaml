@@ -52,11 +52,13 @@ models:
     family: gemini
     params: null
     quant: null
-    context: 1000000 # TODO: verify supported context before a scored run.
+    context: 1000000 # Two full runs (535 and 501 turns) completed at this ctx without a truncation.
     think: high
     release_date: null # TODO: verify.
-    input_cost_per_mtok: null # AI Studio route is free (GDP credits); set rates only if billed.
-    output_cost_per_mtok: null
+    # Introductory rates, in force through 2026-12-31; they double to 1.50/7.50 on 2027-01-01.
+    # The Vertex Express route bills a Cloud project, so the run is paid for even on credits.
+    input_cost_per_mtok: 0.75
+    output_cost_per_mtok: 3.75
 
   # TEMPLATE — not runnable as-is. Replace api_model_id with a real OpenAI-compatible model
   # before use (this is also the row shape the future NIM/ModelScope roster will copy).
