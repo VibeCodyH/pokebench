@@ -102,6 +102,37 @@ class DialogTests(unittest.TestCase):
                 self.assertEqual(result["presses"], 0)
                 self.assertEqual(self.ram.presses, [])
 
+    def test_level_up_stats_box_is_pressed_through_not_stalled(self):
+        # muse-glimmer-30b-20260912_204805 lost 118 turns to this: the level-up box draws a
+        # bordered window, so _menu_open() reported it and the helper returned 0 presses while
+        # the screen sat there. Only A clears it, so the run livelocked until the model
+        # happened to send a bare press_a instead.
+        self.ram.data[0xD057] = 1
+        self.ram.tile(0, 12)                                    # "grew to level N!" text box
+        self.ram.tile(9, 2)                                     # the stats window border
+        for i, label in enumerate(("ATTACK", "DEFENSE", "SPEED", "SPECIAL")):
+            self.ram.text(11, 3 + i * 2, label)
+        self.ram.text(1, 14, "GREW TO LEVEL")
+
+        def dismiss():                                          # A takes the whole thing down
+            self.ram.tile(0, 12, 1)
+            self.ram.tile(9, 2, 1)
+        self.ram.on_press = dismiss
+        result = asyncio.run(live._a_until_dialog_end())
+        self.assertEqual(self.ram.presses, [("a", 1)])
+        self.assertEqual((result["presses"], result["stop_reason"]), (1, "closed"))
+
+    def test_status_page_with_the_same_labels_stays_a_readable_ui(self):
+        # The STATUS page shows the same four labels but no text box, so it is displaying for
+        # the model to read, not waiting to be dismissed. Guards the dialog_open half of the
+        # level-up check: drop it and the helper mashes A through a page it should leave up.
+        self.ram.tile(9, 2)
+        for i, label in enumerate(("ATTACK", "DEFENSE", "SPEED", "SPECIAL")):
+            self.ram.text(11, 3 + i * 2, label)
+        result = asyncio.run(live._a_until_dialog_end())
+        self.assertEqual((result["presses"], result["stop_reason"]), (0, "menu"))
+        self.assertEqual(self.ram.presses, [])
+
     def test_delayed_menu_after_release_stops_and_is_traced(self):
         # T76/480/500: FIGHT appears before its cursor; T266: switch choice.
         for choice in (False, True):

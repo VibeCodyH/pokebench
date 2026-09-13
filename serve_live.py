@@ -72,6 +72,9 @@ _REOPEN_GRACE_TICKS = 6    # x30 frames = ~3 s of "is the next box coming?" afte
 _TILEMAP_ROW12 = 0xC3A0 + 12 * 20   # wTileMap row 12 = top edge of the standard text box
 _BOX_CORNER = 0x79                  # top-left border tile; measured 0x79 open / overworld tile closed
 _MENU_CURSOR = 0xED                 # ▶ menu-selection cursor; present only while a menu awaits a choice (verified 2026-09-09)
+# The level-up box shows these four labels with the "grew to level N!" text box still open.
+# The STATUS page shows them too, but with no text box, so it stays a readable UI (see below).
+_LEVEL_UP_STATS = frozenset({"ATTACK", "DEFENSE", "SPEED", "SPECIAL"})
 
 
 _BUSY_MASK = 0xA1   # 0xD730 bits 0 (scripted NPC movement) + 5 (joypad ignored) + 7 (simulated movement)
@@ -218,8 +221,13 @@ async def _a_until_dialog_end() -> dict:
             said.append(_box_lines())
         if menu_open:
             words = set(_screen_text().replace(" / ", " ").split())
-            stop_reason = "choice" if {"YES", "NO"} <= words else "menu"
-            break
+            # The level-up box draws a border like a menu but asks nothing: pokered leaves the
+            # "<NAME> grew to level N!" text box open behind it and only A dismisses it. Stopping
+            # here returned 0 presses, so a model that kept calling this never left the screen --
+            # run muse-glimmer-30b-20260912_204805 lost 118 turns across three such wedges.
+            if not (dialog_open and _LEVEL_UP_STATS <= words):
+                stop_reason = "choice" if {"YES", "NO"} <= words else "menu"
+                break
         if settle == "capped":
             break
         if not dialog_open:
