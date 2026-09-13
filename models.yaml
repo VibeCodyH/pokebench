@@ -382,3 +382,42 @@ models:
     release_date: "2026-04-23"
     input_cost_per_mtok: null
     output_cost_per_mtok: null
+
+  # Two more Foundry deployments, added on Cody's call 2026-09-13. Neither is here because it
+  # scored well in the probe; both are here because the benchmark is supposed to measure that
+  # rather than pre-judge it.
+  #
+  # grok-4.3 is NOT redundant with grok-4.6. An older sibling on the same lineage is the only way
+  # the board can show whether a generation actually moved, so keep both and let the scores talk.
+  #
+  # ⚠️ Mistral-Large-3 SEES the frame (bills 330 prompt tokens, in the ~350 band every sighted
+  # model lands in) but reads it badly: it called the Pallet Town EXTERIOR an indoor scene and
+  # reported trees that are not there. That is a vision-QUALITY result, not a vision-ABSENT one,
+  # and it belongs on the board as a score. The line Cody drew: a model that cannot take an image
+  # at all is a blocker, a model that takes one and misreads it is just a benchmark result.
+  # Contrast the DeepSeek rows above, which bill 23 prompt tokens because the image never lands.
+  - key: azure-grok-4.3
+    provider: azure-foundry
+    api_model_id: grok-4.3
+    display_name: "Grok 4.3"
+    family: grok
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: high
+    release_date: "2026-04-17"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  - key: azure-mistral-large-3
+    provider: azure-foundry
+    api_model_id: Mistral-Large-3
+    display_name: "Mistral Large 3"
+    family: mistral
+    params: "675B-A41B"
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: high
+    release_date: "2025-12-02"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
