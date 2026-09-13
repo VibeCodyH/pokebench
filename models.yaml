@@ -239,3 +239,146 @@ models:
     release_date: null
     input_cost_per_mtok: null
     output_cost_per_mtok: null
+
+  # --- xAI (OpenAI-compatible, XAI_API_KEY). grok-4.6 is the only Grok that reads an image;
+  # the models page lists every Grok as "Text only", which is wrong — the image-understanding
+  # guide is the primary source, and a live call against a real frame confirmed it.
+  # Funded by the $150/month data-sharing credit, so keep this on its own opted-in xAI team.
+  # think: high — reasoning_effort "none" is rejected by the API, so never set think: off here.
+  # Rates are the <200k-context tier; they double to 4.00/12.00 at >=200k, which this harness
+  # never reaches at ~6.5k prompt tokens per turn. Cached input bills at 0.50 and caching is on
+  # by default, so recorded cost_usd is a ceiling rather than the exact bill. ---
+  - key: grok-4.6
+    provider: xai
+    api_model_id: grok-4.6
+    display_name: "Grok 4.6"
+    family: grok
+    params: null
+    quant: null
+    context: 500000
+    think: high
+    release_date: null # TODO: verify; not published on the models page.
+    input_cost_per_mtok: 2.00
+    output_cost_per_mtok: 6.00
+
+  # --- Azure OpenAI via the v1 API (AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT).
+  # api_model_id is the DEPLOYMENT name, not the model name. Resource pokebench-aoai-179c0197
+  # in eastus2; gpt-5-mini sits on GlobalStandard at 300K TPM, the largest allocation this
+  # subscription was granted. Funded by the $200 trial credit, which expires 2026-10-13.
+  # Rates are Azure's published gpt-5-mini pricing; verify before a SCORED run. ---
+  - key: azure-gpt-5-mini
+    provider: azure
+    api_model_id: gpt-5-mini
+    display_name: "GPT-5 mini"
+    family: gpt
+    params: null
+    quant: null
+    context: 400000
+    think: high
+    release_date: "2025-08-07"
+    input_cost_per_mtok: 0.25
+    output_cost_per_mtok: 2.00
+
+  # --- Azure AI Foundry (AIServices resource, AZURE_FOUNDRY_API_KEY + AZURE_FOUNDRY_ENDPOINT).
+  # A DIFFERENT resource from the azure rows above: pokebenchtv-8636-resource in westus3, which
+  # serves the whole catalog rather than just OpenAI. Quota here is per-model and was granted
+  # without a request (20-100 each), while the OpenAI-published frontier models sat at 0 and were
+  # denied twice. api_model_id is the DEPLOYMENT name.
+  #
+  # Rates are null on every row below on purpose. Azure does not publish these at the same URL as
+  # the OpenAI models (the xai pricing page 404s), third-party trackers disagree with each other,
+  # and the direct-vendor price must NOT be copied across: Azure sets its own. Read them off
+  # Cost Management in the portal after the first run, then fill these in before anything SCORED.
+  #
+  # All six verified 2026-09-13 against a real frame for strict json_schema; the vision column is
+  # per-row below because it is the one that surprises. ---
+  - key: azure-grok-4.6
+    provider: azure-foundry
+    api_model_id: grok-4.6
+    display_name: "Grok 4.6"
+    family: grok
+    params: null
+    quant: null
+    context: 500000
+    think: high
+    release_date: null
+    input_cost_per_mtok: null # TODO: read from portal Cost Management after the first run.
+    output_cost_per_mtok: null
+
+  - key: azure-grok-4-20-reasoning
+    provider: azure-foundry
+    api_model_id: grok-4-20-reasoning
+    display_name: "Grok 4.20 Reasoning"
+    family: grok
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, NOT a vendor claim: num_ctx drives fit_recent's
+                    # trimming, so it must be a positive int. Set conservatively below every
+                    # candidate's published window; the Foundry catalog API exposes no window.
+    think: high
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  # Both Kimis read the frame correctly and report reasoning INSIDE completion_tokens, so unlike
+  # the Grok rows their recorded cost needs no reconciliation. K2.7-Code is the faster of the two
+  # (5.0s vs 16.8s on the same probe) despite the -Code name.
+  - key: azure-kimi-k2.7-code
+    provider: azure-foundry
+    api_model_id: Kimi-K2.7-Code
+    display_name: "Kimi K2.7 Code"
+    family: kimi
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: high
+    release_date: "2026-06-12"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  - key: azure-kimi-k2.6
+    provider: azure-foundry
+    api_model_id: Kimi-K2.6
+    display_name: "Kimi K2.6"
+    family: kimi
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: high
+    release_date: "2026-04-20"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  # ⚠️ BOTH DeepSeek rows are BLIND. Measured 2026-09-13: the same frame that bills ~350 prompt
+  # tokens on every sighted model bills 23 here, and the reply described an indoor scene with a
+  # counter and a Pokeball that is not in the image. The endpoint accepts the image_url block and
+  # discards it, then returns confident schema-valid fiction — nothing in the response says so.
+  # Kept on the roster deliberately (Cody's call, 2026-09-13): DeepSeek is widely used and claims
+  # image input, so a benchmark that quietly excluded it would be hiding a real result. What the
+  # board must not do is present the score as a reasoning failure. It is an input failure, and the
+  # run's own prompt_tokens (~23/turn, flat, never growing with history) is the evidence.
+  - key: azure-deepseek-v4-pro
+    provider: azure-foundry
+    api_model_id: DeepSeek-V4-Pro
+    display_name: "DeepSeek V4 Pro"
+    family: deepseek
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: high
+    release_date: "2026-04-23"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  - key: azure-deepseek-v4-flash
+    provider: azure-foundry
+    api_model_id: DeepSeek-V4-Flash
+    display_name: "DeepSeek V4 Flash"
+    family: deepseek
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: high
+    release_date: "2026-04-23"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null

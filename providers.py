@@ -230,6 +230,18 @@ class OpenAIProvider(Provider):
         super().__init__(model, **opts)
         self.max_tokens = max_tokens
 
+    def _tokens(self, usage: dict) -> dict[str, int]:
+        """OpenAI counts reasoning inside completion_tokens; a backend that does not
+        overrides this so the recorded output matches what it actually bills."""
+        return {
+            "prompt": int(usage.get("prompt_tokens", 0)),
+            "completion": int(usage.get("completion_tokens", 0)),
+        }
+
+    def _thinking(self, message: dict) -> str:
+        """Where the visible reasoning lands, when a backend exposes it at all."""
+        return message.get("reasoning") or ""
+
     def chat(
         self, system: str, user: str, image_b64: str, schema: dict, think: str
     ) -> ChatResult:
@@ -264,13 +276,13 @@ class OpenAIProvider(Provider):
         choice = choices[0]
         message = choice["message"]
         usage = body.get("usage", {})
-        tokens = {"prompt": int(usage.get("prompt_tokens", 0)), "completion": int(usage.get("completion_tokens", 0))}
+        tokens = self._tokens(usage)
         if message.get("refusal") or choice.get("finish_reason") in {"length", "content_filter", "error"}:
             # name the finish_reason: "refused" and "ran out of output" are different failures to audit
             raise _plan_error(f"OpenAI refused or could not finish the JSON plan (finish_reason={choice.get('finish_reason')})",
                               message.get("content"), tokens)
         # Chat Completions omits reasoning; OpenRouter may return message.reasoning, so keep it.
-        return _plan_with_usage(message.get("content"), tokens), message.get("reasoning") or "", tokens
+        return _plan_with_usage(message.get("content"), tokens), self._thinking(message), tokens
 
 
 class GoogleProvider(Provider):
@@ -367,12 +379,103 @@ class BedrockProvider(OpenAIProvider):
     base_url = "https://bedrock-mantle.us-west-2.api.aws/v1"
 
 
+class XAIProvider(OpenAIProvider):
+    """xAI's OpenAI-compatible endpoint. grok-4.6 is the vision model, and it takes a PNG data
+    URL and a strict json_schema in the SAME request — verified 2026-09-13 against a real
+    Pokémon Red frame, which is the one combination xAI's own docs never confirm. Note the
+    models page renders every Grok as "Text only"; that column is wrong, the image-understanding
+    guide is the primary source. reasoning_effort accepts high/low/minimal but 400s on "none",
+    so a row here must not set think: off."""
+
+    api_key_env = "XAI_API_KEY"
+    base_url = "https://api.x.ai/v1"
+
+    def _thinking(self, message: dict) -> str:
+        """xAI puts it in reasoning_content, not reasoning, so the base returns "" here and
+        the run loses the thinking column it records for every other reasoning model."""
+        return message.get("reasoning_content") or ""
+
+    def _tokens(self, usage: dict) -> dict[str, int]:
+        """xAI reports reasoning OUTSIDE completion_tokens and bills it as output: a turn came
+        back with completion_tokens 49 and reasoning_tokens 470, and total_tokens only balances
+        when both are counted. Taking completion_tokens alone would understate cost ~10x."""
+        details = usage.get("completion_tokens_details") or {}
+        return {
+            "prompt": int(usage.get("prompt_tokens", 0)),
+            "completion": int(usage.get("completion_tokens", 0))
+            + int(details.get("reasoning_tokens", 0)),
+        }
+
+
+class AzureOpenAIProvider(OpenAIProvider):
+    """Azure OpenAI through the v1 API, which is what makes this a plain subclass: the v1 path
+    drops the dated api-version query param and accepts `Authorization: Bearer <key>`, so the
+    payload OpenAIProvider already sends works untouched (verified 2026-09-13 with a real frame,
+    vision and strict json_schema together). This class is for an Azure OpenAI resource, which
+    serves OpenAI-published models only, so the base _tokens is right: gpt-5-mini returned
+    prompt 21 + completion 203 == total 224 with reasoning 192 counted INSIDE completion.
+    That is a fact about the PUBLISHER, not about Azure — see AzureFoundryProvider, where the
+    same wrapper serves xAI models that report reasoning outside it.
+
+    base_url is per-resource, so it comes from the environment rather than a class constant, and
+    `model` is the DEPLOYMENT name rather than the model name (they match here by choice)."""
+
+    api_key_env = "AZURE_OPENAI_API_KEY"
+    endpoint_env = "AZURE_OPENAI_ENDPOINT"
+
+    def __init__(self, model: str, **opts):
+        super().__init__(model, **opts)
+        endpoint = os.environ.get(self.endpoint_env, "").strip().rstrip("/")
+        if not endpoint:
+            raise ValueError(f"{type(self).__name__} requires {self.endpoint_env}")
+        self.base_url = f"{endpoint}/openai/v1"
+
+
+class AzureFoundryProvider(AzureOpenAIProvider):
+    """An Azure AI Foundry (AIServices) resource, which serves the whole catalog rather than just
+    OpenAI: xAI, MoonshotAI, DeepSeek and Mistral all answer on the same /openai/v1 path. It is a
+    different resource from the Azure OpenAI one, with its own endpoint and key, which is why it
+    gets its own env pair instead of sharing AZURE_OPENAI_*.
+
+    Its quota is also separate and far easier to get: the OpenAI-published frontier models sat at
+    0 TPM and were denied twice, while grok-4.6 was already serving here with no request at all.
+
+    No _thinking override, unlike XAIProvider: Azure returns only ['role', 'content'] for the
+    Grok deployments, with neither `reasoning` nor xAI's own `reasoning_content`. The reasoning
+    is billed (see _tokens) but its text is not served, so the thinking column stays empty for
+    these rows. That is the endpoint's behaviour, not a missing hook."""
+
+    api_key_env = "AZURE_FOUNDRY_API_KEY"
+    endpoint_env = "AZURE_FOUNDRY_ENDPOINT"
+
+    def _tokens(self, usage: dict) -> dict[str, int]:
+        """Reconcile against total_tokens instead of assuming a publisher, because one endpoint
+        serves both conventions and the deployment name does not reliably say which:
+            gpt-5-mini  21 + 203           == 224  (reasoning 192 already inside completion)
+            grok-4.3   325 + 125 + 1649    == 2099 (reasoning reported alongside it)
+        total_tokens is what the bill is built from, so whichever reading reconciles with it is
+        the true one. Guessing costs ~8x on the Grok rows.
+
+        Detecting this per response rather than per class matters: grok-4.6 answered one probe
+        with reasoning_tokens 0, which balances either way, and an earlier call on that same
+        deployment reported 599. A single sample would have picked the wrong rule."""
+        prompt = int(usage.get("prompt_tokens", 0))
+        completion = int(usage.get("completion_tokens", 0))
+        reasoning = int((usage.get("completion_tokens_details") or {}).get("reasoning_tokens", 0))
+        # Fall through to OpenAI semantics when total is absent or reconciles with neither.
+        if reasoning and int(usage.get("total_tokens", 0)) == prompt + completion + reasoning:
+            completion += reasoning
+        return {"prompt": prompt, "completion": completion}
+
+
 def get_provider(provider_name: str, model: str, **opts) -> Provider:
     """Construct an adapter; opts are constructor settings and registry token rates."""
     providers = {
         "ollama": OllamaProvider, "anthropic": AnthropicProvider,
         "openai": OpenAIProvider, "google": GoogleProvider,
         "openrouter": OpenRouterProvider, "bedrock": BedrockProvider,
+        "xai": XAIProvider, "azure": AzureOpenAIProvider,
+        "azure-foundry": AzureFoundryProvider,
     }
     try:
         provider = providers[provider_name.strip().lower()]
