@@ -83,6 +83,9 @@ class Provider(ABC):
         *,
         input_cost_per_mtok: float | None = None,
         output_cost_per_mtok: float | None = None,
+        # requests treats this as the gap between bytes, not the length of the call. For the
+        # buffered adapters that works out to the whole turn; the streamed OpenAI-compatible
+        # path turns it into a silence window instead, so those rows can set it far lower.
         timeout: float = 600,
     ):
         self.model = model
@@ -120,6 +123,69 @@ class Provider(ABC):
         response = requests.post(url, json=payload, headers=headers, timeout=self.timeout)
         response.raise_for_status()
         return response.json()
+
+    def _post_stream(self, url: str, payload: dict, headers: dict | None = None) -> dict:
+        """Stream an OpenAI-style completion and rebuild the non-streaming response shape.
+
+        This is not about latency. requests' read timeout has always been the gap between
+        bytes, not the total call, but a buffered response sends nothing until the model has
+        finished, so the whole turn had to fit inside `timeout` and a socket that died mid-call
+        looked exactly like a model that was still thinking. One did: an Azure request to Kimi
+        sat with an ESTABLISHED connection and zero bytes queued in either direction while the
+        same deployment answered an independent probe in 3.9s, and the harness could only wait
+        out the full budget. With SSE frames arriving, `timeout` becomes a silence window and
+        that stall is caught in seconds. Measured inter-chunk gaps were at most 1.6s across
+        every model tried, while time to the FIRST chunk reached 178s on grok-4.6 because Azure
+        buffers the reasoning phase, so the window has to clear a model's worst TTFT, not its
+        streaming rate. That is why it is per-model rather than one global number.
+        """
+        response = requests.post(url, json=payload, headers=headers,
+                                 timeout=self.timeout, stream=True)
+        content, reasoning, refusal = [], [], []
+        finish_reason, usage = None, None
+        try:
+            if not response.ok:
+                # Materialize the error body before raising: the turn loop reads
+                # exc.response.text to spot the billing and auth failures it must not retry,
+                # and a streamed response has not fetched it yet.
+                response.content
+                response.raise_for_status()
+            # Set unconditionally. SSE is UTF-8 by specification, but requests derives the
+            # encoding from the header, and get_encoding_from_headers answers ISO-8859-1 for any
+            # text/* type that omits a charset. That is truthy, so falling back only when it is
+            # empty would silently decode UTF-8 as Latin-1: still valid JSON, still a parseable
+            # plan, but every accented character mangled in the thought text the overlay renders.
+            response.encoding = "utf-8"
+            for line in response.iter_lines(decode_unicode=True):
+                # Blank separators, and comment frames like OpenRouter's ": OPENROUTER PROCESSING"
+                if not line or line.startswith(":") or not line.startswith("data:"):
+                    continue
+                data = line[5:].strip()
+                if data == "[DONE]":
+                    break
+                frame = json.loads(data)
+                if frame.get("error"):
+                    raise ValueError(f"stream error: {json.dumps(frame['error'])[:500]}")
+                # include_usage delivers this as its own frame, with choices empty.
+                if frame.get("usage"):
+                    usage = frame["usage"]
+                for choice in frame.get("choices") or []:
+                    delta = choice.get("delta") or {}
+                    content.append(delta.get("content") or "")
+                    # reasoning on most backends, reasoning_content on xAI and DeepSeek
+                    reasoning.append(delta.get("reasoning") or delta.get("reasoning_content") or "")
+                    refusal.append(delta.get("refusal") or "")
+                    finish_reason = choice.get("finish_reason") or finish_reason
+        finally:
+            response.close()
+        if usage is None:
+            # Defaulting to zeros here would record fabricated token counts and price them,
+            # which is the failure cost() refuses to commit. A backend that drops
+            # stream_options has to fail the turn instead.
+            raise ValueError("stream ended without a usage frame; stream_options unsupported?")
+        message = {"content": "".join(content), "reasoning": "".join(reasoning),
+                   "reasoning_content": "".join(reasoning), "refusal": "".join(refusal)}
+        return {"choices": [{"message": message, "finish_reason": finish_reason}], "usage": usage}
 
 
 class OllamaProvider(Provider):
@@ -260,6 +326,9 @@ class OpenAIProvider(Provider):
                 "name": "game_plan", "strict": True,
                 "schema": _schema_for(schema, "openai"),
             }},
+            # Streamed so self.timeout means "silence", not "whole turn" — see _post_stream.
+            "stream": True,
+            "stream_options": {"include_usage": True},
         }
         # Omitted entirely when uncapped, which lets the model use its own maximum.
         if self.max_tokens is not None:
@@ -267,7 +336,7 @@ class OpenAIProvider(Provider):
         effort = think.strip().lower()
         if effort not in {"", "default"}:
             payload["reasoning_effort"] = "none" if effort == "off" else effort
-        body = self._post(f"{self.base_url}/chat/completions", payload, {
+        body = self._post_stream(f"{self.base_url}/chat/completions", payload, {
             "Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json",
         })
         choices = body.get("choices", [])

@@ -353,6 +353,17 @@ models:
     release_date: "2026-06-12"
     input_cost_per_mtok: null
     output_cost_per_mtok: null
+    # Seconds of provider silence before the turn is failed and retried. The OpenAI-compatible
+    # adapters stream, so this is the gap between SSE frames rather than the length of the call.
+    # Safe at 90 only because this deployment streams its reasoning as deltas: measured
+    # 2026-09-13, first chunk at 1.2-1.6s and no gap over 0.4s, holding when the prompt was
+    # written to force a long think. A slow turn here is 174s of frames arriving, not 174s of
+    # silence, so the window never sees it. The Grok rows are left at the 600s default for the
+    # opposite reason: Azure serves them no reasoning text at all, so the whole reasoning phase
+    # buffers into the first chunk and grok-4.6 took 178s to produce it. Re-measure before
+    # lowering any row. This exists because a request to this deployment once hung with an open
+    # socket and zero bytes moving; 90s catches that instead of burning ten minutes.
+    timeout: 90
 
   - key: azure-kimi-k2.6
     provider: azure-foundry
@@ -387,6 +398,9 @@ models:
     release_date: "2026-04-23"
     input_cost_per_mtok: null
     output_cost_per_mtok: null
+    # Measured 2026-09-13: first chunk in 1.2-1.6s, no gap over 0.8s, reasoning streamed as
+    # deltas under a forced long think. See azure-kimi-k2.7-code for why that is the test.
+    timeout: 90
 
   - key: azure-deepseek-v4-flash
     provider: azure-foundry

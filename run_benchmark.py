@@ -70,6 +70,13 @@ def load_model(model_key, registry_path=None):
     max_out = model.get("max_output_tokens")
     if max_out is not None and (type(max_out) is not int or max_out <= 0):
         raise ValueError(f"{model_key}: max_output_tokens must be a positive integer")
+    # Seconds of silence from the provider before the turn is failed and retried. Only the
+    # streamed OpenAI-compatible adapters make this a silence window; elsewhere it caps the
+    # whole call. Absent means the adapter default, which is deliberately generous.
+    timeout = model.get("timeout")
+    if timeout is not None and (type(timeout) not in (int, float)
+                                or not math.isfinite(timeout) or timeout <= 0):
+        raise ValueError(f"{model_key}: timeout must be a positive number of seconds")
     model.setdefault("temperature", TEMPERATURE)
     temperature = model["temperature"]
     if (type(temperature) not in (int, float)
@@ -90,6 +97,8 @@ def make_provider(model):
     # Only when set: the adapters' own defaults differ, and None would override them.
     if model.get("max_output_tokens") is not None:
         opts["max_tokens"] = model["max_output_tokens"]
+    if model.get("timeout") is not None:
+        opts["timeout"] = model["timeout"]
     if model["provider"] == "ollama":
         opts["num_ctx"] = model["num_ctx"]
     if model["provider"] in {"ollama", "google"}:
