@@ -13,6 +13,8 @@ import unittest
 from unittest.mock import Mock, patch
 
 from PIL import Image
+import requests
+import urllib3
 
 import qwen_red
 import run_benchmark as runner
@@ -482,11 +484,120 @@ class ProviderUsageTests(unittest.TestCase):
             p = providers.OpenAIProvider("m")
         body = {"choices": [{"message": {"content": "{\"thought\": \"tru"}, "finish_reason": "length"}],
                 "usage": {"prompt_tokens": 300, "completion_tokens": 8192}}
-        with patch.object(p, "_post", return_value=body):
+        with patch.object(p, "_post_stream", return_value=body):
             with self.assertRaises(ValueError) as caught:
                 p.chat("s", "u", "", {}, "high")
         self.assertIn("finish_reason=length", str(caught.exception))
         self.assertEqual(caught.exception.usage, {"prompt": 300, "completion": 8192})
+
+
+class StreamParsingTests(unittest.TestCase):
+    """_post_stream rebuilds the non-streaming response shape out of SSE frames, and every
+    OpenAI-compatible adapter inherits OpenAIProvider.chat, so that reassembly is the whole
+    surface: _tokens, _thinking and the finish_reason checks all read the shape it returns."""
+
+    def setUp(self):
+        import providers
+        self.providers = providers
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test"}):
+            self.provider = providers.OpenAIProvider("m")
+
+    def sse(self, body, status=200):
+        """A real Response over an SSE body, so iter_lines and the decoding actually run.
+
+        encoding starts where the adapter would leave it: get_encoding_from_headers answers
+        ISO-8859-1 for any text/* type that omits a charset, which is the mojibake
+        _post_stream overrides."""
+        response = requests.Response()
+        response.status_code = status
+        response.headers["Content-Type"] = "text/event-stream"
+        response.raw = urllib3.HTTPResponse(body=io.BytesIO(body.encode()),
+                                            preload_content=False, status=status)
+        response.encoding = requests.utils.get_encoding_from_headers(response.headers)
+        return response
+
+    def post(self, body, status=200):
+        return patch.object(self.providers.requests, "post",
+                            return_value=self.sse(body, status))
+
+    def frames(self, *frames):
+        # ensure_ascii=False so non-ASCII rides the wire as UTF-8 bytes, the way a backend
+        # sends it. Escaped as \uXXXX it would survive any transport encoding and the
+        # decoding under test would never be exercised.
+        return "".join(f"data: {json.dumps(frame, ensure_ascii=False)}\n\n" for frame in frames)
+
+    def call(self):
+        return self.provider._post_stream("https://example.invalid/v1/chat/completions", {}, {})
+
+    def test_deltas_reassemble_into_the_nonstreaming_shape(self):
+        body = ": OPENROUTER PROCESSING\n\n" + self.frames(          # comment frame, not data
+            {"choices": [{"delta": {"content": '{"thought": "caf', "reasoning": "first "}}]},
+            # reasoning_content is where xAI and DeepSeek put it instead
+            {"choices": [{"delta": {"content": '\u00e9"}', "reasoning_content": "second"},
+                          "finish_reason": "stop"}]},
+            # include_usage delivers this last, as its own frame with choices empty
+            {"choices": [], "usage": {"prompt_tokens": 7, "completion_tokens": 9}},
+        ) + "data: [DONE]\n\n"
+        with self.post(body):
+            result = self.call()
+        choice = result["choices"][0]
+        # cafe with an acute accent: Latin-1 would have mangled it into two characters
+        self.assertEqual(choice["message"]["content"], '{"thought": "caf\u00e9"}')
+        self.assertEqual(self.provider._thinking(choice["message"]), "first second")
+        with patch.dict("os.environ", {"XAI_API_KEY": "test"}):
+            xai = self.providers.XAIProvider("m")
+        # xAI reads reasoning_content, so the rebuilt message has to carry it under both names
+        self.assertEqual(xai._thinking(choice["message"]), "first second")
+        self.assertEqual(choice["finish_reason"], "stop")
+        self.assertEqual(self.provider._tokens(result["usage"]), {"prompt": 7, "completion": 9})
+
+    def test_the_registry_timeout_becomes_a_silence_window_on_the_wire(self):
+        # A models.yaml timeout is only a silence window because stream=True goes with it:
+        # requests measures the gap between bytes, and an unstreamed call has none until the
+        # model is done. include_usage is what stops _post_stream raising on every turn.
+        with patch.dict(runner.os.environ, {"OPENAI_API_KEY": "k"}):
+            provider = runner.make_provider(
+                {"key": "m", "provider": "openai", "api_model_id": "x", "timeout": 90})
+        self.assertEqual(provider.timeout, 90)
+        body = self.frames(
+            {"choices": [{"delta": {"content": "{}"}, "finish_reason": "stop"}]},
+            {"choices": [], "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+        ) + "data: [DONE]\n\n"
+        with patch.object(self.providers.requests, "post", return_value=self.sse(body)) as post:
+            provider.chat("s", "u", "", {}, "high")
+        kwargs = post.call_args.kwargs
+        self.assertEqual((kwargs["timeout"], kwargs["stream"]), (90, True))
+        self.assertIs(kwargs["json"]["stream"], True)
+        self.assertIs(kwargs["json"]["stream_options"]["include_usage"], True)
+
+    def test_a_stream_without_usage_fails_instead_of_fabricating_zeros(self):
+        # Zeros here would be recorded and priced as if they were real token counts.
+        body = self.frames(
+            {"choices": [{"delta": {"content": "{}"}, "finish_reason": "stop"}]},
+        ) + "data: [DONE]\n\n"
+        with self.post(body):
+            with self.assertRaises(ValueError) as caught:
+                self.call()
+        self.assertIn("stream_options", str(caught.exception))
+
+    def test_an_error_frame_aborts_the_stream(self):
+        # A backend can answer 200 and then fail mid-stream; half a plan is not a plan.
+        body = self.frames(
+            {"choices": [{"delta": {"content": "{"}}]},
+            {"error": {"message": "upstream capacity", "code": 502}},
+        )
+        with self.post(body):
+            with self.assertRaises(ValueError) as caught:
+                self.call()
+        self.assertIn("upstream capacity", str(caught.exception))
+
+    def test_an_http_error_carries_its_body_to_the_turn_loop(self):
+        # The turn loop reads exc.response.text to spot the billing and auth failures it must
+        # not retry, and a streamed response has not fetched the body yet when it raises.
+        with self.post('{"error": {"code": "insufficient_quota"}}', status=429):
+            with self.assertRaises(requests.HTTPError) as caught:
+                self.call()
+        self.assertIn("insufficient_quota", caught.exception.response.text)
 
 
 class MaxOutputTokensTests(unittest.TestCase):
@@ -523,7 +634,7 @@ class MaxOutputTokensTests(unittest.TestCase):
         sent = {}
         body = {"choices": [{"message": {"content": "{}"}, "finish_reason": "stop"}],
                 "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
-        with patch.object(p, "_post", side_effect=lambda url, payload, *a: sent.update(payload) or body):
+        with patch.object(p, "_post_stream", side_effect=lambda url, payload, *a: sent.update(payload) or body):
             p.chat("s", "u", "", {}, "high")
         self.assertNotIn("max_completion_tokens", sent)
 
@@ -551,7 +662,7 @@ class MaxOutputTokensTests(unittest.TestCase):
         sent = {}
         body = {"choices": [{"message": {"content": "{}"}, "finish_reason": "stop"}],
                 "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
-        with patch.object(provider, "_post",
+        with patch.object(provider, "_post_stream",
                           side_effect=lambda url, payload, *a: sent.update(payload) or body):
             provider.chat("s", "u", "", {}, "high")
         self.assertEqual(sent["max_completion_tokens"], 16384)
