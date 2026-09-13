@@ -622,6 +622,33 @@ class StreamParsingTests(unittest.TestCase):
                 self.call()
         self.assertIn("upstream capacity", str(caught.exception))
 
+    def test_an_error_frame_looks_like_an_http_failure_to_the_turn_loop(self):
+        # OpenRouter answers 200 and then sends a 402 as an error frame once the request is
+        # committed. The turn loop only aborts on exc.response.status_code / .text, so a bare
+        # ValueError here retried a depleted key for the whole error window.
+        body = self.frames(
+            {"error": {"message": "Insufficient credits", "code": 402}},
+        )
+        with self.post(body):
+            with self.assertRaises(ValueError) as caught:
+                self.call()
+        self.assertEqual(caught.exception.response.status_code, 402)
+        self.assertIn("insufficient credits", caught.exception.response.text.lower())
+
+    def test_unicode_line_separators_in_a_frame_do_not_split_it(self):
+        # U+2028 is legal raw inside a JSON string, and str.splitlines() breaks on it. Without an
+        # explicit delimiter the frame was cut mid-string: the tail no longer started with
+        # "data:" and the head failed to parse, so a thought containing one failed the turn.
+        # CRLF framing rides along to show the trailing CR is stripped, not kept in the JSON.
+        text = "one\u2028two\u2029three\u0085four"
+        body = "".join(f"data: {json.dumps(frame, ensure_ascii=False)}\r\n\r\n" for frame in (
+            {"choices": [{"delta": {"content": text}, "finish_reason": "stop"}]},
+            {"choices": [], "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+        )) + "data: [DONE]\r\n\r\n"
+        with self.post(body):
+            result = self.call()
+        self.assertEqual(result["choices"][0]["message"]["content"], text)
+
     def test_an_http_error_carries_its_body_to_the_turn_loop(self):
         # The turn loop reads exc.response.text to spot the billing and auth failures it must
         # not retry, and a streamed response has not fetched the body yet when it raises.

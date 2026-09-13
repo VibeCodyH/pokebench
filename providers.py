@@ -5,6 +5,7 @@ from copy import deepcopy
 import json
 import math
 import os
+from types import SimpleNamespace
 from urllib.parse import quote
 
 import requests
@@ -156,7 +157,12 @@ class Provider(ABC):
             # empty would silently decode UTF-8 as Latin-1: still valid JSON, still a parseable
             # plan, but every accented character mangled in the thought text the overlay renders.
             response.encoding = "utf-8"
-            for line in response.iter_lines(decode_unicode=True):
+            # delimiter given explicitly: without it, iter_lines uses str.splitlines(), which
+            # also breaks on U+2028, U+2029 and U+0085. Those are legal raw inside a JSON string,
+            # and one in the thought text cut the frame mid-string: the remainder no longer
+            # started with "data:", so it was dropped, and the head failed to parse.
+            for line in response.iter_lines(decode_unicode=True, delimiter="\n"):
+                line = line.rstrip("\r")
                 # Blank separators, and comment frames like OpenRouter's ": OPENROUTER PROCESSING"
                 if not line or line.startswith(":") or not line.startswith("data:"):
                     continue
@@ -165,7 +171,7 @@ class Provider(ABC):
                     break
                 frame = json.loads(data)
                 if frame.get("error"):
-                    raise ValueError(f"stream error: {json.dumps(frame['error'])[:500]}")
+                    raise _stream_error(frame["error"])
                 # include_usage delivers this as its own frame, with choices empty.
                 if frame.get("usage"):
                     usage = frame["usage"]
@@ -186,6 +192,18 @@ class Provider(ABC):
         message = {"content": "".join(content), "reasoning": "".join(reasoning),
                    "reasoning_content": "".join(reasoning), "refusal": "".join(refusal)}
         return {"choices": [{"message": message, "finish_reason": finish_reason}], "usage": usage}
+
+
+def _stream_error(error) -> ValueError:
+    """An error frame after HTTP 200 (OpenRouter documents a 402 arriving this way) must reach
+    the turn loop looking like an HTTP failure: it reads exc.response.status_code and
+    exc.response.text to decide that billing and auth errors are not worth retrying. A bare
+    ValueError has neither, so a depleted key was retried for the whole error window."""
+    text = json.dumps(error)[:500]
+    code = error.get("code") if isinstance(error, dict) else None
+    exc = ValueError(f"stream error: {text}")
+    exc.response = SimpleNamespace(status_code=code if isinstance(code, int) else None, text=text)
+    return exc
 
 
 class OllamaProvider(Provider):
