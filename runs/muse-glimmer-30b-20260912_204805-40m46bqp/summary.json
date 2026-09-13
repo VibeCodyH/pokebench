@@ -1,0 +1,78 @@
+{
+  "run_id": "muse-glimmer-30b-20260912_204805-40m46bqp",
+  "model": "muse-glimmer:30b",
+  "provider": "ollama",
+  "family": "meta",
+  "run_name": "muse-glimmer-30b-20260912_204758",
+  "prompt_version": "v21",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "bc7b3c9",
+  "harness_files_sha": "2a80577b0a99082e",
+  "max_output_tokens": null,
+  "execution_route": "ollama-local",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "temperature": 0.6,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-13",
+  "model_release_date": null,
+  "model_params": "27.9B",
+  "quant": "Q4_K_M",
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "muse-glimmer-30b-20260912_204805-40m46bqp-auto"
+  },
+  "notes": "Charmander critically low 2/24 HP on Route 1 vs wild Pidgey. Need to flee immediately to reach Viridian City Pok\u00e9mon Center for healing. Avoid further wild encounters.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 55648.1,
+  "tokens_in": 28303993,
+  "tokens_out": 137181,
+  "failed_attempts": {
+    "count": 0,
+    "prompt": 0,
+    "completion": 0
+  },
+  "cost_usd": 0.0,
+  "youtube_url": null,
+  "timestamp": "20260913_121533",
+  "blackouts": [
+    761
+  ],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 14
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 44
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 476
+    }
+  ],
+  "furthest_key": "route_1",
+  "furthest_label": "Reached Route 1",
+  "furthest_index": 2,
+  "beat_brock": false,
+  "caveat": "118 of these 1000 turns were lost to a harness bug rather than to the model. a_until_dialog_end returned zero presses on the Gen 1 level-up stats box, so the run stalled in three wedges of 38, 57 and 23 turns with the model re-issuing an action that could never advance. Scored as it ran; the bug is fixed for later runs."
+}
