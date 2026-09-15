@@ -310,9 +310,14 @@ class OpenAIProvider(Provider):
     api_key_env = "OPENAI_API_KEY"
     base_url = "https://api.openai.com/v1"
 
-    def __init__(self, model: str, *, max_tokens: int | None = None, **opts):
+    def __init__(self, model: str, *, max_tokens: int | None = None,
+                 structured_output: bool = True, **opts):
         super().__init__(model, **opts)
         self.max_tokens = max_tokens
+        # Some backends (OpenRouter :free tiers on Novita, 2026-09-15) 400 on response_format.
+        # The SYSTEM prompt already demands JSON in the schema's shape, so a row can set
+        # `structured_output: false` and rely on the parse guard instead of the strict schema.
+        self.structured_output = structured_output
 
     def _tokens(self, usage: dict) -> dict[str, int]:
         """OpenAI counts reasoning inside completion_tokens; a backend that does not
@@ -340,14 +345,15 @@ class OpenAIProvider(Provider):
                     }},
                 ]},
             ],
-            "response_format": {"type": "json_schema", "json_schema": {
-                "name": "game_plan", "strict": True,
-                "schema": _schema_for(schema, "openai"),
-            }},
             # Streamed so self.timeout means "silence", not "whole turn" — see _post_stream.
             "stream": True,
             "stream_options": {"include_usage": True},
         }
+        if self.structured_output:
+            payload["response_format"] = {"type": "json_schema", "json_schema": {
+                "name": "game_plan", "strict": True,
+                "schema": _schema_for(schema, "openai"),
+            }}
         # Omitted entirely when uncapped, which lets the model use its own maximum.
         if self.max_tokens is not None:
             payload["max_completion_tokens"] = self.max_tokens
@@ -368,8 +374,13 @@ class OpenAIProvider(Provider):
             # name the finish_reason: "refused" and "ran out of output" are different failures to audit
             raise _plan_error(f"OpenAI refused or could not finish the JSON plan (finish_reason={choice.get('finish_reason')})",
                               message.get("content"), tokens)
+        content = message.get("content")
+        if not self.structured_output and isinstance(content, str):
+            # No schema enforcement: tolerate a ```json fence or prose around the object.
+            from qwen_red import _extract_json
+            content = _extract_json(content)
         # Chat Completions omits reasoning; OpenRouter may return message.reasoning, so keep it.
-        return _plan_with_usage(message.get("content"), tokens), self._thinking(message), tokens
+        return _plan_with_usage(content, tokens), self._thinking(message), tokens
 
 
 class GoogleProvider(Provider):

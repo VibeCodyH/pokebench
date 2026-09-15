@@ -190,6 +190,27 @@ models:
     input_cost_per_mtok: 0.0
     output_cost_per_mtok: 0.0
 
+  # inclusionAI's Ling 3.0 Flash, VL variant, on OpenRouter's :free tier (added 2026-09-15). The
+  # earlier Ling exclusion was the TEXT-ONLY `ling-3.0-flash`; this SKU lists image input and was
+  # sight-checked before seating (with/without-image prompt_tokens delta on a real frame). The
+  # :free listing omits response_format from supported_parameters and its backend (Novita)
+  # 400s on the strict schema ("model features structured outputs not support"), so this row
+  # runs prompt-JSON only: `structured_output: false` drops response_format and the parse guard
+  # does the checking. Cody's call 2026-09-15: free tier, not the $0.06/$0.18 paid SKU.
+  - key: or-ling-3.0-flash-vl
+    provider: openrouter
+    api_model_id: inclusionai/ling-3.0-flash-vl:free
+    display_name: "Ling 3.0 Flash VL"
+    family: ling
+    params: "124B" # 124B total / 5.5B active MoE per the OpenRouter listing
+    structured_output: false
+    quant: null
+    context: 262144
+    think: high
+    release_date: "2026-09-10" # OpenRouter listing date
+    input_cost_per_mtok: 0.0 # OpenRouter :free tier: genuinely free (1,000 req/day/account cap)
+    output_cost_per_mtok: 0.0
+
   # --- Amazon Bedrock (bedrock-mantle OpenAI-compatible endpoint, AWS_BEARER_TOKEN_BEDROCK).
   # NOT bedrock-runtime: separate quota allocation, which is why these work while
   # bedrock-runtime sits at zero on a new account. Funded by AWS Free Tier credit, so
