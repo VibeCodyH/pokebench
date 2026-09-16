@@ -225,7 +225,9 @@ async function main() {
     audioInput = ['-f', info.sample_format, '-ar', String(info.sample_rate), '-ac', String(info.channels),
       '-thread_queue_size', '1024', '-i', new URL('/audio.pcm', streamURL).href];
     // PyBoy's mix is quiet (peaks ~10/127) and rides a DC offset: strip the DC, lift it, soft-limit the peaks.
-    audioFilter = ['-af', 'highpass=f=20,volume=4,alimiter=limit=0.9:level=false'];
+    // AUDIO_GAIN is the lift. 4 was loud enough on the stream to be a complaint (2026-09-16), so 2 is the default.
+    const gain = Number(process.env.AUDIO_GAIN) > 0 ? Number(process.env.AUDIO_GAIN) : 2;
+    audioFilter = ['-af', `highpass=f=20,volume=${gain},alimiter=limit=0.9:level=false`];
     log(`Game audio: ${info.sample_format} ${info.sample_rate} Hz from /audio.pcm.`);
   } catch (error) {
     log(`No game audio (${error.message}); encoding silence.`);
