@@ -399,14 +399,25 @@ models:
     input_cost_per_mtok: null
     output_cost_per_mtok: null
 
-  # ⚠️ BOTH DeepSeek rows are BLIND. Measured 2026-09-13: the same frame that bills ~350 prompt
-  # tokens on every sighted model bills 23 here, and the reply described an indoor scene with a
-  # counter and a Pokeball that is not in the image. The endpoint accepts the image_url block and
-  # discards it, then returns confident schema-valid fiction — nothing in the response says so.
-  # Kept on the roster deliberately (Cody's call, 2026-09-13): DeepSeek is widely used and claims
-  # image input, so a benchmark that quietly excluded it would be hiding a real result. What the
-  # board must not do is present the score as a reasoning failure. It is an input failure, and the
-  # run's own prompt_tokens (~23/turn, flat, never growing with history) is the evidence.
+  # ⚠️ BOTH DeepSeek rows are BLIND. Measured 2026-09-13, re-confirmed 2026-09-14 with a
+  # with/without-image token diff on the same frame and the same code path: grok-4.6 bills +214
+  # prompt tokens and describes the frame correctly, while V4-Pro and V4-Flash both bill +0 and
+  # confabulate ("an interior view of a Pokemon Center, with a nurse behind the counter"). The
+  # endpoint accepts the image_url block and discards it, then returns confident schema-valid
+  # fiction. This is NOT our send: providers.py builds one standard OpenAI vision payload for
+  # every model on this adapter, and the sighted models prove it lands.
+  #
+  # ⚠️ CORRECTION 2026-09-14: the original justification for this row said DeepSeek "claims image
+  # input". That is WRONG and the 2026-09-13 keep-it decision rested on it. The DeepSeek-V4-Pro
+  # model card documents no vision, multimodal, or image-input support - it is a text-only LLM.
+  # DeepSeek ships vision as a separate SKU, DeepSeek-V4-Flash-Vision-Exp, which Azure's catalog
+  # does not carry. So this is not "claims vision, scores badly"; it is a text-only model on a
+  # vision-only benchmark (BENCHMARK-SPEC.md 0), the same rule that excluded Ling.
+  #
+  # Cody's call 2026-09-14: let the in-flight run finish and DISCLOSE it rather than pull it. The
+  # board must label this an INPUT failure - the model never receives the screen - and must not
+  # present the score as a reasoning result. Anything scored later should use the vision SKU or
+  # not use DeepSeek.
   - key: azure-deepseek-v4-pro
     provider: azure-foundry
     api_model_id: DeepSeek-V4-Pro
@@ -459,6 +470,68 @@ models:
     context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
     think: high
     release_date: "2026-04-17"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  # Three more xAI variants, added 2026-09-14 to get off the capacity-20 wall. Measured that day:
+  # the partner-tier models (DeepSeek, Kimi, Mistral-Large-3) hold 20 quota units ~= 20k TPM, and
+  # this harness pushes a single request past 20k around turn 450 once milestone-anchored history
+  # growth kicks in, so those rows 429 for the rest of a run. These three hold 50 units and are
+  # the ONLY grok models with catalog availability AND unused quota: grok-3, grok-3-mini and the
+  # grok-4-fast-* pair have quota lines but no westus3/eastus2 catalog entry, so they cannot be
+  # deployed at all. Full numbers: scratch/pokebench-live-stall-triage/findings.md.
+  #
+  # think: the reasoning row gets high; the two non-reasoning rows get `default` so the adapter
+  # omits reasoning_effort entirely rather than sending a knob the model does not have.
+  #
+  # Deployed 2026-09-14, GlobalStandard capacity 50 each. Confirmed on the deployment resource:
+  # `request=50/60s token=50000/60s` - so capacity N means N requests/min AND N*1000 tokens/min,
+  # both enforced. That is 2.5x the partner-tier ceiling the DeepSeek/Kimi/Mistral rows hit.
+  #
+  # Vision probed the same day against a real frame (Viridian Mart exterior), each model asked
+  # twice, once with the image block and once without, prompt_tokens diffed. ALL THREE SEE IT:
+  #   grok-4-1-fast-reasoning      +257 tokens - read it correctly ("entrance to a Poke Mart")
+  #   grok-4-1-fast-non-reasoning  +257 tokens - read it correctly ("outside a Pokemon Mart")
+  #   grok-4-20-non-reasoning      +212 tokens - MISREAD it ("a Pokemon Center, with Nurse Joy")
+  # The last one is a vision-QUALITY result, not a vision-ABSENT one, and belongs on the board as
+  # a score - same line Cody drew for Mistral-Large-3 below. Contrast the DeepSeek rows, which
+  # bill +0 because the image never lands at all.
+  - key: azure-grok-4-1-fast-reasoning
+    provider: azure-foundry
+    api_model_id: grok-4-1-fast-reasoning
+    display_name: "Grok 4.1 Fast Reasoning"
+    family: grok
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: high
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  - key: azure-grok-4-1-fast-non-reasoning
+    provider: azure-foundry
+    api_model_id: grok-4-1-fast-non-reasoning
+    display_name: "Grok 4.1 Fast Non-Reasoning"
+    family: grok
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: default
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
+  - key: azure-grok-4-20-non-reasoning
+    provider: azure-foundry
+    api_model_id: grok-4-20-non-reasoning
+    display_name: "Grok 4.20 Non-Reasoning"
+    family: grok
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: default
+    release_date: null
     input_cost_per_mtok: null
     output_cost_per_mtok: null
 

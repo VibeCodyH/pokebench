@@ -1,0 +1,77 @@
+{
+  "run_id": "azure-grok-4-1-fast-non-reasoning-20260915_203317-89ln7dev",
+  "model": "grok-4-1-fast-non-reasoning",
+  "provider": "azure-foundry",
+  "family": "grok",
+  "run_name": "azure-grok-4-1-fast-non-reasoning-20260915_203317",
+  "prompt_version": "v21",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "fe0f76f",
+  "harness_files_sha": "2d86ff384178f613",
+  "max_output_tokens": null,
+  "execution_route": "azure-foundry-api",
+  "think_level": "default",
+  "num_ctx": 131072,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-16",
+  "model_release_date": null,
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "azure-grok-4-1-fast-non-reasoning-20260915_203317-89ln7dev-auto"
+  },
+  "notes": "Charmander L8 HP26/26 healthy. Back in Red's House after blackout. Talk to mom then Oak for parcel, Route1 to Viridian. Goal: beat game.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 18688.7,
+  "tokens_in": 19956110,
+  "tokens_out": 139170,
+  "failed_attempts": {
+    "count": 1319,
+    "prompt": 0,
+    "completion": 0
+  },
+  "cost_usd": null,
+  "youtube_url": null,
+  "timestamp": "20260916_014446",
+  "blackouts": [
+    992
+  ],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 84
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 589
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 910
+    }
+  ],
+  "furthest_key": "route_1",
+  "furthest_label": "Reached Route 1",
+  "furthest_index": 2,
+  "beat_brock": false
+}

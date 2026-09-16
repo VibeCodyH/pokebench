@@ -1,0 +1,90 @@
+{
+  "run_id": "azure-grok-4-1-fast-reasoning-20260915_162441-yvee5tib",
+  "model": "grok-4-1-fast-reasoning",
+  "provider": "azure-foundry",
+  "family": "grok",
+  "run_name": "azure-grok-4-1-fast-reasoning-20260915_162441",
+  "prompt_version": "v21",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "fe0f76f",
+  "harness_files_sha": "2d86ff384178f613",
+  "max_output_tokens": null,
+  "execution_route": "azure-foundry-api",
+  "think_level": "high",
+  "num_ctx": 131072,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-16",
+  "model_release_date": null,
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "azure-grok-4-1-fast-reasoning-20260915_162441-yvee5tib-auto"
+  },
+  "notes": "Route 2 (10,46), Squirtle L8 HP18/27 Bubble (KO Route2 wilds, grind to L15 before Forest/Pewter). Healed Viridian. No balls, money 3175, Dex yes, seen4 owned1.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 35776.9,
+  "tokens_in": 11539090,
+  "tokens_out": 4160995,
+  "failed_attempts": {
+    "count": 2,
+    "prompt": 0,
+    "completion": 0
+  },
+  "cost_usd": null,
+  "youtube_url": null,
+  "timestamp": "20260916_022058",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 36
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 138
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 179
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 202
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 466
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pok\u00e9dex",
+      "turn": 558
+    }
+  ],
+  "furthest_key": "got_pokedex",
+  "furthest_label": "Got the Pok\u00e9dex",
+  "furthest_index": 5,
+  "beat_brock": false
+}
