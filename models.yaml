@@ -347,7 +347,7 @@ models:
     family: grok
     params: null
     quant: null
-    context: 500000
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
     think: high
     release_date: null
     input_cost_per_mtok: 2.00
