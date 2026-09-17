@@ -331,6 +331,11 @@ class OpenAIProvider(Provider):
         """Where the visible reasoning lands, when a backend exposes it at all."""
         return message.get("reasoning") or ""
 
+    def _tune_payload(self, payload: dict, effort: str) -> None:
+        """Last word on the request body before it is sent. A backend whose dialect differs
+        from OpenAI's (a thinking switch, a looser response_format) edits it here instead of
+        copying chat()."""
+
     def chat(
         self, system: str, user: str, image_b64: str, schema: dict, think: str
     ) -> ChatResult:
@@ -360,6 +365,7 @@ class OpenAIProvider(Provider):
         effort = think.strip().lower()
         if effort not in {"", "default"}:
             payload["reasoning_effort"] = "none" if effort == "off" else effort
+        self._tune_payload(payload, effort)
         body = self._post_stream(f"{self.base_url}/chat/completions", payload, {
             "Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json",
         })
@@ -505,6 +511,32 @@ class XAIProvider(OpenAIProvider):
         }
 
 
+class DeepSeekProvider(OpenAIProvider):
+    """DeepSeek's own endpoint (DEEPSEEK_API_KEY). `deepseek-flash` is V4.1 Flash, the first
+    DeepSeek that takes an image natively; the Azure rows above it on the roster discard the
+    image and answer blind, which is why this row exists separately.
+
+    Two dialect differences from OpenAI, both handled in _tune_payload: thinking is a
+    `thinking: {type: enabled}` switch alongside reasoning_effort, and response_format only
+    knows `json_object`, not a strict json_schema. So rows here set `structured_output: false`
+    (the schema path would 400) and this class adds json_object on top, which still forces a
+    single JSON object while the parse guard checks the shape. Reasoning streams as
+    `reasoning_content` deltas and is billed inside completion_tokens, so the default token
+    accounting is already right."""
+
+    api_key_env = "DEEPSEEK_API_KEY"
+    base_url = "https://api.deepseek.com/v1"
+
+    def _tune_payload(self, payload: dict, effort: str) -> None:
+        if "response_format" not in payload:
+            payload["response_format"] = {"type": "json_object"}
+        if effort in {"", "default"}:
+            return
+        payload["thinking"] = {"type": "disabled" if effort == "off" else "enabled"}
+        if effort == "off":
+            payload.pop("reasoning_effort", None)
+
+
 class AzureOpenAIProvider(OpenAIProvider):
     """Azure OpenAI through the v1 API, which is what makes this a plain subclass: the v1 path
     drops the dated api-version query param and accepts `Authorization: Bearer <key>`, so the
@@ -572,7 +604,7 @@ def get_provider(provider_name: str, model: str, **opts) -> Provider:
         "ollama": OllamaProvider, "anthropic": AnthropicProvider,
         "openai": OpenAIProvider, "google": GoogleProvider,
         "openrouter": OpenRouterProvider, "bedrock": BedrockProvider,
-        "xai": XAIProvider, "azure": AzureOpenAIProvider,
+        "xai": XAIProvider, "deepseek": DeepSeekProvider, "azure": AzureOpenAIProvider,
         "azure-foundry": AzureFoundryProvider,
     }
     try:
