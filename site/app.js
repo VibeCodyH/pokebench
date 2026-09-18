@@ -459,7 +459,7 @@ function podiumMarkup(run, place) {
   if (!run) return '';
   const foot = place === 1 ? 'Champion' : local(run) ? 'Local' : 'API';
   const footCls = place === 1 ? '' : local(run) ? 'local' : 'api';
-  return `<button type="button" class="box pod ${place === 1 ? 'first' : ''}" data-uid="${escape(run.uid)}" aria-label="${escape(run.model)}, ${['1st','2nd','3rd'][place - 1]} place, open run details">
+  return `<button type="button" class="box pod pod-${place} ${place === 1 ? 'first' : ''}" data-uid="${escape(run.uid)}" aria-label="${escape(run.model)}, ${['1st','2nd','3rd'][place - 1]} place, open run details">
     <div class="body">
       <span class="place">${['1st','2nd','3rd'][place - 1]}</span>
       <span class="name">${escape(run.model)}</span>
