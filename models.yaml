@@ -162,6 +162,42 @@ models:
     input_cost_per_mtok: null
     output_cost_per_mtok: null
 
+  # GPT 5.6 Sol + Luna, seated 2026-09-17 for the two-recorder pair (Sol = Twitch on server 2,
+  # Luna = archive on server 1). PINNED ids, deliberately NOT `~openai/gpt-sol-latest`: the tilde
+  # rows report tokenizer "Router" and can repoint mid-run, which would put two different models
+  # behind one leaderboard row. Both list input_modalities [file, image, text] and structured_outputs.
+  # context is 131072, NOT the 1050000 max, for two reasons: OpenRouter's pricing carries an
+  # override at min_prompt_tokens 272000 that DOUBLES both rates (Sol $4/$15, Luna $0.40/$1.80),
+  # and 131072 is what the Azure Grok rows use, so the comparison stays like-for-like.
+  # Rates below are the STANDARD endpoint, verified against the live API 2026-09-17. The 50%-off
+  # figure on the model page is the `:batch` SKU ($1/$5), which is async and cannot drive a
+  # turn-by-turn loop where turn N+1 needs the screenshot from turn N.
+  - key: or-gpt-5.6-sol
+    provider: openrouter
+    api_model_id: openai/gpt-5.6-sol
+    display_name: "GPT 5.6 Sol"
+    family: gpt
+    params: null
+    quant: null
+    context: 131072
+    think: high
+    release_date: "2026-09-11" # OpenRouter listing date
+    input_cost_per_mtok: 2.00
+    output_cost_per_mtok: 10.00
+
+  - key: or-gpt-5.6-luna
+    provider: openrouter
+    api_model_id: openai/gpt-5.6-luna
+    display_name: "GPT 5.6 Luna"
+    family: gpt
+    params: null
+    quant: null
+    context: 131072
+    think: high
+    release_date: "2026-09-11" # OpenRouter listing date
+    input_cost_per_mtok: 0.20
+    output_cost_per_mtok: 1.20
+
   # Nex AGI N2.5 — FREE on OpenRouter ($0/M, verified vision). Agentic/computer-use pedigree;
   # prime free-seeding candidates. Free models may be rate-limited/queued on OpenRouter.
   - key: or-nex-n2.5-mini
