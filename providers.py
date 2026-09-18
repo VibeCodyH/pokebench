@@ -266,7 +266,7 @@ class AnthropicProvider(Provider):
     THINKING_STYLES = ("budget", "adaptive")
 
     def __init__(self, model: str, *, max_tokens: int | None = None,
-                 thinking_style: str = "budget", **opts):
+                 thinking_style: str = "budget", cache_system: bool = True, **opts):
         super().__init__(model, **opts)
         self.max_tokens = self.DEFAULT_MAX_TOKENS if max_tokens is None else max_tokens
         if thinking_style not in self.THINKING_STYLES:
@@ -274,12 +274,22 @@ class AnthropicProvider(Provider):
                 f"thinking_style must be one of {self.THINKING_STYLES}, got {thinking_style!r}"
             )
         self.thinking_style = thinking_style
+        self.cache_system = cache_system
 
     def chat(
         self, system: str, user: str, image_b64: str, schema: dict, think: str
     ) -> ChatResult:
+        # The system prompt is the only stable prefix the harness has: everything in the user
+        # block (notes, recent turns, state, map) changes every turn, and NOTES sits at the top
+        # of it, so no longer prefix is cacheable without reordering the prompt — which would
+        # change PROMPT_SHA and break comparability with the board. Every other provider here
+        # caches automatically and for free; Anthropic is the one that needs asking, so ask.
+        # ~1.3k tokens on prompt v21, which clears Opus/Sonnet's 1024-token minimum but NOT
+        # Haiku's 2048, where the API declines to cache and simply bills normally.
+        system_block = [{"type": "text", "text": system,
+                         "cache_control": {"type": "ephemeral"}}] if self.cache_system else system
         payload = {
-            "model": self.model, "max_tokens": self.max_tokens, "system": system,
+            "model": self.model, "max_tokens": self.max_tokens, "system": system_block,
             "messages": [{"role": "user", "content": [
                 {"type": "image", "source": {
                     "type": "base64", "media_type": "image/png", "data": image_b64,
@@ -324,10 +334,35 @@ class AnthropicProvider(Provider):
             block["thinking"] for block in blocks if block.get("type") == "thinking"
         )
         usage = body.get("usage", {})
+        # ⚠️ With caching on, `input_tokens` counts only the UNCACHED remainder: the cached
+        # prefix is reported separately and would otherwise vanish. `prompt` has to stay
+        # "tokens the model saw" or tokens_in silently drops ~1.3k a turn and stops meaning
+        # the same thing as every other row on the board (OpenRouter reports the full count
+        # whether or not it served from cache). The split rides along for cost().
+        write = int(usage.get("cache_creation_input_tokens", 0))
+        read = int(usage.get("cache_read_input_tokens", 0))
         return _plan(content), thinking, {
-            "prompt": int(usage.get("input_tokens", 0)),
+            "prompt": int(usage.get("input_tokens", 0)) + write + read,
             "completion": int(usage.get("output_tokens", 0)),
+            "cache_write": write,
+            "cache_read": read,
         }
+
+    def cost(self, tokens: dict[str, int]) -> float | None:
+        """Cache-aware, unlike the base estimate: a 5-minute cache write bills at 1.25x the
+        input rate and a read at 0.1x, so pricing the whole prompt at the standard rate would
+        overstate a cached run by most of the system prompt on every turn after the first."""
+        if self.input_cost_per_mtok is None or self.output_cost_per_mtok is None:
+            return None
+        write = tokens.get("cache_write", 0)
+        read = tokens.get("cache_read", 0)
+        uncached = max(0, tokens["prompt"] - write - read)
+        return (
+            uncached * self.input_cost_per_mtok
+            + write * self.input_cost_per_mtok * 1.25
+            + read * self.input_cost_per_mtok * 0.1
+            + tokens["completion"] * self.output_cost_per_mtok
+        ) / 1_000_000
 
 
 class OpenAIProvider(Provider):

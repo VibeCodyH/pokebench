@@ -177,6 +177,12 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         "wall_time_s": round(wall_s, 1),
         "tokens_in": tokens["prompt"],
         "tokens_out": tokens["completion"],
+        # tokens_in counts what the model SAW, so on a caching provider cost_usd is lower than
+        # tokens_in x the list rate. These two say why, instead of leaving the receipts
+        # unreconcilable. 0 on providers that cache automatically: their discount is real but
+        # invisible in the usage they report, so cost_usd there stays a ceiling.
+        "tokens_cache_write": tokens.get("cache_write", 0),
+        "tokens_cache_read": tokens.get("cache_read", 0),
         # retried attempts (bad JSON, refusals, empty replies): work the model did that tokens_in/out exclude
         "failed_attempts": dict(failed_attempts or {"count": 0, "prompt": 0, "completion": 0}),
         "cost_usd": provider.cost(tokens),
@@ -431,8 +437,11 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
             errors_in_a_row = 0
             first_error_at = None
             elapsed = time.time() - started
-            for key in total_tokens:
-                total_tokens[key] += tokens[key]
+            # Accumulate every key the adapter reports, not just the two seeded above: a
+            # cache-aware adapter adds cache_write/cache_read, and iterating total_tokens
+            # would drop them here and make the summary's cost() blind to the discount.
+            for key, value in tokens.items():
+                total_tokens[key] = total_tokens.get(key, 0) + value
             thought = str(plan.get("thought") or "").strip()
             proposed = plan.get("actions")
             actions = ([action for action in proposed if isinstance(action, str) and action in ALLOWED][:6]
