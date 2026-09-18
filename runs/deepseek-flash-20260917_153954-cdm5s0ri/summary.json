@@ -98,5 +98,6 @@
   "furthest_key": "pewter_city",
   "furthest_label": "Reached Pewter City",
   "furthest_index": 7,
-  "beat_brock": false
+  "beat_brock": false,
+  "caveat": "Contributed run. It was produced on the contributor's own hardware against api.deepseek.com, not on the benchmark rig, so there is no recording of it and no VOD to check it against. It is on the board on the strength of its turn log alone until the seat is re-run here. Its cost_usd of 13.33 is DeepSeek's peak cache-miss list price, which is a ceiling and not a measurement: off-peak bills half and cache hits bill at 0.006 per million."
 }
