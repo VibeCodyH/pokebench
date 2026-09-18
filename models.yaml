@@ -63,6 +63,51 @@ models:
     input_cost_per_mtok: null # TODO: set the authoritative Haiku 4.5 rates before a scored run.
     output_cost_per_mtok: null
 
+  # --- Claude 5 family, same `anthropic` provider as the Haiku row above. Two things the
+  # launcher must get right or the run dies before inference: the key is ORG-SCOPED, so
+  # ANTHROPIC_WORKSPACE_ID has to be in env (a bare request 400s with "not scoped to a
+  # workspace"), and these models need `thinking_style: adaptive` — the Claude 5 family
+  # 400s on the budget_tokens shape the Haiku row above uses ("thinking.type.enabled is not
+  # supported for this model"), and Haiku 400s on adaptive, so the two cannot share one shape.
+  # Thinking bills INSIDE output_tokens either way, so output here is thinking plus the plan,
+  # not the plan alone, and it is the dominant cost term at $25/MTok.
+  # ⚠️ COMPARABILITY: Claude 4.7 and later use a newer tokenizer that emits ~30% more tokens
+  # for the same text, so token COUNTS on these rows do not line up with the Gemini or Grok
+  # rows even for identical output. Compare cost and turns, not token totals.
+  # Rates are the standard first-party prices (platform.claude.com/docs/en/about-claude/pricing,
+  # read 2026-09-17); ids and release dates are /v1/models `id` and `created_at`, not guesses.
+  # `context` is the harness history budget (fit_recent), not a capability claim — Opus 5 and
+  # Sonnet 5 both carry 1M natively. 200000 leaves ~180k tokens for history after the ~19k
+  # reserve, which 1000 turns of ~150-char entries cannot reach, so it never binds and
+  # MILESTONE_WINDOW stays the real bound. It is a runaway-cost backstop, nothing more.
+  - key: claude-opus-5
+    provider: anthropic
+    thinking_style: adaptive
+    api_model_id: claude-opus-5
+    display_name: "Claude Opus 5"
+    family: claude
+    params: null
+    quant: null
+    context: 200000
+    think: high
+    release_date: "2026-07-24" # /v1/models created_at
+    input_cost_per_mtok: 5.00
+    output_cost_per_mtok: 25.00
+
+  - key: claude-sonnet-5
+    provider: anthropic
+    thinking_style: adaptive
+    api_model_id: claude-sonnet-5
+    display_name: "Claude Sonnet 5"
+    family: claude
+    params: null
+    quant: null
+    context: 200000
+    think: high
+    release_date: "2026-06-29" # /v1/models created_at
+    input_cost_per_mtok: 2.00 # the launch "introductory" $2/$10 is now the standard price
+    output_cost_per_mtok: 10.00
+
   - key: gemini-3.8-flash
     provider: google
     api_model_id: gemini-3.8-flash # verified: the id run via the AI Studio route

@@ -242,7 +242,20 @@ class OllamaProvider(Provider):
 
 
 class AnthropicProvider(Provider):
-    """Messages API with image blocks, JSON output schema, and budget_tokens thinking."""
+    """Messages API with image blocks, JSON output schema, and thinking.
+
+    Thinking has TWO mutually exclusive request shapes and the API hard-400s on the wrong one,
+    so `thinking_style` is a per-row choice rather than something to detect:
+
+      budget   (default) `thinking: {type: enabled, budget_tokens: N}`. Haiku 4.5 and kin;
+               they reject adaptive ("adaptive thinking is not supported on this model").
+      adaptive `thinking: {type: adaptive}` + `output_config.effort`. The Claude 5 family
+               rejects the budget shape with "thinking.type.enabled is not supported for this
+               model. Use thinking.type.adaptive and output_config.effort" — verified against
+               claude-opus-5 and claude-sonnet-5 on 2026-09-17.
+
+    Both bill thinking inside `output_tokens`, so cost accounting is the same either way.
+    """
 
     api_key_env = "ANTHROPIC_API_KEY"
 
@@ -250,10 +263,17 @@ class AnthropicProvider(Provider):
     # let the model use its own maximum. This is a high default rather than a real ceiling;
     # models.yaml can raise it per row, and must, for a model that supports more.
     DEFAULT_MAX_TOKENS = 32000
+    THINKING_STYLES = ("budget", "adaptive")
 
-    def __init__(self, model: str, *, max_tokens: int | None = None, **opts):
+    def __init__(self, model: str, *, max_tokens: int | None = None,
+                 thinking_style: str = "budget", **opts):
         super().__init__(model, **opts)
         self.max_tokens = self.DEFAULT_MAX_TOKENS if max_tokens is None else max_tokens
+        if thinking_style not in self.THINKING_STYLES:
+            raise ValueError(
+                f"thinking_style must be one of {self.THINKING_STYLES}, got {thinking_style!r}"
+            )
+        self.thinking_style = thinking_style
 
     def chat(
         self, system: str, user: str, image_b64: str, schema: dict, think: str
@@ -274,13 +294,19 @@ class AnthropicProvider(Provider):
         if effort in {"off", "none"}:
             payload["thinking"] = {"type": "disabled"}
         elif effort not in {"", "default"}:
-            # budget_tokens extended thinking (adaptive/effort is rejected by Haiku 4.5 and kin);
-            # it coexists with output_config json_schema on this API version. max_tokens must
-            # exceed the budget, so bump it when a high budget would meet the configured ceiling.
-            budget = {"low": 2048, "medium": 4096, "high": 8192}.get(effort, 4096)
-            payload["thinking"] = {"type": "enabled", "budget_tokens": budget}
-            if payload["max_tokens"] <= budget:
-                payload["max_tokens"] = budget + 4096
+            if self.thinking_style == "adaptive":
+                # The model decides how much to think; effort sets the ceiling. No max_tokens
+                # bump, because there is no separate budget to clear.
+                payload["thinking"] = {"type": "adaptive"}
+                payload["output_config"]["effort"] = effort
+            else:
+                # budget_tokens extended thinking; it coexists with output_config json_schema on
+                # this API version. max_tokens must exceed the budget, so bump it when a high
+                # budget would meet the configured ceiling.
+                budget = {"low": 2048, "medium": 4096, "high": 8192}.get(effort, 4096)
+                payload["thinking"] = {"type": "enabled", "budget_tokens": budget}
+                if payload["max_tokens"] <= budget:
+                    payload["max_tokens"] = budget + 4096
         headers = {
             "x-api-key": self.api_key, "anthropic-version": "2023-06-01",
             "content-type": "application/json",

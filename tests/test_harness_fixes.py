@@ -792,3 +792,72 @@ class DeepSeekProviderTests(unittest.TestCase):
         self.assertIsInstance(p, providers.DeepSeekProvider)
         self.assertFalse(p.structured_output)
         self.assertEqual(p.cost({"prompt": 1_000_000, "completion": 1_000_000}), 1.5)
+
+
+class AnthropicThinkingStyleTests(unittest.TestCase):
+    """Anthropic has TWO mutually exclusive thinking request shapes and the API hard-400s on
+    the wrong one, so getting this wrong costs a run at turn 1 rather than degrading it.
+    Verified live 2026-09-17: claude-opus-5 and claude-sonnet-5 reject
+    `thinking:{type:enabled,budget_tokens:N}` ("Use thinking.type.adaptive and
+    output_config.effort"), while Haiku 4.5 rejects adaptive. The default must stay `budget`
+    so the pre-existing Haiku row keeps working untouched."""
+
+    def make(self, **opts):
+        import providers
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test"}):
+            return providers.AnthropicProvider("claude-test", **opts)
+
+    def capture(self, p, think):
+        body = {"content": [{"type": "thinking", "thinking": "hmm"},
+                            {"type": "text", "text": "{\"thought\": \"ok\", \"actions\": []}"}],
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 11, "output_tokens": 22}}
+        with patch.object(p, "_post", return_value=body) as post:
+            plan, thinking, tokens = p.chat("s", "u", "aGk=", {"type": "object"}, think)
+        return post.call_args.args[1], plan, thinking, tokens
+
+    def test_adaptive_sends_effort_and_never_a_token_budget(self):
+        payload, plan, thinking, tokens = self.capture(self.make(thinking_style="adaptive"), "high")
+        self.assertEqual(payload["thinking"], {"type": "adaptive"})
+        self.assertEqual(payload["output_config"]["effort"], "high")
+        self.assertNotIn("budget_tokens", payload["thinking"])
+        # The schema still has to ride along on output_config, not get clobbered by effort.
+        self.assertEqual(payload["output_config"]["format"]["type"], "json_schema")
+        self.assertEqual(plan, {"thought": "ok", "actions": []})
+        self.assertEqual(tokens, {"prompt": 11, "completion": 22})
+
+    def test_budget_is_the_default_and_still_bumps_max_tokens(self):
+        p = self.make(max_tokens=4096)
+        self.assertEqual(p.thinking_style, "budget")
+        payload, *_ = self.capture(p, "high")
+        self.assertEqual(payload["thinking"], {"type": "enabled", "budget_tokens": 8192})
+        self.assertNotIn("effort", payload["output_config"])
+        self.assertGreater(payload["max_tokens"], 8192)
+
+    def test_off_disables_thinking_under_either_style(self):
+        for style in ("budget", "adaptive"):
+            payload, *_ = self.capture(self.make(thinking_style=style), "off")
+            self.assertEqual(payload["thinking"], {"type": "disabled"}, style)
+            self.assertNotIn("effort", payload["output_config"], style)
+
+    def test_an_unknown_style_fails_at_construction_not_at_turn_one(self):
+        with self.assertRaises(ValueError):
+            self.make(thinking_style="enabled")
+
+    def test_claude_5_rows_declare_adaptive_and_haiku_keeps_the_default(self):
+        import providers
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test"}):
+            opus = runner.make_provider(runner.load_model("claude-opus-5"))
+            sonnet = runner.make_provider(runner.load_model("claude-sonnet-5"))
+        self.assertIsInstance(opus, providers.AnthropicProvider)
+        self.assertEqual(opus.thinking_style, "adaptive")
+        self.assertEqual(sonnet.thinking_style, "adaptive")
+        # $5/MTok in + $25/MTok out, read off the pricing page rather than back-computed.
+        self.assertEqual(opus.cost({"prompt": 1_000_000, "completion": 1_000_000}), 30.0)
+        self.assertEqual(sonnet.cost({"prompt": 1_000_000, "completion": 1_000_000}), 12.0)
+
+    def test_thinking_style_is_not_passed_to_non_anthropic_rows(self):
+        """make_provider whitelists kwargs per adapter; leaking this one would TypeError."""
+        row = dict(runner.load_model("or-gpt-5.6-sol"), thinking_style="adaptive")
+        with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test"}):
+            runner.make_provider(row)  # must not raise
