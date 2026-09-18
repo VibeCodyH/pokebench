@@ -824,7 +824,10 @@ class AnthropicThinkingStyleTests(unittest.TestCase):
         # The schema still has to ride along on output_config, not get clobbered by effort.
         self.assertEqual(payload["output_config"]["format"]["type"], "json_schema")
         self.assertEqual(plan, {"thought": "ok", "actions": []})
-        self.assertEqual(tokens, {"prompt": 11, "completion": 22})
+        # Subset, not equality: the dict also carries the cache split (see
+        # AnthropicPromptCacheTests), and pinning it whole here would fail for an unrelated reason.
+        self.assertEqual(tokens["prompt"], 11)
+        self.assertEqual(tokens["completion"], 22)
 
     def test_budget_is_the_default_and_still_bumps_max_tokens(self):
         p = self.make(max_tokens=4096)
@@ -861,3 +864,67 @@ class AnthropicThinkingStyleTests(unittest.TestCase):
         row = dict(runner.load_model("or-gpt-5.6-sol"), thinking_style="adaptive")
         with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test"}):
             runner.make_provider(row)  # must not raise
+
+
+class AnthropicPromptCacheTests(unittest.TestCase):
+    """Anthropic is the only provider here that has to be ASKED to cache; the rest do it
+    automatically. Two ways enabling it could quietly corrupt the receipts, both covered:
+    `input_tokens` stops counting the cached prefix, so tokens_in would drop ~1.3k a turn and
+    stop meaning what it means on every other row; and cost priced at the flat input rate
+    would ignore the 1.25x write / 0.1x read tiers it just opted into."""
+
+    def make(self, **opts):
+        import providers
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test"}):
+            return providers.AnthropicProvider(
+                "claude-test", input_cost_per_mtok=5.0, output_cost_per_mtok=25.0, **opts)
+
+    def capture(self, p, usage):
+        body = {"content": [{"type": "text", "text": "{\"thought\": \"ok\", \"actions\": []}"}],
+                "stop_reason": "end_turn", "usage": usage}
+        with patch.object(p, "_post", return_value=body) as post:
+            _, _, tokens = p.chat("SYS", "u", "aGk=", {"type": "object"}, "high")
+        return post.call_args.args[1], tokens
+
+    def test_system_is_sent_as_a_cacheable_block(self):
+        payload, _ = self.capture(self.make(), {"input_tokens": 1, "output_tokens": 1})
+        self.assertEqual(payload["system"],
+                         [{"type": "text", "text": "SYS",
+                           "cache_control": {"type": "ephemeral"}}])
+
+    def test_opting_out_sends_a_plain_string_system(self):
+        payload, _ = self.capture(self.make(cache_system=False),
+                                  {"input_tokens": 1, "output_tokens": 1})
+        self.assertEqual(payload["system"], "SYS")
+
+    def test_cached_prefix_still_counts_toward_tokens_in(self):
+        """The regression that would silently shrink tokens_in on every cached turn."""
+        _, tokens = self.capture(self.make(), {
+            "input_tokens": 4700, "cache_read_input_tokens": 1298, "output_tokens": 300})
+        self.assertEqual(tokens["prompt"], 5998)  # what the model saw, not just the uncached part
+        self.assertEqual(tokens["cache_read"], 1298)
+        self.assertEqual(tokens["cache_write"], 0)
+
+    def test_cost_applies_the_read_and_write_multipliers(self):
+        p = self.make()
+        # 1M uncached in + 1M cache reads at 0.1x + 1M writes at 1.25x + 1M out.
+        cost = p.cost({"prompt": 3_000_000, "completion": 1_000_000,
+                       "cache_read": 1_000_000, "cache_write": 1_000_000})
+        self.assertAlmostEqual(cost, 5.0 + 0.5 + 6.25 + 25.0)
+
+    def test_cost_matches_the_base_estimate_when_nothing_was_cached(self):
+        p = self.make()
+        flat = {"prompt": 1_000_000, "completion": 1_000_000}
+        self.assertAlmostEqual(p.cost(flat), 30.0)
+        self.assertAlmostEqual(p.cost(dict(flat, cache_read=0, cache_write=0)), 30.0)
+
+    def test_totals_accumulate_cache_keys_the_seed_dict_never_had(self):
+        """run_benchmark seeds {prompt, completion}; iterating that would drop the cache keys
+        before cost() ever sees them, making the discount invisible in the summary."""
+        total = {"prompt": 0, "completion": 0}
+        for _ in range(3):
+            for key, value in {"prompt": 10, "completion": 2,
+                               "cache_read": 5, "cache_write": 1}.items():
+                total[key] = total.get(key, 0) + value
+        self.assertEqual(total, {"prompt": 30, "completion": 6,
+                                 "cache_read": 15, "cache_write": 3})
