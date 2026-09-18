@@ -1,0 +1,70 @@
+{
+  "run_id": "azure-grok-4-20-non-reasoning-20260916_130505-xktp7_ah",
+  "model": "grok-4-20-non-reasoning",
+  "provider": "azure-foundry",
+  "family": "grok",
+  "run_name": "azure-grok-4-20-non-reasoning-20260916_130505",
+  "prompt_version": "v21",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "fe0f76f",
+  "harness_files_sha": "2d86ff384178f613",
+  "max_output_tokens": null,
+  "execution_route": "azure-foundry-api",
+  "think_level": "default",
+  "num_ctx": 131072,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-16",
+  "model_release_date": null,
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "azure-grok-4-20-non-reasoning-20260916_130505-xktp7_ah-auto"
+  },
+  "notes": "Oak's Lab (4,2) facing right, Charmander L5. Pokedex false, no parcel. Rival has Squirtle. Plan: advance ALL remaining dialogue fully (use a_until_dialog_end liberally), then talk to rival (move right then press_a if needed), then exit lab (use D tiles properly), go to Blue's house (north house in Pallet) for parcel, then north on Route 1 to Viridian. Lesson: stop looping on blocked moves and dialogue spam; follow story sequence by advancing text then moving to rival. Now in lab post-starter, focus on rival battle trigger next.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 21316.4,
+  "tokens_in": 23669490,
+  "tokens_out": 211330,
+  "failed_attempts": {
+    "count": 1489,
+    "prompt": 0,
+    "completion": 0
+  },
+  "cost_usd": null,
+  "youtube_url": null,
+  "timestamp": "20260916_190022",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 36
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 755
+    }
+  ],
+  "furthest_key": "got_starter",
+  "furthest_label": "Got a starter",
+  "furthest_index": 1,
+  "beat_brock": false
+}

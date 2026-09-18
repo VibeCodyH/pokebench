@@ -1,0 +1,80 @@
+{
+  "run_id": "azure-grok-4-20-reasoning-20260916_130559-nlnquqre",
+  "model": "grok-4-20-reasoning",
+  "provider": "azure-foundry",
+  "family": "grok",
+  "run_name": "azure-grok-4-20-reasoning-20260916_130558",
+  "prompt_version": "v21",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "fe0f76f",
+  "harness_files_sha": "2d86ff384178f613",
+  "max_output_tokens": null,
+  "execution_route": "azure-foundry-api",
+  "think_level": "high",
+  "num_ctx": 131072,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-17",
+  "model_release_date": null,
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "azure-grok-4-20-reasoning-20260916_130559-nlnquqre-auto"
+  },
+  "notes": "In Viridian Mart at (8,4) facing up; parcel not picked up. Plan: get parcel via clerk, exit (D mat+wall), south to Pallet/Oak for Pokedex, then north to Pewter gym. Lessons: always a_until_dialog_end after press_a; check STATE/flags to avoid loops; follow plan strictly, no random walking. Charmander L7, Potion x1, money 3175. Pokedex false.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 39995.8,
+  "tokens_in": 14758783,
+  "tokens_out": 5202069,
+  "failed_attempts": {
+    "count": 90,
+    "prompt": 0,
+    "completion": 0
+  },
+  "cost_usd": null,
+  "youtube_url": null,
+  "timestamp": "20260917_001235",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 25
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 270
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 328
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 348
+    }
+  ],
+  "furthest_key": "viridian_city",
+  "furthest_label": "Reached Viridian City",
+  "furthest_index": 3,
+  "beat_brock": false
+}
