@@ -745,3 +745,50 @@ class MaxOutputTokensTests(unittest.TestCase):
                 with self.assertRaises(ValueError) as caught:
                     runner.load_model("m", self.write_registry(max_output_tokens=bad))
                 self.assertIn("max_output_tokens", str(caught.exception))
+
+
+class DeepSeekProviderTests(unittest.TestCase):
+    """DeepSeek's endpoint speaks OpenAI's wire format with two differences, and both live in
+    _tune_payload: thinking is a switch on the body, and response_format only knows
+    json_object. The base class must not send a strict json_schema there (the row sets
+    structured_output: false), yet the request still has to force a single JSON object."""
+
+    def make(self, **opts):
+        import providers
+        with patch.dict("os.environ", {"DEEPSEEK_API_KEY": "test"}):
+            return providers.DeepSeekProvider("deepseek-flash", structured_output=False, **opts)
+
+    def capture(self, p, think):
+        body = {"choices": [{"message": {"content": "{\"thought\": \"ok\"}", "reasoning_content": "hmm"},
+                             "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 20}}
+        with patch.object(p, "_post_stream", return_value=body) as post:
+            plan, thinking, tokens = p.chat("s", "u", "", {"type": "object"}, think)
+        return post.call_args.args[1], plan, thinking, tokens
+
+    def test_high_sends_thinking_switch_and_json_object(self):
+        payload, plan, thinking, tokens = self.capture(self.make(), "high")
+        self.assertEqual(payload["thinking"], {"type": "enabled"})
+        self.assertEqual(payload["reasoning_effort"], "high")
+        self.assertEqual(payload["response_format"], {"type": "json_object"})
+        self.assertEqual(plan, {"thought": "ok"})
+        self.assertEqual(tokens, {"prompt": 10, "completion": 20})
+
+    def test_off_disables_thinking_without_a_rejected_effort_value(self):
+        payload, *_ = self.capture(self.make(), "off")
+        self.assertEqual(payload["thinking"], {"type": "disabled"})
+        self.assertNotIn("reasoning_effort", payload)
+
+    def test_default_leaves_thinking_to_the_api(self):
+        payload, *_ = self.capture(self.make(), "default")
+        self.assertNotIn("thinking", payload)
+        self.assertNotIn("reasoning_effort", payload)
+        self.assertEqual(payload["response_format"], {"type": "json_object"})
+
+    def test_registry_row_constructs_the_deepseek_adapter(self):
+        import providers
+        with patch.dict("os.environ", {"DEEPSEEK_API_KEY": "test"}):
+            p = runner.make_provider(runner.load_model("deepseek-flash"))
+        self.assertIsInstance(p, providers.DeepSeekProvider)
+        self.assertFalse(p.structured_output)
+        self.assertEqual(p.cost({"prompt": 1_000_000, "completion": 1_000_000}), 1.5)

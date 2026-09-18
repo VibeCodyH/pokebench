@@ -247,6 +247,29 @@ models:
     input_cost_per_mtok: 0.0 # OpenRouter :free tier: genuinely free (1,000 req/day/account cap)
     output_cost_per_mtok: 0.0
 
+  # --- DeepSeek direct (api.deepseek.com, DEEPSEEK_API_KEY). `deepseek-flash` resolves to
+  # V4.1 Flash (released 2026-09-10): 552B MoE, 8B active on input / 16B on output, and the
+  # first DeepSeek with a native vision encoder. Sight-checked before seating the same way the
+  # Azure rows were: prompt_tokens with the frame minus without it, and the reply must describe
+  # the frame. The endpoint has no strict json_schema, only json_object, so structured_output
+  # is off and DeepSeekProvider adds json_object itself; the parse guard checks the shape.
+  # Rates are the PEAK cache-miss list price (01:00-04:00 and 06:00-10:00 UTC, Mon-Fri); off-peak
+  # is exactly half and cache hits bill at 0.006, so recorded cost_usd is a ceiling. The
+  # harness re-sends the same system prompt every turn, so the real bill sits well under it.
+  - key: deepseek-flash
+    provider: deepseek
+    api_model_id: deepseek-flash
+    display_name: "DeepSeek V4.1 Flash"
+    family: deepseek
+    params: "552B-A16B" # 552B total; 8B active per input token, 16B per output token
+    structured_output: false
+    quant: null
+    context: 1000000 # Same harness history budget as the Gemini row; the model's window is 1M.
+    think: high
+    release_date: "2026-09-10"
+    input_cost_per_mtok: 0.30
+    output_cost_per_mtok: 1.20
+
   # --- Amazon Bedrock (bedrock-mantle OpenAI-compatible endpoint, AWS_BEARER_TOKEN_BEDROCK).
   # NOT bedrock-runtime: separate quota allocation, which is why these work while
   # bedrock-runtime sits at zero on a new account. Funded by AWS Free Tier credit, so

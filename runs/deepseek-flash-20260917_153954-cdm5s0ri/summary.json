@@ -1,0 +1,102 @@
+{
+  "run_id": "deepseek-flash-20260917_153954-cdm5s0ri",
+  "model": "deepseek-flash",
+  "provider": "deepseek",
+  "family": "deepseek",
+  "run_name": "deepseek-flash-20260917_073951-3336",
+  "prompt_version": "v21",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "5ed1cda",
+  "harness_files_sha": "3db6589454209fe2",
+  "max_output_tokens": null,
+  "execution_route": "deepseek-api",
+  "think_level": "high",
+  "num_ctx": 1000000,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-18",
+  "model_release_date": "2026-09-10",
+  "model_params": "552B-A16B",
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "deepseek-flash-20260917_153954-cdm5s0ri-auto"
+  },
+  "notes": "Pewter City (25,8). Charmander L15, 36/39 HP, Potionx1, Poke Ballx4. Row y=7 is a one-way ledge spanning most of town; can't go north from here. Exploring west along y=8 to find Gym/heal. After Gym, head to Route 3 (east). Watch Charmander HP; heal at Pokemon Center when possible.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 31003.3,
+  "tokens_in": 18179215,
+  "tokens_out": 6564832,
+  "failed_attempts": {
+    "count": 1,
+    "prompt": 0,
+    "completion": 0
+  },
+  "cost_usd": 13.331562899999998,
+  "youtube_url": null,
+  "timestamp": "20260918_001637",
+  "blackouts": [
+    762
+  ],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 23
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 32
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 53
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 82
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 160
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pok\u00e9dex",
+      "turn": 186
+    },
+    {
+      "key": "viridian_forest",
+      "label": "Entered Viridian Forest",
+      "turn": 246
+    },
+    {
+      "key": "pewter_city",
+      "label": "Reached Pewter City",
+      "turn": 967
+    }
+  ],
+  "furthest_key": "pewter_city",
+  "furthest_label": "Reached Pewter City",
+  "furthest_index": 7,
+  "beat_brock": false
+}
