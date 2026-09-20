@@ -94,6 +94,28 @@ models:
     input_cost_per_mtok: 5.00
     output_cost_per_mtok: 25.00
 
+  - key: vertex-claude-fable-5-1
+    provider: vertex
+    thinking_style: adaptive
+    api_model_id: claude-fable-5-1  # Google's id has no @version suffix on the 5 family
+    display_name: "Claude Fable 5.1"
+    family: claude
+    params: null
+    quant: null
+    # 1M on Vertex, but this is the harness history budget, not a vendor claim, and it is set
+    # to match azure-gpt-6-astra so the two frontier rows carry the same amount of history.
+    context: 131072
+    think: high
+    # Google's global endpoint, which matches Anthropic's list price. Regional and multi-region
+    # endpoints add a 10% premium, so leaving region unset is worth $1.35 on an Astra-sized run.
+    input_cost_per_mtok: 10.00
+    output_cost_per_mtok: 50.00
+    # 4000, NOT the AnthropicProvider default of 32000. claude-opus-5 ran uncapped and averaged
+    # 798 output tokens a turn against Astra's 169; output alone was $5.65 of its $16.94. The
+    # cap is the difference between a $20 budget covering a run and not.
+    max_output_tokens: 4000
+    max_call_s: 300
+
   - key: claude-sonnet-5
     provider: anthropic
     thinking_style: adaptive

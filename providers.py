@@ -311,6 +311,21 @@ class AnthropicProvider(Provider):
         self.thinking_style = thinking_style
         self.cache_system = cache_system
 
+    def _dispatch(self, payload: dict) -> dict:
+        """Put a prepared Messages payload on the wire. Split out from chat() because the
+        payload is identical on Google Cloud and only the transport differs -- keeping the
+        prompt assembly in ONE place is what makes a Vertex row comparable to a first-party
+        one on the board."""
+        headers = {
+            "x-api-key": self.api_key, "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+        # Org-scoped keys must name a workspace or the API 400s before any inference.
+        workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID", "").strip()
+        if workspace:
+            headers["anthropic-workspace-id"] = workspace
+        return self._post("https://api.anthropic.com/v1/messages", payload, headers)
+
     def chat(
         self, system: str, user: str, image_b64: str, schema: dict, think: str
     ) -> ChatResult:
@@ -352,15 +367,7 @@ class AnthropicProvider(Provider):
                 payload["thinking"] = {"type": "enabled", "budget_tokens": budget}
                 if payload["max_tokens"] <= budget:
                     payload["max_tokens"] = budget + 4096
-        headers = {
-            "x-api-key": self.api_key, "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        }
-        # Org-scoped keys must name a workspace or the API 400s before any inference.
-        workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID", "").strip()
-        if workspace:
-            headers["anthropic-workspace-id"] = workspace
-        body = self._post("https://api.anthropic.com/v1/messages", payload, headers)
+        body = self._dispatch(payload)
         if body.get("stop_reason") in {"max_tokens", "refusal"}:
             raise ValueError(f"Anthropic returned no complete plan: {body['stop_reason']}")
         blocks = body.get("content", [])
@@ -398,6 +405,96 @@ class AnthropicProvider(Provider):
             + read * self.input_cost_per_mtok * 0.1
             + tokens["completion"] * self.output_cost_per_mtok
         ) / 1_000_000
+
+
+class VertexAnthropicProvider(AnthropicProvider):
+    """Claude through Google Cloud's Agent Platform (Vertex AI).
+
+    The request body is the first-party Messages payload with two edits Google requires:
+    `model` moves out of the body and into the URL, and `anthropic_version` moves out of the
+    header and into the body as the literal "vertex-2023-10-16". Everything else -- image
+    blocks, output_config json_schema, adaptive thinking, the cached system prefix -- is
+    byte-identical to the anthropic rows, which is the point: a Vertex result has to be
+    comparable to a first-party one on the board.
+
+    Auth is OAuth, not an API key, and that is the part with a trap. A Google access token
+    lives ONE hour. A PokéBench run lasts several, so a token minted at launch and passed in
+    through the environment would 401 the whole run somewhere around turn 250 and burn the
+    error window. This mints its own from the same Application Default Credentials file
+    `gcloud auth application-default login` writes, and refreshes five minutes early.
+
+    ⚠️ Google's $300 free-trial credit does NOT pay for this. Their own terms: "You can't
+    access or use the $300 credit for a generative AI partner model that is offered as a
+    managed API." Claude on Vertex is exactly that, so a trial account is billed directly.
+    """
+
+    api_key_env = ""                      # OAuth bearer, minted per request window
+    ANTHROPIC_VERSION = "vertex-2023-10-16"
+    ADC_PATH = "~/.config/gcloud/application_default_credentials.json"
+
+    def __init__(self, model: str, *, project: str | None = None, region: str = "global",
+                 credentials_path: str | None = None, **opts):
+        super().__init__(model, **opts)
+        self.project = (project or os.environ.get("GOOGLE_CLOUD_PROJECT", "")).strip()
+        if not self.project:
+            raise ValueError("VertexAnthropicProvider requires GOOGLE_CLOUD_PROJECT "
+                             "(or a project: on the models.yaml row)")
+        self.region = region.strip() or "global"
+        self.credentials_path = os.path.expanduser(
+            credentials_path or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") or self.ADC_PATH)
+        self._token, self._token_expires = "", 0.0
+
+    def _endpoint(self) -> str:
+        """Global has no host prefix and no pricing premium; multi-region uses the .rep host;
+        a named region uses the classic prefix. Regional and multi-region both carry a 10%
+        premium over global, so a row that sets one is choosing to pay it."""
+        if self.region == "global":
+            host = "aiplatform.googleapis.com"
+        elif self.region in {"us", "eu"}:
+            host = f"aiplatform.{self.region}.rep.googleapis.com"
+        else:
+            host = f"{self.region}-aiplatform.googleapis.com"
+        return (f"https://{host}/v1/projects/{quote(self.project)}"
+                f"/locations/{quote(self.region)}/publishers/anthropic/models/"
+                f"{quote(self.model)}:rawPredict")
+
+    def _access_token(self) -> str:
+        """Refresh five minutes before expiry rather than on the 401. Catching it as a failure
+        would cost a turn and a backoff sleep every hour, and the turn loop cannot tell an
+        expired token from a revoked one -- both are 401, which it treats as non-retryable and
+        aborts the run on."""
+        if self._token and time.time() < self._token_expires:
+            return self._token
+        try:
+            with open(self.credentials_path) as handle:
+                creds = json.load(handle)
+        except OSError as exc:
+            raise ValueError(f"No Google credentials at {self.credentials_path}; run "
+                             f"`gcloud auth application-default login`") from exc
+        if creds.get("type") != "authorized_user":
+            raise ValueError(f"{self.credentials_path} is type {creds.get('type')!r}; this "
+                             "adapter reads the authorized_user shape that "
+                             "`gcloud auth application-default login` writes")
+        response = requests.post("https://oauth2.googleapis.com/token", timeout=30, data={
+            "grant_type": "refresh_token", "client_id": creds["client_id"],
+            "client_secret": creds["client_secret"], "refresh_token": creds["refresh_token"],
+        })
+        response.raise_for_status()
+        body = response.json()
+        self._token = body["access_token"]
+        self._token_expires = time.time() + int(body.get("expires_in", 3600)) - 300
+        return self._token
+
+    def _dispatch(self, payload: dict) -> dict:
+        # Copied, not mutated: chat() built this dict and a pop() on the caller's object would
+        # be an invisible side effect on any future caller that reuses a payload.
+        payload = dict(payload)
+        payload.pop("model", None)        # Google takes it from the URL and 400s on the field
+        payload["anthropic_version"] = self.ANTHROPIC_VERSION
+        return self._post(self._endpoint(), payload, {
+            "Authorization": f"Bearer {self._access_token()}",
+            "Content-Type": "application/json",
+        })
 
 
 class OpenAIProvider(Provider):
@@ -793,7 +890,7 @@ def get_provider(provider_name: str, model: str, **opts) -> Provider:
         "ollama": OllamaProvider, "anthropic": AnthropicProvider,
         "openai": OpenAIProvider, "google": GoogleProvider,
         "openrouter": OpenRouterProvider, "jev": JevDecisionProvider,
-        "bedrock": BedrockProvider,
+        "bedrock": BedrockProvider, "vertex": VertexAnthropicProvider,
         "xai": XAIProvider, "deepseek": DeepSeekProvider, "azure": AzureOpenAIProvider,
         "azure-foundry": AzureFoundryProvider,
     }

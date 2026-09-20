@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import time
 import types
 import unittest
 from unittest.mock import Mock, patch
@@ -794,6 +795,147 @@ class RunawayCallTests(StreamParsingTests):
         row = next(m for m in runner.yaml.safe_load(config.read_text())["models"]
                    if m["key"] == "azure-gpt-6-astra")
         self.assertEqual(row["max_call_s"], 300)
+
+
+class VertexClaudeTests(unittest.TestCase):
+    """Claude on Google Cloud is AnthropicProvider with the transport swapped. The tests that
+    matter are the two edits Google requires and the claim that nothing ELSE differs, because
+    a Vertex row is only worth putting on the board if it played the same game."""
+
+    FAKE_ADC = {"type": "authorized_user", "client_id": "cid", "client_secret": "sec",
+                "refresh_token": "rt"}
+
+    def setUp(self):
+        import providers
+        self.providers = providers
+        self.creds = Path(tempfile.mkdtemp()) / "adc.json"
+        self.creds.write_text(json.dumps(self.FAKE_ADC))
+
+    def make(self, **kw):
+        kw.setdefault("project", "proj-1")
+        kw.setdefault("credentials_path", str(self.creds))
+        return self.providers.VertexAnthropicProvider("claude-fable-5-1", **kw)
+
+    def test_endpoint_matches_googles_documented_url_for_each_endpoint_type(self):
+        base = "/v1/projects/proj-1/locations/{}/publishers/anthropic/models/claude-fable-5-1:rawPredict"
+        for region, host in (("global", "aiplatform.googleapis.com"),
+                             ("us", "aiplatform.us.rep.googleapis.com"),
+                             ("eu", "aiplatform.eu.rep.googleapis.com"),
+                             ("us-east5", "us-east5-aiplatform.googleapis.com")):
+            with self.subTest(region=region):
+                self.assertEqual(self.make(region=region)._endpoint(),
+                                 f"https://{host}" + base.format(region))
+
+    def test_dispatch_moves_model_to_the_url_and_version_into_the_body(self):
+        provider = self.make()
+        sent = {}
+        with patch.object(provider, "_post", side_effect=lambda u, p, h: sent.update(
+                url=u, payload=p, headers=h) or {"content": []}), \
+             patch.object(provider, "_access_token", return_value="tok"):
+            provider._dispatch({"model": "claude-fable-5-1", "max_tokens": 4000})
+        self.assertNotIn("model", sent["payload"])   # Google 400s on the field
+        self.assertEqual(sent["payload"]["anthropic_version"], "vertex-2023-10-16")
+        self.assertEqual(sent["headers"]["Authorization"], "Bearer tok")
+        self.assertNotIn("x-api-key", sent["headers"])
+        self.assertIn("/models/claude-fable-5-1:rawPredict", sent["url"])
+
+    def test_dispatch_does_not_mutate_the_payload_it_was_handed(self):
+        provider = self.make()
+        payload = {"model": "claude-fable-5-1", "max_tokens": 4000}
+        with patch.object(provider, "_post", return_value={"content": []}), \
+             patch.object(provider, "_access_token", return_value="tok"):
+            provider._dispatch(payload)
+        self.assertEqual(payload, {"model": "claude-fable-5-1", "max_tokens": 4000})
+
+    def test_the_prompt_sent_to_google_is_the_one_sent_to_anthropic(self):
+        """The comparability claim, asserted rather than asserted-in-a-comment: build both
+        payloads from the same inputs and diff them. Only the two documented edits may differ.
+        If a future change touches chat() for one path only, this is what reds."""
+        import providers
+        captured = {}
+
+        def grab(name):
+            def _post(url, payload, headers):
+                captured[name] = payload
+                return {"content": [{"type": "text", "text": "{}"}],
+                        "usage": {"input_tokens": 1, "output_tokens": 1}}
+            return _post
+
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test"}):
+            first = providers.AnthropicProvider("claude-fable-5-1", thinking_style="adaptive",
+                                                max_tokens=4000)
+        vertex = self.make(thinking_style="adaptive", max_tokens=4000)
+        for name, provider in (("anthropic", first), ("vertex", vertex)):
+            with patch.object(provider, "_post", side_effect=grab(name)), \
+                 patch.object(vertex, "_access_token", return_value="tok"):
+                with contextlib.suppress(Exception):   # the fake body is not a valid plan
+                    provider.chat("sys", "user", "aW1n", {"type": "object"}, "high")
+
+        google, anthropic = dict(captured["vertex"]), dict(captured["anthropic"])
+        self.assertEqual(anthropic.pop("model"), "claude-fable-5-1")
+        self.assertEqual(google.pop("anthropic_version"), "vertex-2023-10-16")
+        self.assertEqual(google, anthropic)
+
+    def test_the_token_is_refreshed_early_and_reused_until_then(self):
+        """A Google access token lives an hour and a run lasts several. Refreshing ON the 401
+        would not work: the turn loop treats 401 as non-retryable and aborts the whole run."""
+        provider = self.make()
+        calls = []
+
+        def fake_post(url, timeout, data):
+            calls.append(data["grant_type"])
+            return Mock(json=lambda: {"access_token": f"tok{len(calls)}", "expires_in": 3600},
+                        raise_for_status=lambda: None)
+
+        with patch.object(self.providers.requests, "post", side_effect=fake_post):
+            self.assertEqual(provider._access_token(), "tok1")
+            self.assertEqual(provider._access_token(), "tok1")     # cached, no second mint
+            self.assertEqual(len(calls), 1)
+            provider._token_expires = 0                            # as if the window elapsed
+            self.assertEqual(provider._access_token(), "tok2")
+        self.assertEqual(calls, ["refresh_token", "refresh_token"])
+
+    def test_expiry_is_set_five_minutes_before_google_says(self):
+        provider = self.make()
+        with patch.object(self.providers.requests, "post", return_value=Mock(
+                json=lambda: {"access_token": "t", "expires_in": 3600},
+                raise_for_status=lambda: None)):
+            provider._access_token()
+        self.assertAlmostEqual(provider._token_expires - time.time(), 3300, delta=5)
+
+    def test_a_missing_or_wrong_shaped_credential_file_says_what_to_run(self):
+        missing = self.make(credentials_path=str(self.creds.parent / "nope.json"))
+        with self.assertRaises(ValueError) as caught:
+            missing._access_token()
+        self.assertIn("gcloud auth application-default login", str(caught.exception))
+
+        self.creds.write_text(json.dumps({"type": "service_account"}))
+        with self.assertRaises(ValueError) as caught:
+            self.make()._access_token()
+        self.assertIn("service_account", str(caught.exception))
+
+    def test_a_row_without_a_project_fails_before_the_run_starts(self):
+        """make_provider is called at launch precisely so a misconfigured row does not die on
+        turn 1 with a recording already running."""
+        with patch.dict("os.environ", {"GOOGLE_CLOUD_PROJECT": ""}):
+            with self.assertRaises(ValueError) as caught:
+                self.providers.VertexAnthropicProvider("claude-fable-5-1")
+        self.assertIn("GOOGLE_CLOUD_PROJECT", str(caught.exception))
+
+    def test_the_fable_row_is_capped_the_way_astra_is(self):
+        """claude-opus-5 ran uncapped at 798 output tokens a turn and cost $16.94 for 283
+        turns. This row is the fix for that, so the cap is the thing worth pinning."""
+        config = Path(runner.__file__).resolve().parent / "models.yaml"
+        row = next(m for m in runner.yaml.safe_load(config.read_text())["models"]
+                   if m["key"] == "vertex-claude-fable-5-1")
+        self.assertEqual(row["provider"], "vertex")
+        self.assertEqual(row["api_model_id"], "claude-fable-5-1")
+        self.assertEqual(row["thinking_style"], "adaptive")
+        self.assertEqual(row["max_output_tokens"], 4000)
+        self.assertEqual((row["input_cost_per_mtok"], row["output_cost_per_mtok"]), (10.0, 50.0))
+        self.assertNotIn("region", row)          # global: no 10% regional premium
+        with patch.dict("os.environ", {"GOOGLE_CLOUD_PROJECT": "p"}):
+            self.assertEqual(runner.make_provider(row).thinking_style, "adaptive")
 
 
 class MaxOutputTokensTests(unittest.TestCase):
