@@ -212,8 +212,70 @@ class DialogTests(unittest.TestCase):
         self.assertFalse(live._dialog_open())
         self.assertTrue(live._menu_open())
         self.assertIn("SQUIRTLE", live._screen_text())
+        # #32: the page stays READABLE (_screen_text above) but a_until no longer refuses to
+        # touch it. Nothing here ever closes the page, so it presses to the dex cap and then
+        # reports the menu -- the Start-menu dex, where A only plays the cry, costs this much
+        # and no more.
+        result = asyncio.run(live._a_until_dialog_end())
+        self.assertEqual((result["presses"], result["stop_reason"]),
+                         (live._DEX_PAGE_PRESS_CAP, "menu"))
+
+    def test_dex_data_page_is_pressed_through_when_a_closes_it(self):
+        # The starter pick: two text pages, then it closes into the Yes/No. Grok 4.6 lost turns
+        # 16-18 of azure-grok-4-6-20260917_001630 to this returning 0 presses (#32).
+        self.ram.data[0xC3A0:0xC3A0 + 20] = b"\x63" + b"\x64" * 18 + b"\x65"
+        self.ram.tile(0, 1, 0x66)
+        self.ram.tile(19, 1, 0x67)
+        self.assertTrue(live._dex_data_page(self.ram.read_range(0xC3A0, 360)))
+
+        def close():
+            self.ram.data[0xC3A0:0xC3A0 + 20] = bytes([1, 2, 3, 4]) * 5
+        self.ram.on_press = close
+        result = asyncio.run(live._a_until_dialog_end())
+        self.assertEqual((result["presses"], result["stop_reason"]), (1, "closed"))
+
+    def test_dex_list_is_never_pressed_through(self):
+        # Same border, but the column-14 divider means this is the LIST, where A opens an entry
+        # rather than advancing text. _dex_data_page must reject it or a_until would walk the dex.
+        self.ram.data[0xC3A0:0xC3A0 + 20] = b"\x63" + b"\x64" * 18 + b"\x65"
+        self.ram.tile(0, 1, 0x66)
+        self.ram.tile(19, 1, 0x67)
+        self.ram.data[0xC3A0 + 14] = 0x71
+        for r in range(1, 18):
+            self.ram.data[0xC3A0 + r * 20 + 14] = 0x71 if r % 2 else 0x70
+        self.assertFalse(live._dex_data_page(self.ram.read_range(0xC3A0, 360)))
         result = asyncio.run(live._a_until_dialog_end())
         self.assertEqual((result["presses"], result["stop_reason"]), (0, "menu"))
+
+    def test_open_dialog_is_pressed_even_when_the_screen_never_settles(self):
+        # #45: the Viridian Mart parcel clerk. The pre-loop settle capped, so a_until broke with
+        # 0 presses while a text box was open on screen, and GPT-6 Astra stood there for three
+        # turns. _dialog_open reads the box corner from RAM, so a true reading means the box is
+        # really drawn -- the empty-frame race the settle guard exists for cannot be live.
+        self.ram.data[0xD730] = 0x80          # permanently busy: every settle comes back capped
+        self.ram.tile(0, 12)                  # ... with a real text box on screen
+
+        def close():
+            self.ram.tile(0, 12, 1)
+        self.ram.on_press = close
+        result = asyncio.run(live._a_until_dialog_end())
+        # The press is the fix. It still reports "capped" rather than "closed", because a screen
+        # that never settles is a screen we cannot claim anything about -- the invariant
+        # test_busy_cap_does_not_press_or_claim_closed protects. Before this change it reported
+        # the same "capped" with ZERO presses, which is what cost Astra the turns.
+        self.assertEqual(self.ram.presses, [("a", 1)])
+        self.assertEqual((result["presses"], result["stop_reason"]), (1, "capped"))
+        self.assertFalse(live._dialog_open())
+
+    def test_unsettled_dialog_that_never_clears_is_bounded(self):
+        # The same path with nothing ever closing the box must not burn all _A_UNTIL_CAP presses
+        # at full speed: the post-press settle caps too, so only the dedicated cap stops it.
+        self.ram.data[0xD730] = 0x80
+        self.ram.tile(0, 12)
+        result = asyncio.run(live._a_until_dialog_end())
+        self.assertEqual((result["presses"], result["stop_reason"]),
+                         (live._UNSETTLED_PRESS_CAP, "capped"))
+        self.assertLess(result["presses"], live._A_UNTIL_CAP)
 
     def test_pokedex_list_and_overworld_party_cursor_are_menus(self):
         self.ram.tile(14, 0, 0x71)

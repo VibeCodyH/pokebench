@@ -75,6 +75,23 @@ _MENU_CURSOR = 0xED                 # ▶ menu-selection cursor; present only wh
 # The level-up box shows these four labels with the "grew to level N!" text box still open.
 # The STATUS page shows them too, but with no text box, so it stays a readable UI (see below).
 _LEVEL_UP_STATS = frozenset({"ATTACK", "DEFENSE", "SPEED", "SPECIAL"})
+# Both caps bound a press loop that would otherwise run the full _A_UNTIL_CAP at full speed.
+_UNSETTLED_PRESS_CAP = 8   # presses allowed while the screen refuses to hold still
+_DEX_PAGE_PRESS_CAP = 6    # presses allowed on a ShowPokedexData page (starter pick needs ~2)
+
+
+def _dex_data_page(raw) -> bool:
+    """The ShowPokedexData border WITHOUT the list's column-14 divider. That page asks nothing --
+    only A advances it, two text pages then it closes into the Yes/No -- but _menu_open() reports
+    it as a menu, so a_until used to break there with 0 presses (#32).
+
+    The Start-menu Pokedex wears the same border and there A plays the cry instead of advancing,
+    which is why this is capped rather than trusted: worst case is _DEX_PAGE_PRESS_CAP wasted
+    presses inside ONE turn, against the several turns the 0-press break was costing."""
+    head = bytes(raw[:20]) == b"\x63" + b"\x64" * 18 + b"\x65" and raw[20] == 0x66 and raw[39] == 0x67
+    if not head:
+        return False
+    return not (raw[14] == 0x71 and bytes(raw[34:355:20]) == bytes([0x71, 0x70]) * 8 + b"\x71")
 
 
 _BUSY_MASK = 0xA1   # 0xD730 bits 0 (scripted NPC movement) + 5 (joypad ignored) + 7 (simulated movement)
@@ -207,11 +224,15 @@ async def _a_until_dialog_end() -> dict:
     Check settled RAM before the first press and after every release; never hold A
     across the transition from a text page to a menu's input loop."""
     presses = 0
+    unsettled_presses = 0   # presses spent while settle kept coming back "capped"
+    dex_presses = 0         # presses spent on a ShowPokedexData page
     stop_reason = "capped"
     said, trace = [], []
     settle = await _settle_screen(_FRAME_SETTLE_TICKS)
     for _ in range(_A_UNTIL_CAP + 1):
+        raw = bytes(S._emulator.read_range(_TILEMAP, 18 * 20))
         dialog_open, menu_open = _dialog_open(), _menu_open()
+        on_dex_page = _dex_data_page(raw)
         in_battle = S._emulator.read_u8(_red.ADDR_BATTLE_TYPE) != 0
         if presses:
             trace.append({"press": presses, "ui": dialog_open or menu_open or in_battle,
@@ -225,18 +246,30 @@ async def _a_until_dialog_end() -> dict:
             # "<NAME> grew to level N!" text box open behind it and only A dismisses it. Stopping
             # here returned 0 presses, so a model that kept calling this never left the screen --
             # run muse-glimmer-30b-20260912_204805 lost 118 turns across three such wedges.
-            if not (dialog_open and _LEVEL_UP_STATS <= words):
+            level_up = dialog_open and _LEVEL_UP_STATS <= words
+            if not (level_up or (on_dex_page and dex_presses < _DEX_PAGE_PRESS_CAP)):
                 stop_reason = "choice" if {"YES", "NO"} <= words else "menu"
                 break
-        if settle == "capped":
+        # A page only A can clear is still a page only A can clear when the screen will not
+        # hold still. _dialog_open reads the box corner out of RAM, so a true reading means the
+        # box IS drawn -- the empty-frame race _settle_after guards against cannot be live here.
+        # Astra sat on the Viridian Mart parcel clerk for three turns because this broke with 0
+        # presses while a dialog box was open on screen (#45). Bounded, because the post-press
+        # settle caps too and this would otherwise burn all 100 presses at full speed.
+        may_press = dialog_open or on_dex_page
+        if settle == "capped" and (not may_press or unsettled_presses >= _UNSETTLED_PRESS_CAP):
             break
-        if not dialog_open:
+        if not may_press:
             stop_reason = "closed"
             break
         if presses == _A_UNTIL_CAP:
             break
         await S._run_sync(S._emulator.press, "a", 1)
         presses += 1
+        if on_dex_page:
+            dex_presses += 1
+        if settle == "capped":
+            unsettled_presses += 1
         settle = await _settle_screen(_FRAME_SETTLE_TICKS, grace=True)
     return {"presses": presses, "stop_reason": stop_reason, "text": _squash(said),
             "trace": trace, "settle": settle}
