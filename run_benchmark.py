@@ -99,6 +99,8 @@ def make_provider(model):
         opts["max_tokens"] = model["max_output_tokens"]
     if model.get("timeout") is not None:
         opts["timeout"] = model["timeout"]
+    if model.get("max_call_s") is not None:
+        opts["max_call_s"] = model["max_call_s"]
     # OpenAI-shaped adapters only: skip the strict response_format on a backend that rejects it.
     if model.get("structured_output") is not None:
         opts["structured_output"] = bool(model["structured_output"])

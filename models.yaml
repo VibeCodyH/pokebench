@@ -487,6 +487,11 @@ models:
     # dead air per hang, and because ERROR_WINDOW is 1800s three hangs in a row abort the whole
     # run as provider_error. Observed model time is 3-4s, so this is still ~20x headroom.
     timeout: 90
+    # 300s, not the 900s default, because this is the row the guard was written for and we have
+    # its numbers: worst SUCCESSFUL call in the winning run was 26.0s. A runaway now ends in
+    # five minutes instead of never. Do not copy this onto a row you have not measured -- the
+    # loose default exists so an unmeasured slow model retries rather than dying provider_error.
+    max_call_s: 300
 
   - key: azure-grok-4.6
     provider: azure-foundry
