@@ -937,6 +937,24 @@ class VertexClaudeTests(unittest.TestCase):
         with patch.dict("os.environ", {"GOOGLE_CLOUD_PROJECT": "p"}):
             self.assertEqual(runner.make_provider(row).thinking_style, "adaptive")
 
+    def test_the_first_party_fable_row_carries_the_same_caps(self):
+        """The row that can actually run today: Google gives this project zero partner-model
+        quota. Both Fable seats must be configured identically or a later Vertex run would not
+        be comparable to the one that goes on the board first."""
+        config = Path(runner.__file__).resolve().parent / "models.yaml"
+        rows = {m["key"]: m for m in runner.yaml.safe_load(config.read_text())["models"]}
+        first, vertex = rows["claude-fable-5-1"], rows["vertex-claude-fable-5-1"]
+        self.assertEqual(first["provider"], "anthropic")
+        for field in ("api_model_id", "context", "think", "thinking_style",
+                      "max_output_tokens", "max_call_s",
+                      "input_cost_per_mtok", "output_cost_per_mtok"):
+            with self.subTest(field=field):
+                self.assertEqual(first[field], vertex[field])
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test"}):
+            provider = runner.make_provider(first)
+        self.assertEqual(provider.max_tokens, 4000)
+        self.assertTrue(provider.cache_system)   # $0.25/M cache hits are 2.5% of base input
+
 
 class MaxOutputTokensTests(unittest.TestCase):
     """Models run uncapped by default: a truncated plan is a harness artifact in the results,

@@ -115,6 +115,38 @@ models:
     # cap is the difference between a $20 budget covering a run and not.
     max_output_tokens: 4000
     max_call_s: 300
+    # ⛔ VERIFIED UNUSABLE on Cody's GCP project, 2026-09-20, and the reason is the account not
+    # the code. Data sharing is now enabled for publisher anthropic (a setPublisherModelConfig
+    # call; the Console's Enable button does NOT write it, and fetchPublisherModelConfig 404s
+    # until it does). Past that, rawPredict returns 429 with quota 0 for base model
+    # anthropic-claude-fable. serviceusage reports 2,370 nonzero Gemini quota buckets on the
+    # same project and ZERO for every Anthropic model, which is Google's documented partner
+    # exclusion, not a per-model grant: "You can't access or use the $300 credit for a
+    # generative AI partner model that is offered as a managed API."
+    # The adapter itself is verified working -- token mint, auth, and request shape all pass.
+    # This row starts serving the moment the project has partner quota. Until then use
+    # claude-fable-5-1 below, which is the same model on Anthropic's own API.
+
+  - key: claude-fable-5-1
+    provider: anthropic
+    thinking_style: adaptive
+    api_model_id: claude-fable-5-1
+    display_name: "Claude Fable 5.1"
+    family: claude
+    params: null
+    quant: null
+    # Matches azure-gpt-6-astra, NOT claude-opus-5's 200000. Opus averaged 9,378 input tokens a
+    # turn against Astra's 4,639, and input was $13.27 of its $16.94 bill.
+    context: 131072
+    think: high
+    input_cost_per_mtok: 10.00
+    output_cost_per_mtok: 50.00
+    # 4000, not AnthropicProvider's 32000 default. Opus ran uncapped at 798 output tokens a
+    # turn; Astra ran capped at 169. cost() prices input at the base rate and does not model
+    # the cache tier, so a run here should come in UNDER what the summary reports: Fable 5.1
+    # bills cache hits at $0.25/M, 2.5% of base input, and the adapter caches the system block.
+    max_output_tokens: 4000
+    max_call_s: 300
 
   - key: claude-sonnet-5
     provider: anthropic
