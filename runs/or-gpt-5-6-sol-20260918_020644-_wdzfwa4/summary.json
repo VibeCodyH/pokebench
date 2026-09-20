@@ -1,0 +1,115 @@
+{
+  "run_id": "or-gpt-5-6-sol-20260918_020644-_wdzfwa4",
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openrouter",
+  "family": "gpt",
+  "run_name": "or-gpt-5.6-sol-20260918_020644",
+  "prompt_version": "v21",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "fe0f76f",
+  "harness_files_sha": "2d86ff384178f613",
+  "max_output_tokens": null,
+  "execution_route": "openrouter-api",
+  "think_level": "high",
+  "num_ctx": 131072,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-18",
+  "model_release_date": "2026-09-11",
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "or-gpt-5-6-sol-20260918_020644-_wdzfwa4-auto"
+  },
+  "notes": "Squirtle L14, 40/40 HP. Brock's Onix is at 3/36 HP; Bubble is third move and selected. Finish with Bubble, then advance victory/badge dialogue.",
+  "budget_turns": 1000,
+  "turns_used": 532,
+  "termination_reason": "beat_brock",
+  "wall_time_s": 8345.3,
+  "tokens_in": 4133730,
+  "tokens_out": 139459,
+  "failed_attempts": {
+    "count": 5,
+    "prompt": 0,
+    "completion": 0
+  },
+  "cost_usd": 9.66205,
+  "youtube_url": null,
+  "timestamp": "20260918_042549",
+  "blackouts": [
+    195,
+    320,
+    363,
+    417
+  ],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 9
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 18
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 30
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 45
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 57
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pok\u00e9dex",
+      "turn": 81
+    },
+    {
+      "key": "viridian_forest",
+      "label": "Entered Viridian Forest",
+      "turn": 160
+    },
+    {
+      "key": "pewter_city",
+      "label": "Reached Pewter City",
+      "turn": 274
+    },
+    {
+      "key": "pewter_gym",
+      "label": "Entered Brock's Gym",
+      "turn": 303
+    },
+    {
+      "key": "beat_brock",
+      "label": "Beat Brock (Boulder Badge)",
+      "turn": 532
+    }
+  ],
+  "furthest_key": "beat_brock",
+  "furthest_label": "Beat Brock (Boulder Badge)",
+  "furthest_index": 9,
+  "beat_brock": true
+}
