@@ -1,6 +1,7 @@
 {
   "run_id": "azure-grok-4-1-fast-reasoning-20260915_162441-yvee5tib",
   "model": "grok-4-1-fast-reasoning",
+  "display_name": "Grok 4.1 Fast Reasoning",
   "provider": "azure-foundry",
   "family": "grok",
   "run_name": "azure-grok-4-1-fast-reasoning-20260915_162441",

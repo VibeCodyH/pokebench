@@ -1,6 +1,7 @@
 {
   "run_id": "azure-grok-4-20-non-reasoning-20260916_130505-xktp7_ah",
   "model": "grok-4-20-non-reasoning",
+  "display_name": "Grok 4.20 Non-Reasoning",
   "provider": "azure-foundry",
   "family": "grok",
   "run_name": "azure-grok-4-20-non-reasoning-20260916_130505",

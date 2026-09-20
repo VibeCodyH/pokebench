@@ -1,6 +1,7 @@
 {
   "run_id": "gemini-3-8-flash-20260912_181852-sid5a1mf",
   "model": "gemini-3.8-flash",
+  "display_name": "Gemini 3.8 Flash",
   "provider": "google",
   "family": "gemini",
   "run_name": "gemini-flash-vertex-run1",

@@ -1,6 +1,7 @@
 {
   "run_id": "qwen3-vl-30b-20260913_205806-lx58k4nz",
   "model": "qwen3-vl:30b",
+  "display_name": "Qwen3-VL 30B",
   "provider": "ollama",
   "family": "qwen",
   "run_name": "qwen3-vl-30b-20260913_205744",

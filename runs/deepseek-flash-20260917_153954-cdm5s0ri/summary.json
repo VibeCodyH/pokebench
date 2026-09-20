@@ -1,6 +1,7 @@
 {
   "run_id": "deepseek-flash-20260917_153954-cdm5s0ri",
   "model": "deepseek-flash",
+  "display_name": "DeepSeek V4.1 Flash",
   "provider": "deepseek",
   "family": "deepseek",
   "run_name": "deepseek-flash-20260917_073951-3336",

@@ -1,6 +1,7 @@
 {
   "run_id": "azure-grok-4-20-reasoning-20260916_130559-nlnquqre",
   "model": "grok-4-20-reasoning",
+  "display_name": "Grok 4.20 Reasoning",
   "provider": "azure-foundry",
   "family": "grok",
   "run_name": "azure-grok-4-20-reasoning-20260916_130558",

@@ -1,6 +1,7 @@
 {
   "run_id": "azure-grok-4-6-20260917_001630-cvbx8mxk",
   "model": "grok-4.6",
+  "display_name": "Grok 4.6",
   "provider": "azure-foundry",
   "family": "grok",
   "run_name": "azure-grok-4.6-20260917_001629",

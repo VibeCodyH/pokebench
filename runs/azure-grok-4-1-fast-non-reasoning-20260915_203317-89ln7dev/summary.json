@@ -1,6 +1,7 @@
 {
   "run_id": "azure-grok-4-1-fast-non-reasoning-20260915_203317-89ln7dev",
   "model": "grok-4-1-fast-non-reasoning",
+  "display_name": "Grok 4.1 Fast Non-Reasoning",
   "provider": "azure-foundry",
   "family": "grok",
   "run_name": "azure-grok-4-1-fast-non-reasoning-20260915_203317",
