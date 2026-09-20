@@ -262,6 +262,10 @@ MILESTONE_WINDOW = 2
 # seconds of consecutive failures. Billing 429s look like rate limits by status; only the body tells.
 ERROR_WINDOW = 1800
 BILLING_WORDS = ("credits are depleted", "credit balance", "prepay", "insufficient_quota", "insufficient quota")
+# How often to re-probe the provider while paused waiting for a top-up. Deliberately not the
+# exponential backoff the other errors use: a human is refilling a balance, and the useful
+# question is "has it landed yet", asked at a steady rate.
+BILLING_POLL_S = 60
 
 
 def milestone_anchor_turn(tracker, keep):
@@ -305,7 +309,8 @@ def fit_recent(history, num_ctx, static_chars):
     return kept
 
 
-def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
+def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
+        pause_on_billing=0):
     server = server.rstrip("/")
     os.makedirs(RUNS_DIR, exist_ok=True)
     slug = re.sub(r"[^A-Za-z0-9_-]+", "-", model["key"]).strip("-")[:80] or "model"
@@ -349,6 +354,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
     blackouts = []
     errors_in_a_row = 0
     first_error_at = None
+    billing_waited = 0
     try:
         # A turn is one model plan that reached the emulator. Pauses, server hiccups and
         # provider errors retry the same turn number so outages never eat the model's budget.
@@ -437,6 +443,22 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
                 # Auth and billing failures never clear on their own (a depleted-credits 429 once looped
                 # 5,341 times overnight), and a provider that stays down past the window is not worth waiting on.
                 billing = any(word in body.lower() for word in BILLING_WORDS)
+                if billing and pause_on_billing and billing_waited < pause_on_billing:
+                    # A dry balance is the one provider error a human can fix DURING the run,
+                    # and aborting throws away everything already paid for: claude-opus-5 died
+                    # this way on turn 284 of 1000 with $16.94 spent and no board result.
+                    # Resetting the error window matters as much as the sleep -- ERROR_WINDOW
+                    # is 1800s, so a pause past 30 minutes would otherwise abort regardless.
+                    wait = min(BILLING_POLL_S, pause_on_billing - billing_waited)
+                    billing_waited += wait
+                    print(f"[turn {turn}] *** OUT OF CREDIT *** {body[:200]}\n"
+                          f"[turn {turn}] PAUSED; top up and the run resumes on its own. "
+                          f"Giving up after {pause_on_billing - billing_waited}s more.",
+                          flush=True)
+                    errors_in_a_row, first_error_at = 0, None
+                    turn -= 1
+                    time.sleep(wait)
+                    continue
                 if status in (401, 402, 403) or billing:
                     print(f"[turn {turn}] non-retryable provider error {status}, aborting: {exc} {body}", flush=True)
                     termination = "provider_error"
@@ -452,6 +474,10 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False):
                 continue
             errors_in_a_row = 0
             first_error_at = None
+            # Per OUTAGE, not per run: a completed turn proves the balance was topped up, so a
+            # second dry-out hours later gets the full budget again. It cannot spin forever --
+            # clearing this requires a turn that actually went through.
+            billing_waited = 0
             elapsed = time.time() - started
             # Accumulate every key the adapter reports, not just the two seeded above: a
             # cache-aware adapter adds cache_write/cache_read, and iterating total_tokens
@@ -588,6 +614,9 @@ def main(argv=None):
     parser.add_argument("--turns", type=int, default=1000)
     parser.add_argument("--run-name", default="")
     parser.add_argument("--no-frames", action="store_true", help="don't save frame PNGs")
+    parser.add_argument("--pause-on-billing", type=int, default=0, metavar="SECONDS",
+                        help="on an out-of-credit error, pause and re-probe every "
+                             f"{BILLING_POLL_S}s for up to SECONDS instead of aborting the run")
     args = parser.parse_args(argv)
     if args.turns <= 0:
         parser.error("--turns must be positive")
@@ -597,7 +626,8 @@ def main(argv=None):
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))
     try:
-        run(model, provider, args.server, args.turns, args.run_name or args.model_key, no_frames=args.no_frames)
+        run(model, provider, args.server, args.turns, args.run_name or args.model_key,
+            no_frames=args.no_frames, pause_on_billing=args.pause_on_billing)
     except KeyboardInterrupt:
         print("Run interrupted; partial summary written.", flush=True)
         return 130

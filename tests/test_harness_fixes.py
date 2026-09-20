@@ -11,6 +11,7 @@ import sys
 import tempfile
 import time
 import types
+from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
@@ -410,6 +411,117 @@ class RunnerTests(unittest.TestCase):
                 if not disabled:
                     self.assertEqual(rows[-1]["frame_file"], "frames/turn-0001.png")
                     self.assertNotEqual(rows[0]["frame_file"], rows[1]["frame_file"])
+
+
+class BillingPauseTests(RunnerTests):
+    """claude-opus-5 died on turn 284 of 1000 with $16.94 spent because a dry balance is
+    classified non-retryable and aborts. It is the ONE provider error a human can fix while the
+    run is still going, so --pause-on-billing waits for the top-up instead."""
+
+    DRY = "Your credit balance is too low to access the Anthropic API."
+
+    def error(self, body, status=400):
+        exc = ValueError(f"{status} Client Error")
+        exc.response = SimpleNamespace(status_code=status, text=json.dumps(
+            {"type": "error", "error": {"type": "invalid_request_error", "message": body}}))
+        return exc
+
+    def drive(self, side_effect, *, budget=2, advance_clock=False, **run_kw):
+        """Run the loop against a scripted provider. Returns write_summary's positional args."""
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        provider = Mock()
+        provider.chat.side_effect = side_effect
+        frame = self.frame()
+        get = lambda url, **kw: Mock(json=lambda: frame if url.endswith("/frame") else {"state": "running"})
+        post = lambda url, **kw: Mock(json=lambda: {"actions_executed": 1, "steps": [],
+                                                    "state_after": frame["state"]})
+        model = {"key": "test", "api_model_id": "test", "provider": "ollama",
+                 "num_ctx": 65536, "think": "off"}
+        summary = Mock(return_value=None)
+        clock = {"t": 1_000.0}
+        # Without a clock that MOVES when we sleep, ERROR_WINDOW can never expire and a test
+        # cannot tell a reset error window from one that simply never filled.
+        slept = []
+        def sleeper(seconds):
+            slept.append(seconds)
+            if advance_clock:
+                clock["t"] += seconds
+        patches = [patch.object(runner.time, "sleep", side_effect=sleeper)]
+        if advance_clock:
+            patches.append(patch.object(runner.time, "time", side_effect=lambda: clock["t"]))
+        with patch.multiple(runner, RUNS_DIR=tmp.name,
+                            harness_fingerprint=Mock(return_value=(None, None)),
+                            record_milestones=Mock(return_value=False),
+                            save_game=Mock(return_value=None), write_summary=summary), \
+                patch.object(runner.requests, "get", side_effect=get), \
+                patch.object(runner.requests, "post", side_effect=post), \
+                contextlib.ExitStack() as stack, contextlib.redirect_stdout(io.StringIO()):
+            for p in patches:
+                stack.enter_context(p)
+            runner.run(model, provider, "http://unused", budget=budget, no_frames=True, **run_kw)
+        self.slept = slept
+        return summary.call_args[0]
+
+    PLAN = ({"thought": "t", "actions": ["wait_60"]}, "", {"prompt": 10, "completion": 1})
+
+    def test_without_the_flag_a_dry_balance_still_aborts(self):
+        """The default is unchanged. A run that silently waited forever on a depleted key would
+        be worse than the abort -- the comment on BILLING_WORDS records a 429 that looped 5,341
+        times overnight."""
+        args = self.drive([self.error(self.DRY), self.PLAN])
+        self.assertEqual(args[-2], "provider_error")
+        self.assertEqual(args[6], 0)          # turns_used: it never got one through
+
+    def test_with_the_flag_the_run_survives_a_top_up(self):
+        args = self.drive([self.error(self.DRY), self.PLAN, self.PLAN], pause_on_billing=600)
+        self.assertEqual(args[-2], "budget")
+        self.assertEqual(args[6], 2)          # both turns landed after the pause
+
+    def test_a_long_pause_does_not_poison_the_window_for_the_NEXT_error(self):
+        """The subtle half, and it is not about the pause itself -- the pause `continue`s
+        before the ERROR_WINDOW check, so waiting can never trip it directly. The damage is
+        afterwards: first_error_at is stamped at the dry balance, so a plain 500 on the turn
+        after a long top-up wait would read as "failing for 2400s straight" and abort a run
+        that had just recovered. Clearing it during the pause is what prevents that."""
+        self.assertGreater(40 * runner.BILLING_POLL_S, runner.ERROR_WINDOW)   # the test bites
+        script = ([self.error(self.DRY)] * 40 + [self.error("upstream blip", status=500)]
+                  + [self.PLAN])
+        args = self.drive(script, budget=1, pause_on_billing=3600, advance_clock=True)
+        self.assertEqual(args[-2], "budget")
+        self.assertEqual(args[6], 1)
+
+    def test_the_wait_is_bounded_and_then_it_gives_up(self):
+        """Asserting the outcome alone does NOT bite: with the bound removed the script simply
+        runs out of scripted errors and the resulting StopIteration aborts the run as a
+        provider_error too, so the test passes while the guard is gone. The number of seconds
+        actually slept is the thing that distinguishes them."""
+        budget = 2 * runner.BILLING_POLL_S
+        args = self.drive([self.error(self.DRY)] * 50, budget=1,
+                          pause_on_billing=budget, advance_clock=True)
+        self.assertEqual(args[-2], "provider_error")
+        self.assertLessEqual(sum(self.slept), budget + runner.ERROR_WINDOW)
+        self.assertEqual(sum(s for s in self.slept if s == runner.BILLING_POLL_S), budget)
+
+    def test_a_completed_turn_restores_the_full_budget_for_a_later_outage(self):
+        """Per outage, not per run. Two dry spells hours apart each get the whole budget, and
+        the counter can only be cleared by a turn that actually went through, so this cannot
+        become an unbounded loop."""
+        script = ([self.error(self.DRY)] * 2 + [self.PLAN]
+                  + [self.error(self.DRY)] * 2 + [self.PLAN])
+        args = self.drive(script, budget=2, pause_on_billing=3 * runner.BILLING_POLL_S,
+                          advance_clock=True)
+        self.assertEqual(args[-2], "budget")
+        self.assertEqual(args[6], 2)
+
+    def test_auth_failures_are_not_treated_as_something_a_top_up_fixes(self):
+        """advance_clock, even though nothing here pauses. Without a clock that moves, a
+        regression that stops classifying 401 as fatal leaves the loop retrying against a
+        frozen ERROR_WINDOW, and the test spins for 30 real minutes instead of failing."""
+        args = self.drive([self.error("invalid x-api-key", status=401)] * 50,
+                          budget=1, pause_on_billing=600, advance_clock=True)
+        self.assertEqual(args[-2], "provider_error")
+        self.assertEqual(self.slept, [])          # aborted outright, never even backed off
 
 
 class StateTests(unittest.TestCase):
