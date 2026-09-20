@@ -4,6 +4,7 @@ import base64
 import contextlib
 import importlib.util
 import io
+import itertools
 import json
 from pathlib import Path
 import sys
@@ -718,6 +719,81 @@ class StreamParsingTests(unittest.TestCase):
             with self.assertRaises(requests.HTTPError) as caught:
                 self.call()
         self.assertIn("insufficient_quota", caught.exception.response.text)
+
+
+class RunawayCallTests(StreamParsingTests):
+    """#47: the silence window cannot end a stream that keeps arriving. gpt-6-astra held one
+    turn open for over ten minutes at ~37 KB/s with a 90s poll re-arming on every chunk."""
+
+    def clock(self, step):
+        """monotonic() readings that advance a fixed amount per call. The first reading sets
+        the deadline, so with step=10 and max_call_s=25 the third loop check is the one that
+        crosses it -- before the usage frame, which is what makes the raise unambiguous."""
+        ticks = itertools.count(0, step)
+        return patch.object(self.providers.time, "monotonic", side_effect=lambda: next(ticks))
+
+    def endless(self):
+        """Three content frames and then a perfectly good ending. A deadline that fails to
+        fire therefore returns a valid result rather than erroring for some other reason."""
+        return self.frames(
+            {"choices": [{"delta": {"content": "aaa", "reasoning": "thinking "}}]},
+            {"choices": [{"delta": {"content": "bbb"}}]},
+            {"choices": [{"delta": {"content": "ccc"}, "finish_reason": "stop"}]},
+            {"choices": [], "usage": {"prompt_tokens": 7, "completion_tokens": 9}},
+        ) + "data: [DONE]\n\n"
+
+    def test_a_stream_that_keeps_delivering_is_cut_at_max_call_s(self):
+        self.provider.max_call_s = 25
+        with self.post(self.endless()), self.clock(10):
+            with self.assertRaises(TimeoutError) as caught:
+                self.call()
+        self.assertIn("max_call_s=25", str(caught.exception))
+
+    def test_the_cut_is_retryable_and_carries_what_the_model_was_emitting(self):
+        """No .response is the whole contract with the turn loop: it reads status None and an
+        empty body, so it backs off and replays the turn instead of aborting the run the way
+        it must for a 401/402/403. raw_output is the only record of WHY the call ran away."""
+        self.provider.max_call_s = 25
+        with self.post(self.endless()), self.clock(10):
+            with self.assertRaises(TimeoutError) as caught:
+                self.call()
+        self.assertIsNone(getattr(caught.exception, "response", None))
+        self.assertEqual(caught.exception.raw_output, "thinking aaa")
+
+    def test_a_stream_that_finishes_in_time_is_untouched(self):
+        """The control. Same body, same tiny cap, a clock that does not advance: if the guard
+        fired on anything other than elapsed time this would fail too."""
+        self.provider.max_call_s = 25
+        with self.post(self.endless()), self.clock(0):
+            result = self.call()
+        self.assertEqual(result["usage"], {"prompt_tokens": 7, "completion_tokens": 9})
+        self.assertEqual(result["choices"][0]["message"]["content"], "aaabbbccc")
+
+    def test_the_default_clears_the_worst_call_ever_measured(self):
+        """403.1s is the longest SUCCESSFUL call in any run on the board (azure-grok-4-3).
+        A default under that turns a slow model into provider_error, which is barred from the
+        leaderboard -- so tightening belongs on the row, not here."""
+        self.assertGreaterEqual(self.providers.Provider.__init__.__kwdefaults__["max_call_s"], 806)
+
+    def test_a_nonsense_cap_is_rejected_at_construction(self):
+        for bad in (0, -1, float("inf")):
+            with self.subTest(bad=bad), patch.dict("os.environ", {"OPENAI_API_KEY": "test"}):
+                with self.assertRaises(ValueError):
+                    self.providers.OpenAIProvider("m", max_call_s=bad)
+
+    def test_a_row_can_tighten_the_cap(self):
+        """make_provider must actually forward it; the knob is useless in yaml alone."""
+        row = {"provider": "openai", "api_model_id": "m", "max_call_s": 300,
+               "input_cost_per_mtok": 1.0, "output_cost_per_mtok": 2.0}
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test"}):
+            self.assertEqual(runner.make_provider(row).max_call_s, 300)
+
+    def test_the_astra_row_is_capped(self):
+        """The row the guard was written for. Its worst successful call was 26.0s."""
+        config = Path(runner.__file__).resolve().parent / "models.yaml"
+        row = next(m for m in runner.yaml.safe_load(config.read_text())["models"]
+                   if m["key"] == "azure-gpt-6-astra")
+        self.assertEqual(row["max_call_s"], 300)
 
 
 class MaxOutputTokensTests(unittest.TestCase):

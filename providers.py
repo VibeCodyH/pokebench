@@ -5,6 +5,7 @@ from copy import deepcopy
 import json
 import math
 import os
+import time
 from types import SimpleNamespace
 from urllib.parse import quote
 
@@ -88,9 +89,20 @@ class Provider(ABC):
         # buffered adapters that works out to the whole turn; the streamed OpenAI-compatible
         # path turns it into a silence window instead, so those rows can set it far lower.
         timeout: float = 600,
+        # Wall clock for ONE model call, which `timeout` cannot supply on a streamed response:
+        # a backend that keeps emitting frames forever never trips a silence window. The
+        # default is deliberately loose. Worst SUCCESSFUL call across every run on the board is
+        # 403.1s (azure-grok-4-3), so this clears the measured ceiling by better than 2x.
+        # ★ Keep it that way: per-row is the TIGHTENING mechanism, not this number. Too tight a
+        # default does not fail loudly, it turns a merely slow model into `provider_error` after
+        # an hour of compute, and a provider_error run is barred from the board.
+        max_call_s: float = 900,
     ):
         self.model = model
         self.timeout = timeout
+        if not math.isfinite(max_call_s) or max_call_s <= 0:
+            raise ValueError("max_call_s must be a finite positive number of seconds")
+        self.max_call_s = max_call_s
         self.input_cost_per_mtok = input_cost_per_mtok
         self.output_cost_per_mtok = output_cost_per_mtok
         for rate in (input_cost_per_mtok, output_cost_per_mtok):
@@ -139,7 +151,14 @@ class Provider(ABC):
         every model tried, while time to the FIRST chunk reached 178s on grok-4.6 because Azure
         buffers the reasoning phase, so the window has to clear a model's worst TTFT, not its
         streaming rate. That is why it is per-model rather than one global number.
+
+        The silence window has a blind spot that `max_call_s` covers: a stream that keeps
+        arriving can never trip it. gpt-6-astra did exactly that twice, delivering ~37 KB/s
+        into a single turn for over ten minutes with the 90s poll rearming on every chunk, and
+        nothing in the harness could end it. The deadline is only observed when a chunk lands,
+        so the overshoot is bounded by one `timeout` and no watchdog thread is needed.
         """
+        deadline = time.monotonic() + self.max_call_s   # started before the post: TTFT counts
         response = requests.post(url, json=payload, headers=headers,
                                  timeout=self.timeout, stream=True)
         content, reasoning, refusal = [], [], []
@@ -162,6 +181,9 @@ class Provider(ABC):
             # and one in the thought text cut the frame mid-string: the remainder no longer
             # started with "data:", so it was dropped, and the head failed to parse.
             for line in response.iter_lines(decode_unicode=True, delimiter="\n"):
+                # Before the blank/comment skip, so keepalive frames cannot hold the call open.
+                if time.monotonic() > deadline:
+                    raise _call_expired(self.max_call_s, "".join(content), "".join(reasoning))
                 line = line.rstrip("\r")
                 # Blank separators, and comment frames like OpenRouter's ": OPENROUTER PROCESSING"
                 if not line or line.startswith(":") or not line.startswith("data:"):
@@ -192,6 +214,19 @@ class Provider(ABC):
         message = {"content": "".join(content), "reasoning": "".join(reasoning),
                    "reasoning_content": "".join(reasoning), "refusal": "".join(refusal)}
         return {"choices": [{"message": message, "finish_reason": finish_reason}], "usage": usage}
+
+
+def _call_expired(limit: float, content: str, reasoning: str) -> TimeoutError:
+    """A runaway stream has to reach the turn loop as a RETRYABLE failure: no .response means
+    the loop reads status None and an empty body, so it backs off and replays the same turn
+    rather than aborting the run. Carry a head of what the model was emitting -- that text is
+    the only evidence of WHY a call ran away, and the alternative is a log line saying a call
+    took too long with nothing to look at. Truncated because raw_output is written to
+    log.jsonl verbatim and the stream that prompted this guard reached 13.9 MB."""
+    exc = TimeoutError(f"model call exceeded max_call_s={limit:g}s while the stream was still "
+                       f"delivering ({len(content)} content + {len(reasoning)} reasoning chars)")
+    exc.raw_output = (reasoning + content)[:2000]
+    return exc
 
 
 def _stream_error(error) -> ValueError:
@@ -421,6 +456,11 @@ class OpenAIProvider(Provider):
                 "schema": _schema_for(schema, "openai"),
             }}
         # Omitted entirely when uncapped, which lets the model use its own maximum.
+        # #47 proposed a harness-wide default here and it was rejected on the numbers: the
+        # worst SUCCESSFUL turn on the board spent 46,517 completion tokens (deepseek-flash),
+        # so a default safe enough not to truncate a real plan sits too high to be much of a
+        # guard, and it would silently change the request shape for all 14 published runs.
+        # max_call_s is the provider-agnostic bound instead. Cap a row when you have measured it.
         if self.max_tokens is not None:
             payload["max_completion_tokens"] = self.max_tokens
         effort = think.strip().lower()
