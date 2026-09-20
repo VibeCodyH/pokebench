@@ -102,6 +102,7 @@ models:
     family: claude
     params: null
     quant: null
+    release_date: "2026-08-31" # Google's Model Garden card; GA, retires 2027-02-28
     # 1M on Vertex, but this is the harness history budget, not a vendor claim, and it is set
     # to match azure-gpt-6-astra so the two frontier rows carry the same amount of history.
     context: 131072
@@ -122,7 +123,10 @@ models:
     # anthropic-claude-fable. serviceusage reports 2,370 nonzero Gemini quota buckets on the
     # same project and ZERO for every Anthropic model, which is Google's documented partner
     # exclusion, not a per-model grant: "You can't access or use the $300 credit for a
-    # generative AI partner model that is offered as a managed API."
+    # generative AI partner model that is offered as a managed API." Re-checked against the
+    # second project on the account (the one Model Garden links to) -- identical 429, so this
+    # is the ACCOUNT, not one project. Google's card notes Fable 5.1 shares one Fable-family
+    # quota, so there is no sibling model to route around it to either.
     # The adapter itself is verified working -- token mint, auth, and request shape all pass.
     # This row starts serving the moment the project has partner quota. Until then use
     # claude-fable-5-1 below, which is the same model on Anthropic's own API.
@@ -135,6 +139,7 @@ models:
     family: claude
     params: null
     quant: null
+    release_date: "2026-08-31"
     # Matches azure-gpt-6-astra, NOT claude-opus-5's 200000. Opus averaged 9,378 input tokens a
     # turn against Astra's 4,639, and input was $13.27 of its $16.94 bill.
     context: 131072
