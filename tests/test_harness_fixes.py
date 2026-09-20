@@ -866,6 +866,86 @@ class AnthropicThinkingStyleTests(unittest.TestCase):
             runner.make_provider(row)  # must not raise
 
 
+class JevDecisionProviderTests(unittest.TestCase):
+    """Jev is the only seat that is not a chat model: a different endpoint, a {state, questions}
+    body, and a typed choice back instead of prose. Each test below pins one thing that would
+    otherwise fail silently rather than loudly -- a dropped image looks like a working run, and
+    a plan carrying six actions would quietly give this seat six times the moves per turn."""
+
+    RESPONSE = {  # captured verbatim from the live endpoint, 2026-09-20
+        "model": "typesafe/jev-1.13-20260917",
+        "answers": {"action": {
+            "type": "choice", "choice": "walk_up", "confidence": 0.78,
+            "probabilities": {"walk_right": 0.01, "walk_up": 0.83,
+                              "walk_down": 0.01, "walk_left": 0.15}}},
+        "usage": {"input_tokens": 405, "output_tokens": 50, "cost": 0.00001701},
+    }
+
+    def _provider(self):
+        import providers
+        self.providers = providers
+        with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test"}):
+            return providers.get_provider(
+                "jev", "typesafe/jev-1.13",
+                input_cost_per_mtok=0.042, output_cost_per_mtok=0.0)
+
+    def test_one_action_per_turn(self):
+        """A choice question returns exactly one option. If this ever grew a list, this seat
+        would silently start taking up to six moves a turn like the chat seats do."""
+        provider = self._provider()
+        with patch.object(self.providers.JevDecisionProvider, "_post", return_value=self.RESPONSE):
+            plan, _, _ = provider.chat("SYS", "STATE", "IMAGEB64", {}, "high")
+        self.assertEqual(plan["actions"], ["walk_up"])
+
+    def test_screenshot_never_reaches_the_request(self):
+        """Jev takes no image. Sending one would either 400 or, worse, be ignored while the
+        run's receipts implied the model could see."""
+        provider = self._provider()
+        with patch.object(self.providers.JevDecisionProvider, "_post",
+                          return_value=self.RESPONSE) as post:
+            provider.chat("SYS", "STATE", "IMAGEB64", {}, "high")
+        body = post.call_args[0][1]
+        self.assertNotIn("IMAGEB64", json.dumps(body))
+        self.assertEqual(body["state"], "SYS\n\nSTATE")
+
+    def test_every_allowed_action_is_offered(self):
+        """`criteria` IS the prompt for a choice question, so a missing key does not just omit
+        documentation, it removes the option from the model's ballot entirely."""
+        provider = self._provider()
+        with patch.object(self.providers.JevDecisionProvider, "_post",
+                          return_value=self.RESPONSE) as post:
+            provider.chat("SYS", "STATE", "", {}, "high")
+        offered = set(post.call_args[0][1]["questions"]["action"]["criteria"])
+        self.assertEqual(offered, qwen_red.ALLOWED)
+
+    def test_thought_is_lifted_from_the_response_not_invented(self):
+        """The model emits no reasoning. The thought column has to be the distribution it
+        actually reported, or the run log fabricates reasoning that never happened."""
+        provider = self._provider()
+        with patch.object(self.providers.JevDecisionProvider, "_post", return_value=self.RESPONSE):
+            plan, thinking, _ = provider.chat("SYS", "STATE", "", {}, "high")
+        self.assertEqual(thinking, "")
+        self.assertIn("no reasoning", plan["thought"])
+        self.assertIn("walk_up 0.83", plan["thought"])
+        self.assertIn("confidence 0.78", plan["thought"])
+
+    def test_cost_matches_the_endpoint_own_figure(self):
+        """Guards the models.yaml rate against the price the API itself charged for this call."""
+        provider = self._provider()
+        with patch.object(self.providers.JevDecisionProvider, "_post", return_value=self.RESPONSE):
+            _, _, tokens = provider.chat("SYS", "STATE", "", {}, "high")
+        self.assertAlmostEqual(provider.cost(tokens), self.RESPONSE["usage"]["cost"], places=9)
+
+    def test_missing_choice_raises_with_usage_attached(self):
+        """A refusal still costs input tokens; the runner logs them from the exception."""
+        provider = self._provider()
+        empty = {"answers": {}, "usage": {"input_tokens": 9, "output_tokens": 0}}
+        with patch.object(self.providers.JevDecisionProvider, "_post", return_value=empty):
+            with self.assertRaises(ValueError) as caught:
+                provider.chat("SYS", "STATE", "", {}, "high")
+        self.assertEqual(caught.exception.usage, {"prompt": 9, "completion": 0})
+
+
 class AnthropicPromptCacheTests(unittest.TestCase):
     """Anthropic is the only provider here that has to be ASKED to cache; the rest do it
     automatically. Two ways enabling it could quietly corrupt the receipts, both covered:

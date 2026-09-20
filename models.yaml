@@ -660,3 +660,21 @@ models:
     release_date: "2025-12-02"
     input_cost_per_mtok: null
     output_cost_per_mtok: null
+
+  # EXHIBITION SEAT, not a leaderboard peer. Jev is a System One decision model: it answers on
+  # OpenRouter's /api/alpha/decisions endpoint, returns a typed choice plus a probability
+  # distribution, and never writes prose. It takes no image, so it plays from the text STATE
+  # alone, and a `choice` question yields ONE action per turn where every other seat may send
+  # six. Priced per input token only; completion is genuinely $0 because nothing is generated.
+  - key: jev-1.13
+    provider: jev
+    api_model_id: typesafe/jev-1.13
+    display_name: "TypeSafe Jev 1.13"
+    family: jev
+    params: null
+    quant: null
+    context: 32000
+    think: default # ignored: supported_parameters is empty on this endpoint
+    release_date: "2026-09-18"
+    input_cost_per_mtok: 0.042
+    output_cost_per_mtok: 0.0
