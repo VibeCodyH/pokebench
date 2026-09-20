@@ -28,7 +28,10 @@ const milestoneList = [
   {key:'pewter_gym', label:"Entered Brock's Gym", short:'Entered gym'},
   {key:'beat_brock', label:'Beat Brock (Boulder Badge)', short:'Beat Brock'}
 ];
-const modelName = run => textValue(run.model);
+// display_name is the registry's label; run.model is the raw api_model_id, which on Azure
+// carries the deployment suffix ("gpt-6-astra-1"). Summaries written before this keep no
+// display_name, so they fall back and render exactly what they render today.
+const modelName = run => textValue(run.display_name) || textValue(run.model);
 const milestoneLabel = run => milestoneList[run.furthest_index]?.label || 'No milestone reached';
 const trophy = '<svg class="trophy" viewBox="0 0 32 37" aria-hidden="true"><use href="#art-trophy"/></svg>';
 let lastFocused = null;
@@ -459,10 +462,10 @@ function podiumMarkup(run, place) {
   if (!run) return '';
   const foot = place === 1 ? 'Champion' : local(run) ? 'Local' : 'API';
   const footCls = place === 1 ? '' : local(run) ? 'local' : 'api';
-  return `<button type="button" class="box pod pod-${place} ${place === 1 ? 'first' : ''}" data-uid="${escape(run.uid)}" aria-label="${escape(run.model)}, ${['1st','2nd','3rd'][place - 1]} place, open run details">
+  return `<button type="button" class="box pod pod-${place} ${place === 1 ? 'first' : ''}" data-uid="${escape(run.uid)}" aria-label="${escape(modelName(run))}, ${['1st','2nd','3rd'][place - 1]} place, open run details">
     <div class="body">
       <span class="place">${['1st','2nd','3rd'][place - 1]}</span>
-      <span class="name">${escape(run.model)}</span>
+      <span class="name">${escape(modelName(run))}</span>
       <span class="meta">${number(run.turns_used)} turns · ${price(run)}</span>
       <span class="result">${escape(stopLabel(run))}</span>
     </div>
@@ -474,9 +477,9 @@ function podiumMarkup(run, place) {
 function cardMarkup(run, rank) {
   const done = won(run);
   const width = Math.round((run.furthest_index + 1) / milestoneList.length * 100);
-  return `<button type="button" class="box trainer" data-uid="${escape(run.uid)}" aria-label="${escape(run.model)}, rank ${rank}, ${escape(stopLabel(run))}, open run details">
+  return `<button type="button" class="box trainer" data-uid="${escape(run.uid)}" aria-label="${escape(modelName(run))}, rank ${rank}, ${escape(stopLabel(run))}, open run details">
     <div class="body">
-      <div class="top"><span class="rank ${rank <= 3 ? 'top3' : ''}">${rank}</span><span class="name">${escape(run.model)}</span></div>
+      <div class="top"><span class="rank ${rank <= 3 ? 'top3' : ''}">${rank}</span><span class="name">${escape(modelName(run))}</span></div>
       <div class="kv">
         <div><div class="label">Turns</div><div class="value">${number(run.turns_used)}</div></div>
         <div><div class="label">Run cost</div><div class="value">${price(run)}</div></div>

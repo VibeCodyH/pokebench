@@ -145,6 +145,12 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
     summary = {
         "run_id": run_id,
         "model": model["api_model_id"],
+        # The human label. "model" stays the id actually sent to the API, which on Azure is
+        # the DEPLOYMENT name, so the board had no clean name to show for those rows.
+        # .get, not [], deliberately: a missing label must never raise HERE. write_summary runs
+        # after the whole run is done, so a KeyError would throw away a completed result over
+        # a cosmetic field. The site falls back to "model" when this is absent.
+        "display_name": model.get("display_name"),
         "provider": provider_name,
         "family": model["family"],
         "run_name": run_name,
