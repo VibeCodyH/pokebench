@@ -532,6 +532,94 @@ class OpenRouterProvider(OpenAIProvider):
     base_url = "https://openrouter.ai/api/v1"
 
 
+class JevDecisionProvider(Provider):
+    """TypeSafe's Jev on OpenRouter's /api/alpha/decisions endpoint.
+
+    Not a chat model and not on /api/v1. Its modality is text->decisions: it returns a typed
+    choice plus a probability over the options, never prose, so there is no content string to
+    parse and `supported_parameters` is empty (no temperature, no max_tokens, no schema). The
+    body is {model, state, questions} rather than messages.
+
+    Two consequences for the benchmark, both real asterisks rather than bugs:
+
+    - No vision. `image_b64` is discarded. The model gets the same system prompt and the same
+      text STATE every other seat gets, and nothing else.
+    - ONE action per turn, not up to six, because a `choice` question returns a single option.
+
+    The run is an exhibition. Measured 2026-09-20 against the live endpoint: on a raw ASCII map
+    with two solid rows of trees directly north and the goal stated as north, Jev answered
+    walk_up at p=0.83. It reads the goal, not the map. That is what a System One model is, and
+    it is the reason this cannot share a seat with the deliberating models."""
+
+    api_key_env = "OPENROUTER_API_KEY"
+    url = "https://openrouter.ai/api/alpha/decisions"
+
+    # What each action does, in the model's own decision vocabulary. `criteria` IS the prompt
+    # for a choice question, so these lines are load-bearing in a way a chat enum is not.
+    ACTION_CRITERIA = {
+        "walk_up": "Move one tile north",
+        "walk_down": "Move one tile south",
+        "walk_left": "Move one tile west",
+        "walk_right": "Move one tile east",
+        "press_a": "Interact, confirm, talk, or advance one dialog box",
+        "press_b": "Cancel, back out of a menu, or decline",
+        "press_start": "Open the main menu",
+        "press_select": "Rarely useful; effectively a wasted turn",
+        "wait_60": "Do nothing for a moment and let the game animate",
+        "hold_a_30": "Hold A through a long unskippable sequence",
+        "a_until_dialog_end": "Press A repeatedly until the current dialog finishes",
+    }
+
+    def chat(
+        self, system: str, user: str, image_b64: str, schema: dict, think: str
+    ) -> ChatResult:
+        body = self._post(
+            self.url,
+            {
+                "model": self.model,
+                # Same information every other seat receives, minus the screenshot it cannot
+                # accept. The system prompt carries the rules; `user` carries this turn's state.
+                "state": f"{system}\n\n{user}",
+                "questions": {
+                    "action": {
+                        "type": "choice",
+                        "instructions": (
+                            "Pick the single button action that best makes progress toward the "
+                            "current goal. Walking into a wall, tree, or ledge wastes the turn."
+                        ),
+                        "criteria": dict(self.ACTION_CRITERIA),
+                    }
+                },
+            },
+            {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
+        )
+
+        answer = (body.get("answers") or {}).get("action") or {}
+        usage = body.get("usage") or {}
+        tokens = {
+            "prompt": int(usage.get("input_tokens", 0)),
+            "completion": int(usage.get("output_tokens", 0)),
+        }
+        choice = answer.get("choice")
+        if not isinstance(choice, str) or not choice:
+            raise _plan_error("Jev returned no choice", body, tokens)
+
+        # Jev emits no reasoning, so rather than invent one, record what it actually reported:
+        # the distribution it chose from. Every character here is lifted from the response.
+        probabilities = answer.get("probabilities") or {}
+        ranked = sorted(
+            ((k, v) for k, v in probabilities.items() if isinstance(v, (int, float))),
+            key=lambda kv: -kv[1],
+        )[:4]
+        spread = " · ".join(f"{name} {value:.2f}" for name, value in ranked)
+        confidence = answer.get("confidence")
+        thought = f"[no reasoning: System One model] {spread}" if spread else "[no reasoning]"
+        if isinstance(confidence, (int, float)):
+            thought += f" | confidence {confidence:.2f}"
+
+        return {"thought": thought, "actions": [choice]}, "", tokens
+
+
 class BedrockProvider(OpenAIProvider):
     """Amazon Bedrock's OpenAI-compatible endpoint, authenticated with a Bedrock API key
     (bearer token, not SigV4). Note this is NOT bedrock-runtime: it is a separate endpoint
@@ -664,7 +752,8 @@ def get_provider(provider_name: str, model: str, **opts) -> Provider:
     providers = {
         "ollama": OllamaProvider, "anthropic": AnthropicProvider,
         "openai": OpenAIProvider, "google": GoogleProvider,
-        "openrouter": OpenRouterProvider, "bedrock": BedrockProvider,
+        "openrouter": OpenRouterProvider, "jev": JevDecisionProvider,
+        "bedrock": BedrockProvider,
         "xai": XAIProvider, "deepseek": DeepSeekProvider, "azure": AzureOpenAIProvider,
         "azure-foundry": AzureFoundryProvider,
     }
