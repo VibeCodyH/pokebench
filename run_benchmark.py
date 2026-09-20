@@ -104,10 +104,18 @@ def make_provider(model):
     # OpenAI-shaped adapters only: skip the strict response_format on a backend that rejects it.
     if model.get("structured_output") is not None:
         opts["structured_output"] = bool(model["structured_output"])
-    # Anthropic only: which of the two mutually exclusive thinking request shapes this model
-    # accepts. The API 400s on the wrong one, so it is declared per row, not detected.
-    if model["provider"] == "anthropic" and model.get("thinking_style") is not None:
+    # Anthropic-shaped only: which of the two mutually exclusive thinking request shapes this
+    # model accepts. The API 400s on the wrong one, so it is declared per row, not detected.
+    # "vertex" is in the set because it IS AnthropicProvider, just pointed at Google Cloud.
+    if model["provider"] in {"anthropic", "vertex"} and model.get("thinking_style") is not None:
         opts["thinking_style"] = model["thinking_style"]
+    if model["provider"] == "vertex":
+        # project falls back to GOOGLE_CLOUD_PROJECT in the adapter, so a row may omit it and
+        # keep the project id out of a public repo. region defaults to the global endpoint,
+        # which is the one WITHOUT the 10% regional premium.
+        for name in ("project", "region"):
+            if model.get(name) is not None:
+                opts[name] = model[name]
     if model["provider"] == "ollama":
         opts["num_ctx"] = model["num_ctx"]
     if model["provider"] in {"ollama", "google"}:
