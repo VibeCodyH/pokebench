@@ -465,8 +465,16 @@ models:
     context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
     think: high
     release_date: "2026-09-03"
-    input_cost_per_mtok: null
-    output_cost_per_mtok: null
+    # Global (non-Data-Zone) SHORT-context meters, westus3, from the retail-prices API:
+    # `contains(meterName,'6-astra')`. Searching for "gpt-6" or "Astra" returns nothing -- the
+    # meters are named "6-astra ShortCo Inp Std Gl 1M Tokens", which is also exactly what the
+    # portal's cost chart legend shows. LongCo doubles these ($20/$75) and the harness never
+    # reaches it; Data Zone is 10% more. Cached input is a separate $1.00/M meter that cost()
+    # deliberately does not model, so a run with cache hits records slightly high.
+    # Cross-checked 2026-09-20: 275.64K in + 16.15K out billed $3.52, against $3.56 at these
+    # rates, the gap being that cached meter.
+    input_cost_per_mtok: 10.00
+    output_cost_per_mtok: 50.00
     # Every other row omits this, which OpenAIProvider treats as "use the model's own maximum".
     # On 2026-09-20 Astra took that literally: one turn streamed 13.9 MB of SSE and was still
     # climbing at ~37 KB/s when it was killed. A SILENCE timeout cannot catch that -- the poll
