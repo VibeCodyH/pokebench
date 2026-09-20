@@ -31,7 +31,7 @@ const milestoneList = [
 // display_name is the registry's label; run.model is the raw api_model_id, which on Azure
 // carries the deployment suffix ("gpt-6-astra-1"). Summaries written before this keep no
 // display_name, so they fall back and render exactly what they render today.
-const modelName = run => textValue(run.display_name) || textValue(run.model);
+const modelName = run => textValue(run.display_name || run.model);
 const milestoneLabel = run => milestoneList[run.furthest_index]?.label || 'No milestone reached';
 const trophy = '<svg class="trophy" viewBox="0 0 32 37" aria-hidden="true"><use href="#art-trophy"/></svg>';
 let lastFocused = null;
