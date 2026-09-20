@@ -467,6 +467,12 @@ models:
     release_date: "2026-09-03"
     input_cost_per_mtok: null
     output_cost_per_mtok: null
+    # Every other row omits this, which OpenAIProvider treats as "use the model's own maximum".
+    # On 2026-09-20 Astra took that literally: one turn streamed 13.9 MB of SSE and was still
+    # climbing at ~37 KB/s when it was killed. A SILENCE timeout cannot catch that -- the poll
+    # re-arms on every chunk -- so the cap is the only thing that ends it. Observed plans are
+    # 43-83 completion tokens, so this is ~50x headroom and should never truncate a real one.
+    max_output_tokens: 4000
     # 90s, not the 600s default. OpenAIProvider streams, so `timeout` is a SILENCE window, and
     # Astra opened a TLS connection on turn 22 that then sent nothing -- deployment healthy in
     # parallel, 149,991 of 150,000 TPM free, zero 429s. At the default that costs ten minutes of
