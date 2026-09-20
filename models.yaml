@@ -166,6 +166,10 @@ models:
     input_cost_per_mtok: 0.10
     output_cost_per_mtok: 0.20
 
+  # Vision verified on the pinned id 2026-09-20: input_modalities is text+image+video, which is
+  # the gate for this seat because the harness sends a PNG every turn. OpenRouter routes this
+  # model across several providers whose rates differ ($0.075-0.09 in, $0.25-0.30 out), so the
+  # headline pair below is an estimate of a routed price, not a single vendor's card.
   - key: or-glm-5.3-flash
     provider: openrouter
     api_model_id: z-ai/glm-5.3-flash-20260826
@@ -175,9 +179,9 @@ models:
     quant: null
     context: 1000000
     think: high
-    release_date: null
-    input_cost_per_mtok: null
-    output_cost_per_mtok: null
+    release_date: "2026-08-26"
+    input_cost_per_mtok: 0.09
+    output_cost_per_mtok: 0.30
 
   - key: or-deepseek-v4-vision
     provider: openrouter
@@ -444,6 +448,26 @@ models:
   # completion tokens (would be $4.21) - either output meters post later than input, or Azure is
   # not billing reasoning tokens as output. Unresolved; treat cost_usd on reasoning rows as a
   # CEILING until the bill settles.
+  # gpt-6-astra is OpenAI-published but deployed on the FOUNDRY resource, so it uses the
+  # azure-foundry env pair while its usage follows OpenAI semantics (reasoning inside
+  # completion). That needs no second class: AzureFoundryProvider._tokens reconciles against
+  # total_tokens per response rather than per publisher. Verified 2026-09-20 against a real
+  # frame -- vision and strict json_schema both answer on /openai/v1/chat/completions.
+  # Rates null for the same reason as the rows below: Azure does not publish them and the
+  # OpenAI direct price must not be copied across.
+  - key: azure-gpt-6-astra
+    provider: azure-foundry
+    api_model_id: gpt-6-astra-1  # deployment name; the model behind it is gpt-6-astra-2026-09-03
+    display_name: "GPT-6 Astra"
+    family: gpt
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: high
+    release_date: "2026-09-03"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
   - key: azure-grok-4.6
     provider: azure-foundry
     api_model_id: grok-4.6
