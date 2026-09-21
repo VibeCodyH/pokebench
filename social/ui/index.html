@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PokéBench — Social Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><span class="mark">PB</span><span class="wordmark">PokéBench<i>_</i></span></div>
+    <div class="nav-label">Queue</div>
+    <nav id="nav"></nav>
+    <div class="nav-label accounts-label">Accounts</div>
+    <div id="accounts" class="accounts"></div>
+    <div class="agent">
+      <div class="nav-label">Posting</div>
+      <div class="agent-line"><span class="dot"></span>Manual · you paste, nothing auto-posts</div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <header class="head">
+      <div>
+        <div class="eyebrow">Queue</div>
+        <h1 id="view-title">Pending Review</h1>
+      </div>
+      <div class="head-actions">
+        <input id="search" type="search" placeholder="Search drafts..." autocomplete="off">
+      </div>
+    </header>
+
+    <div id="summary" class="summary"></div>
+    <div id="filters" class="filters"></div>
+    <div id="grid" class="grid"></div>
+  </main>
+</div>
+
+<dialog id="post-modal"></dialog>
+<dialog id="edit-modal"></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="/ui/app.js"></script>
+</body>
+</html>
