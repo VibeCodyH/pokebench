@@ -101,6 +101,8 @@ def make_provider(model):
         opts["timeout"] = model["timeout"]
     if model.get("max_call_s") is not None:
         opts["max_call_s"] = model["max_call_s"]
+    if model.get("max_call_chars") is not None:
+        opts["max_call_chars"] = model["max_call_chars"]
     # OpenAI-shaped adapters only: skip the strict response_format on a backend that rejects it.
     if model.get("structured_output") is not None:
         opts["structured_output"] = bool(model["structured_output"])
@@ -219,7 +221,15 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
     return path
 
 
-def record_milestones(server, tracker, state, turn):
+def game_epoch(server):
+    """The server's current game counter, so a milestone post can prove which game it is about."""
+    try:
+        return requests.get(f"{server}/milestones", timeout=10).json().get("epoch")
+    except Exception:
+        return None      # an older server has no epoch; posting without one is still accepted
+
+
+def record_milestones(server, tracker, state, turn, epoch=None):
     before = set(tracker.first_turn)
     tracker.update(state, turn)
     for key, label, _ in MILESTONES:
@@ -227,7 +237,9 @@ def record_milestones(server, tracker, state, turn):
             print(f"🏁 MILESTONE: {label} (turn {turn})", flush=True)
             event(server, "key_moment", description=f"Milestone: {label}", category="milestone")
             try:  # feed the dashboard JOURNEY tracker; summary.json is the scoring source of truth
-                requests.post(f"{server}/milestones", json={"key": key, "label": label, "turn": turn}, timeout=10)
+                requests.post(f"{server}/milestones",
+                              json={"key": key, "label": label, "turn": turn, "epoch": epoch},
+                              timeout=10)
             except Exception:
                 pass
     return "beat_brock" in tracker.first_turn
@@ -309,9 +321,39 @@ def fit_recent(history, num_ctx, static_chars):
     return kept
 
 
+def verify_fresh_game(server):
+    """Refuse to score against a game that is already part-played.
+
+    `run.sh` POSTs /games/new with `curl --fail`, but the per-model launchers on the box do that
+    step by hand and the runner itself never checked. A missed or failed reset does not announce
+    itself: the loop scores the PREVIOUS run's progress, and because MilestoneTracker only arms
+    once it has seen Red's House, a game parked past it can also never trip a rung at all. Both
+    produce a finished-looking summary.json, which is the worst shape a scoring bug can take.
+
+    Checked against the emulator's own RAM rather than the /milestones display dict, since that
+    dict is display state and a stale POST can repopulate it (#14). A fresh game means no badges
+    and no party; the title screen and Red's bedroom both satisfy it.
+    """
+    try:
+        state = requests.get(f"{server}/state", timeout=10).json()
+    except Exception as exc:
+        raise SystemExit(f"cannot read {server}/state to confirm a fresh game: {exc}")
+    player = state.get("player") or {}
+    # badges is the list of names and badge_count the number; read both so a shape change on
+    # either side cannot quietly turn this check into a no-op.
+    badges = player.get("badge_count") or len(player.get("badges") or [])
+    party = state.get("party") or []
+    if badges or party:
+        raise SystemExit(
+            f"refusing to start: {server} is already part-played "
+            f"(badges={badges}, party={len(party)}). POST /games/new, set /control to running, "
+            "then launch again.")
+
+
 def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
         pause_on_billing=0):
     server = server.rstrip("/")
+    verify_fresh_game(server)
     os.makedirs(RUNS_DIR, exist_ok=True)
     slug = re.sub(r"[^A-Za-z0-9_-]+", "-", model["key"]).strip("-")[:80] or "model"
     prefix = f"{slug}-{time.strftime('%Y%m%d_%H%M%S')}-"
@@ -327,6 +369,9 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
           f"ctx {model['num_ctx']})", flush=True)
 
     tracker = MilestoneTracker()
+    # Read once, at the start, and carry it on every milestone post: that is what makes a post
+    # from a previous run identifiable as stale rather than merely late.
+    epoch = game_epoch(server)
     run_start = time.time()
     harness_git_sha, harness_files_sha = harness_fingerprint()  # snapshot the code at run start
     try:  # tell the /stream dashboard which model is playing (branding, colors, ctx label)
@@ -394,7 +439,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 time.sleep(5)
                 continue
 
-            if record_milestones(server, tracker, state, turn):
+            if record_milestones(server, tracker, state, turn, epoch):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
                 termination = "beat_brock"
                 break
@@ -419,6 +464,21 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             started = time.time()
             try:
                 plan, thinking, tokens = provider.chat(system_prompt, user, img, SCHEMA, model["think"])
+                # A name outside ALLOWED used to be dropped while the REST of the batch still ran, so
+                # the trailing confirmation press landed on whatever the shortened sequence left on
+                # screen: Nex turn 268 reopened FIGHT instead of selecting RUN. A plan that cannot be
+                # executed as written is a model error, not a shorter plan, so it takes the same retry
+                # path as malformed JSON. An EMPTY list still falls through to the wait_60 default
+                # below -- a model choosing to do nothing is a legal turn, an unrunnable plan is not.
+                proposed_names = plan.get("actions")
+                invalid = ([a for a in proposed_names if not (isinstance(a, str) and a in ALLOWED)]
+                           if isinstance(proposed_names, list) else [])
+                if invalid:
+                    plan_error = ValueError("plan used actions outside the allowed set: "
+                                            + ", ".join(repr(a) for a in invalid[:6]))
+                    plan_error.raw_output = json.dumps(plan)[:2000]
+                    plan_error.usage = tokens   # the rejected attempt still cost these tokens
+                    raise plan_error
             except Exception as exc:
                 if frame_file:
                     # A retried turn gets the required canonical filename; preserve this failed
@@ -576,7 +636,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             for step in steps:
                 after = step.get("after") if isinstance(step, dict) else None
                 if isinstance(after, dict) and after.get("map_id") is not None:
-                    record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn)
+                    record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn, epoch)
             # A white-out halves the money (floor) and warps to the last Pokémon Center: no purchase does both.
             if isinstance(state_after, dict):
                 money_before = (state.get("player") or {}).get("money")
@@ -587,7 +647,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                     blackouts.append(turn)
                     print(f"💀 BLACKOUT (turn {turn})", flush=True)
             # /action supplies RAM state: credit even a milestone on the last budgeted turn.
-            if isinstance(state_after, dict) and record_milestones(server, tracker, state_after, turn):
+            if isinstance(state_after, dict) and record_milestones(server, tracker, state_after, turn, epoch):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
                 termination = "beat_brock"
                 break

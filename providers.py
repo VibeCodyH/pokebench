@@ -97,12 +97,23 @@ class Provider(ABC):
         # default does not fail loudly, it turns a merely slow model into `provider_error` after
         # an hour of compute, and a provider_error run is barred from the board.
         max_call_s: float = 900,
+        # Volume, not time. `max_call_s` bounds a runaway call but only after it has burned the
+        # whole budget: the gpt-6-astra runaway was identifiable within seconds as 13.9 MB of SSE
+        # still climbing, when a real plan is a few hundred bytes of JSON. Measured across the
+        # 15,621 scored turns on the board, the largest SUCCESSFUL completion is 146.0 KB
+        # (deepseek-flash, turn 531) and p99 is 44.6 KB, so this default clears the real ceiling
+        # by ~7x. Same rule as max_call_s: per-row is the tightening mechanism, not this number,
+        # because a tight cap turns a verbose model into provider_error and bars it from the board.
+        max_call_chars: int = 1_000_000,
     ):
         self.model = model
         self.timeout = timeout
         if not math.isfinite(max_call_s) or max_call_s <= 0:
             raise ValueError("max_call_s must be a finite positive number of seconds")
         self.max_call_s = max_call_s
+        if max_call_chars <= 0:
+            raise ValueError("max_call_chars must be a positive number of characters")
+        self.max_call_chars = max_call_chars
         self.input_cost_per_mtok = input_cost_per_mtok
         self.output_cost_per_mtok = output_cost_per_mtok
         for rate in (input_cost_per_mtok, output_cost_per_mtok):
@@ -162,6 +173,7 @@ class Provider(ABC):
         response = requests.post(url, json=payload, headers=headers,
                                  timeout=self.timeout, stream=True)
         content, reasoning, refusal = [], [], []
+        delivered = 0          # decoded characters of message payload, the thing max_call_chars bounds
         finish_reason, usage = None, None
         try:
             if not response.ok:
@@ -204,6 +216,13 @@ class Provider(ABC):
                     reasoning.append(delta.get("reasoning") or delta.get("reasoning_content") or "")
                     refusal.append(delta.get("refusal") or "")
                     finish_reason = choice.get("finish_reason") or finish_reason
+                    delivered += len(content[-1]) + len(reasoning[-1]) + len(refusal[-1])
+                    # Checked inside the frame loop rather than after it: the point of a volume
+                    # bound is to end a runaway in seconds, and a stream that never stops never
+                    # leaves this loop on its own.
+                    if delivered > self.max_call_chars:
+                        raise _stream_overrun(self.max_call_chars, delivered,
+                                              "".join(content), "".join(reasoning))
         finally:
             response.close()
         if usage is None:
@@ -225,6 +244,18 @@ def _call_expired(limit: float, content: str, reasoning: str) -> TimeoutError:
     log.jsonl verbatim and the stream that prompted this guard reached 13.9 MB."""
     exc = TimeoutError(f"model call exceeded max_call_s={limit:g}s while the stream was still "
                        f"delivering ({len(content)} content + {len(reasoning)} reasoning chars)")
+    exc.raw_output = (reasoning + content)[:2000]
+    return exc
+
+
+def _stream_overrun(limit: int, delivered: int, content: str, reasoning: str) -> TimeoutError:
+    """Same retryable shape as _call_expired, for the same reason: no .response means the turn
+    loop reads status None, backs off and replays the turn instead of aborting the run. A
+    TimeoutError rather than a ValueError because this IS the runaway that max_call_s catches
+    late, not a malformed reply -- treating it as a bad plan would retry it as a model error and
+    read the same on the log."""
+    exc = TimeoutError(f"model call exceeded max_call_chars={limit:,} while the stream was still "
+                       f"delivering ({delivered:,} characters so far)")
     exc.raw_output = (reasoning + content)[:2000]
     return exc
 
