@@ -355,6 +355,28 @@ models:
     input_cost_per_mtok: 0.0 # OpenRouter :free tier: genuinely free (1,000 req/day/account cap)
     output_cost_per_mtok: 0.0
 
+  # Xiaomi MiMo V2.6 Pro, seated 2026-09-22. Paid SKU, not a :free tier, so no 1,000-req/day cap
+  # to time a launch around. Gated before seating on a real turn-0400 frame through
+  # providers.OpenRouterProvider: prompt_tokens +212 with the image and a plan that described the
+  # actual screen (vision is real, not a catalog claim), strict json_schema accepted, and 495
+  # characters of reasoning came back. That last one is the check that mattered: OpenRouter lists
+  # `reasoning` and `include_reasoning` in supported_parameters for this model and NOT
+  # `reasoning_effort`, which is what `think: high` sends, so a silent drop would have put a
+  # non-thinking run on the board wearing a high label. It is honoured. The two siblings on the
+  # same listing are `-flash` (10x cheaper) and `-pro-ultraspeed` (10x dearer than pro).
+  - key: or-mimo-v2.6-pro
+    provider: openrouter
+    api_model_id: xiaomi/mimo-v2.6-pro
+    display_name: "MiMo V2.6 Pro"
+    family: mimo
+    params: null
+    quant: null
+    context: 1048576
+    think: high
+    release_date: null # OpenRouter listing carries no release date for this SKU
+    input_cost_per_mtok: 0.435
+    output_cost_per_mtok: 0.87
+
   # --- DeepSeek direct (api.deepseek.com, DEEPSEEK_API_KEY). `deepseek-flash` resolves to
   # V4.1 Flash (released 2026-09-10): 552B MoE, 8B active on input / 16B on output, and the
   # first DeepSeek with a native vision encoder. Sight-checked before seating the same way the
