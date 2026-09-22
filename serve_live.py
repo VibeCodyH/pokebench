@@ -406,6 +406,8 @@ async def _busy_guard(request, call_next):
     if mutating:
         _busy += 1
         if request.url.path == "/games/new":
+            global _game_epoch
+            _game_epoch += 1
             _milestones.clear(); _run_meta.clear()
         async with _lock:  # wait for any in-flight tick, then hold nothing (handler runs unlocked)
             pass
@@ -644,12 +646,23 @@ except Exception:
     pass
 
 _milestones: dict = {}  # key -> turn, for the current game; cleared on /games/new
+# Bumped on every /games/new. Clearing _milestones is not enough on its own: a harness from a
+# PRIOR run that is still alive posts against the game it thinks it is playing, and that post
+# lands after the clear and repopulates the dashboard for the new one. The epoch is the thing
+# it cannot guess -- it read its value before the reset, so its post no longer matches.
+_game_epoch: int = 0
 
 
 @S.app.post("/milestones")
 async def post_milestone(body: dict):
     """Harness reports a newly hit milestone {key, label, turn}; stored for /stream refreshes and broadcast live."""
     key, turn = body.get("key"), body.get("turn")
+    # A post that names an epoch must name THIS one. Omitting it is still accepted, so a harness
+    # that predates the field keeps working -- the guard is aimed at a second, older runner, and
+    # that one does send an epoch, just the wrong one.
+    epoch = body.get("epoch")
+    if epoch is not None and epoch != _game_epoch:
+        return {"success": False, "stale": True, "epoch": _game_epoch, "hit": _milestones}
     # The harness (milestones.py tracker) is the single source of truth: it posts each key exactly
     # once, at its real first turn, guarded against the boot state. So TRUST it and overwrite — a
     # stale value left by a boot false-fire or a prior session must not lock the dashboard to turn 1.
@@ -676,7 +689,8 @@ async def get_run_meta():
 
 @S.app.get("/milestones")
 async def get_milestones():
-    return {"ladder": [{"key": k, "label": l} for k, l, _ in _LADDER], "hit": _milestones}
+    return {"ladder": [{"key": k, "label": l} for k, l, _ in _LADDER], "hit": _milestones,
+            "epoch": _game_epoch}
 
 
 @S.app.get("/frame")

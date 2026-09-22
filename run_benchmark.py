@@ -221,7 +221,15 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
     return path
 
 
-def record_milestones(server, tracker, state, turn):
+def game_epoch(server):
+    """The server's current game counter, so a milestone post can prove which game it is about."""
+    try:
+        return requests.get(f"{server}/milestones", timeout=10).json().get("epoch")
+    except Exception:
+        return None      # an older server has no epoch; posting without one is still accepted
+
+
+def record_milestones(server, tracker, state, turn, epoch=None):
     before = set(tracker.first_turn)
     tracker.update(state, turn)
     for key, label, _ in MILESTONES:
@@ -229,7 +237,9 @@ def record_milestones(server, tracker, state, turn):
             print(f"🏁 MILESTONE: {label} (turn {turn})", flush=True)
             event(server, "key_moment", description=f"Milestone: {label}", category="milestone")
             try:  # feed the dashboard JOURNEY tracker; summary.json is the scoring source of truth
-                requests.post(f"{server}/milestones", json={"key": key, "label": label, "turn": turn}, timeout=10)
+                requests.post(f"{server}/milestones",
+                              json={"key": key, "label": label, "turn": turn, "epoch": epoch},
+                              timeout=10)
             except Exception:
                 pass
     return "beat_brock" in tracker.first_turn
@@ -359,6 +369,9 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
           f"ctx {model['num_ctx']})", flush=True)
 
     tracker = MilestoneTracker()
+    # Read once, at the start, and carry it on every milestone post: that is what makes a post
+    # from a previous run identifiable as stale rather than merely late.
+    epoch = game_epoch(server)
     run_start = time.time()
     harness_git_sha, harness_files_sha = harness_fingerprint()  # snapshot the code at run start
     try:  # tell the /stream dashboard which model is playing (branding, colors, ctx label)
@@ -426,7 +439,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 time.sleep(5)
                 continue
 
-            if record_milestones(server, tracker, state, turn):
+            if record_milestones(server, tracker, state, turn, epoch):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
                 termination = "beat_brock"
                 break
@@ -623,7 +636,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             for step in steps:
                 after = step.get("after") if isinstance(step, dict) else None
                 if isinstance(after, dict) and after.get("map_id") is not None:
-                    record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn)
+                    record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn, epoch)
             # A white-out halves the money (floor) and warps to the last Pokémon Center: no purchase does both.
             if isinstance(state_after, dict):
                 money_before = (state.get("player") or {}).get("money")
@@ -634,7 +647,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                     blackouts.append(turn)
                     print(f"💀 BLACKOUT (turn {turn})", flush=True)
             # /action supplies RAM state: credit even a milestone on the last budgeted turn.
-            if isinstance(state_after, dict) and record_milestones(server, tracker, state_after, turn):
+            if isinstance(state_after, dict) and record_milestones(server, tracker, state_after, turn, epoch):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
                 termination = "beat_brock"
                 break
