@@ -369,11 +369,11 @@ models:
     api_model_id: xiaomi/mimo-v2.6-pro
     display_name: "MiMo V2.6 Pro"
     family: mimo
-    params: null
+    params: "1T+" # "over 1T parameters" is all the OpenRouter listing gives; no exact count
     quant: null
     context: 1048576
     think: high
-    release_date: null # OpenRouter listing carries no release date for this SKU
+    release_date: "2026-09-21" # OpenRouter listing date
     input_cost_per_mtok: 0.435
     output_cost_per_mtok: 0.87
 
