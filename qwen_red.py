@@ -42,21 +42,30 @@ Reply with JSON only:
  "notes": "<optional: rewrite your persistent notes (where you are, plan, lessons). Under 600 chars>"}
 """
 
+ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk_down", "walk_left",
+           "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 SCHEMA = {
     "type": "object",
     "properties": {
         "thought": {"type": "string"},
-        "actions": {"type": "array", "items": {"type": "string"}},
+        # The enum is the first line of defence against a name outside ALLOWED: a provider that
+        # honours the schema cannot emit one at all. Sorted so the schema is byte-stable across
+        # runs -- a set's order is not, and this goes into the request every turn.
+        "actions": {"type": "array", "items": {"type": "string", "enum": sorted(ALLOWED)}},
         "key_moment": {"type": "string"},
         "notes": {"type": "string"},
     },
     "required": ["thought", "actions"],
 }
-ALLOWED = {"press_a", "press_b", "press_start", "press_select", "walk_up", "walk_down", "walk_left",
-           "walk_right", "hold_a_30", "wait_60", "a_until_dialog_end"}
 
 # Provenance (BENCHMARK-SPEC.md §2b — same prompt, same rules, public receipts).
-PROMPT_VERSION = "v21"          # v21 = STATE says "none loaded yet" on the title/intro instead of Red's House 2F (3,6); v20 = door rule no longer contradicts the exit-mat rule; v19 = map shows raw walkability, no reachability flood-fill; v18 = truthful warp/UI/party/feedback
+# v22 = STATE no longer reports the starter-preview dex count as owned, and an action outside
+#       ALLOWED is rejected instead of silently dropped from the batch
+# v21 = STATE says "none loaded yet" on the title/intro instead of Red's House 2F (3,6)
+# v20 = door rule no longer contradicts the exit-mat rule
+# v19 = map shows raw walkability, no reachability flood-fill
+# v18 = truthful warp/UI/party/feedback
+PROMPT_VERSION = "v22"
 HARNESS_VERSION = 2
 NUM_CTX = 65536
 TEMPERATURE = 0.6
@@ -138,7 +147,14 @@ def compact(state):
     fl = state.get("flags") or {}
     in_bag = any("PARCEL" in str(i.get("item", "")).upper() for i in state.get("bag", []) or [])
     parcel = "in your bag" if in_bag else ("already delivered to Oak" if fl.get("has_oaks_parcel") else "not yet picked up")
-    lines.append(f"flags: pokedex {fl.get('has_pokedex')}, parcel {parcel}, seen {fl.get('pokedex_seen')} owned {fl.get('pokedex_owned')}")
+    # The starter-pick screen sets the owned bits for the three starters plus Ivysaur to draw its
+    # preview, then clears them (pokered engine/events/starter_dex.asm). Reporting "owned 4" with an
+    # empty party told the model it had caught Pokemon it had never seen. Qualified rather than
+    # silently zeroed so the log record, which is this string, still shows what the RAM said.
+    owned = fl.get("pokedex_owned")
+    owned_text = (f"0 (starter preview is showing {owned})"
+                  if not party and isinstance(owned, int) and owned > 0 else owned)
+    lines.append(f"flags: pokedex {fl.get('has_pokedex')}, parcel {parcel}, seen {fl.get('pokedex_seen')} owned {owned_text}")
     return "\n".join(lines)
 
 

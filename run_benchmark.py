@@ -101,6 +101,8 @@ def make_provider(model):
         opts["timeout"] = model["timeout"]
     if model.get("max_call_s") is not None:
         opts["max_call_s"] = model["max_call_s"]
+    if model.get("max_call_chars") is not None:
+        opts["max_call_chars"] = model["max_call_chars"]
     # OpenAI-shaped adapters only: skip the strict response_format on a backend that rejects it.
     if model.get("structured_output") is not None:
         opts["structured_output"] = bool(model["structured_output"])
@@ -309,9 +311,39 @@ def fit_recent(history, num_ctx, static_chars):
     return kept
 
 
+def verify_fresh_game(server):
+    """Refuse to score against a game that is already part-played.
+
+    `run.sh` POSTs /games/new with `curl --fail`, but the per-model launchers on the box do that
+    step by hand and the runner itself never checked. A missed or failed reset does not announce
+    itself: the loop scores the PREVIOUS run's progress, and because MilestoneTracker only arms
+    once it has seen Red's House, a game parked past it can also never trip a rung at all. Both
+    produce a finished-looking summary.json, which is the worst shape a scoring bug can take.
+
+    Checked against the emulator's own RAM rather than the /milestones display dict, since that
+    dict is display state and a stale POST can repopulate it (#14). A fresh game means no badges
+    and no party; the title screen and Red's bedroom both satisfy it.
+    """
+    try:
+        state = requests.get(f"{server}/state", timeout=10).json()
+    except Exception as exc:
+        raise SystemExit(f"cannot read {server}/state to confirm a fresh game: {exc}")
+    player = state.get("player") or {}
+    # badges is the list of names and badge_count the number; read both so a shape change on
+    # either side cannot quietly turn this check into a no-op.
+    badges = player.get("badge_count") or len(player.get("badges") or [])
+    party = state.get("party") or []
+    if badges or party:
+        raise SystemExit(
+            f"refusing to start: {server} is already part-played "
+            f"(badges={badges}, party={len(party)}). POST /games/new, set /control to running, "
+            "then launch again.")
+
+
 def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
         pause_on_billing=0):
     server = server.rstrip("/")
+    verify_fresh_game(server)
     os.makedirs(RUNS_DIR, exist_ok=True)
     slug = re.sub(r"[^A-Za-z0-9_-]+", "-", model["key"]).strip("-")[:80] or "model"
     prefix = f"{slug}-{time.strftime('%Y%m%d_%H%M%S')}-"
@@ -419,6 +451,21 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             started = time.time()
             try:
                 plan, thinking, tokens = provider.chat(system_prompt, user, img, SCHEMA, model["think"])
+                # A name outside ALLOWED used to be dropped while the REST of the batch still ran, so
+                # the trailing confirmation press landed on whatever the shortened sequence left on
+                # screen: Nex turn 268 reopened FIGHT instead of selecting RUN. A plan that cannot be
+                # executed as written is a model error, not a shorter plan, so it takes the same retry
+                # path as malformed JSON. An EMPTY list still falls through to the wait_60 default
+                # below -- a model choosing to do nothing is a legal turn, an unrunnable plan is not.
+                proposed_names = plan.get("actions")
+                invalid = ([a for a in proposed_names if not (isinstance(a, str) and a in ALLOWED)]
+                           if isinstance(proposed_names, list) else [])
+                if invalid:
+                    plan_error = ValueError("plan used actions outside the allowed set: "
+                                            + ", ".join(repr(a) for a in invalid[:6]))
+                    plan_error.raw_output = json.dumps(plan)[:2000]
+                    plan_error.usage = tokens   # the rejected attempt still cost these tokens
+                    raise plan_error
             except Exception as exc:
                 if frame_file:
                     # A retried turn gets the required canonical filename; preserve this failed
