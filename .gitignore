@@ -25,3 +25,6 @@ site/runs.json
 # unpublished social drafts: this repo is public, and a draft is marketing copy plus
 # Cody's send-back notes. The dashboard and generator are tracked; what they produce is not.
 social/drafts/
+
+# Generated post assets — rebuildable from the run frames.
+social/media/
