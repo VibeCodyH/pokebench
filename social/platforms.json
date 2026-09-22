@@ -1,0 +1,101 @@
+{
+  "x": {
+    "label": "X",
+    "chip": "#E8E6DE",
+    "handle": "@pokebenchtv",
+    "display": "PokéBench",
+    "limit": 280,
+    "url_weight": 23,
+    "compose": "https://x.com/intent/post?text={text}",
+    "prefill": true,
+    "media_manual": true,
+    "steps": [
+      "Body is on your clipboard.",
+      "X opens with the text prefilled. Check it survived the URL encoding.",
+      "Attach media by hand if this draft has any — intent links cannot carry files.",
+      "Post, then paste the URL back here."
+    ]
+  },
+  "bluesky": {
+    "label": "Bluesky",
+    "chip": "#CFE3EE",
+    "handle": "@pokebench.tv",
+    "display": "PokéBench",
+    "limit": 300,
+    "unit": "graphemes",
+    "compose": "https://bsky.app/intent/compose?text={text}",
+    "prefill": true,
+    "media_manual": true,
+    "steps": [
+      "Body is on your clipboard.",
+      "Bluesky opens with the text prefilled.",
+      "Attach media by hand if this draft has any.",
+      "Post, then paste the URL back here."
+    ]
+  },
+  "reddit": {
+    "label": "Reddit",
+    "chip": "#F5DCC4",
+    "handle": "u/VibeCodyH",
+    "display": "VibeCodyH",
+    "limit": 40000,
+    "title_limit": 300,
+    "compose": "https://www.reddit.com/r/{subreddit}/submit?title={title}&text={text}",
+    "prefill": true,
+    "media_manual": false,
+    "steps": [
+      "Title copied first. Body is the second copy button.",
+      "Reddit opens on the submit page with both prefilled.",
+      "Read the subreddit rules before you hit post. Self-promo rules bite harder than the API ever did.",
+      "Post, then paste the URL back here."
+    ]
+  },
+  "discord": {
+    "label": "Discord",
+    "chip": "#D8DCF0",
+    "handle": "PokéBench",
+    "display": "PokéBench",
+    "limit": 2000,
+    "compose": "https://discord.com/channels/@me",
+    "prefill": false,
+    "media_manual": true,
+    "steps": [
+      "Body is on your clipboard.",
+      "Discord opens. Pick the channel yourself — no compose URL can target one.",
+      "Paste and send.",
+      "Right-click the message, Copy Message Link, paste it back here."
+    ]
+  },
+  "instagram": {
+    "label": "Instagram",
+    "chip": "#E6D9EF",
+    "handle": "pokebenchtv",
+    "display": "pokebenchtv",
+    "limit": 2200,
+    "compose": "https://www.instagram.com/",
+    "prefill": false,
+    "media_manual": true,
+    "steps": [
+      "Caption is on your clipboard.",
+      "Instagram opens. Hit Create and upload the image listed below.",
+      "Paste the caption.",
+      "Share, then paste the URL back here."
+    ]
+  },
+  "tiktok": {
+    "label": "TikTok",
+    "chip": "#EFD6DE",
+    "handle": "@pokebenchtv",
+    "display": "pokebenchtv",
+    "limit": 2200,
+    "compose": "https://www.tiktok.com/tiktokstudio/upload",
+    "prefill": false,
+    "media_manual": true,
+    "steps": [
+      "Caption is on your clipboard.",
+      "TikTok Studio opens on the upload page. Upload the clip listed below.",
+      "Paste the caption.",
+      "Post, then paste the URL back here."
+    ]
+  }
+}
