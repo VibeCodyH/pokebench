@@ -372,17 +372,21 @@ models:
     params: "1T+" # "over 1T parameters" is all the OpenRouter listing gives; no exact count
     quant: null
     context: 1048576
-    think: high
-    # Runaway-reasoning bounds, measured on this row's own first run (2026-09-22). MiMo
-    # occasionally falls into a reasoning chain it never exits: turn 9 delivered 119,475
-    # characters of reasoning and ZERO content before the 900s default cut it, and the retry
-    # did it again, while the SAME prompt replayed against the same model answered in 7.1s.
-    # So it is a sampling loop, not a hard screen. Healthy turns here deliver a few thousand
-    # characters (273-320 completion tokens, 424-598 thinking chars at high; the worst
-    # legitimate call measured was `low` at 17,384 thinking chars / 163s). 60k chars and 180s
-    # sit roughly 3x above the worst honest call and cut a loop in well under a minute, so a
-    # bad draw costs one retry instead of half the 1800s ERROR_WINDOW. Neither truncates a
-    # plan -- both raise the retryable error the turn loop already handles.
+    # NOT `high` like its neighbours, and the reason is the finding: at high effort MiMo cannot
+    # answer a turn that carries the WALKABILITY MAP. Two runs died on the byte-identical frame
+    # (Red's House 2F, the first turn of a run that has a loaded map) and an A/B on that exact
+    # prompt settled it -- with map + high: 200s and 32,929 reasoning characters with ZERO
+    # content; the SAME prompt with the map section withheld: 7.5s; with the map at medium:
+    # 28.9s; with the map at off: 8.1s. So it is the grid plus high effort, not the screen, not
+    # sampling, and not the harness. Medium keeps this a reasoning seat -- which is the
+    # comparison the board exists for -- at roughly 29s a turn.
+    think: medium
+    # Runaway bounds, measured here 2026-09-22. A healthy turn on this seat delivers a few
+    # thousand characters (273-871 completion tokens, 424-2,404 thinking chars); the high-effort
+    # loop delivered 119,475 before the 900s default cut it. 60k chars and 180s sit ~6x above
+    # the worst honest call at medium and cut a loop in under a minute, so a bad draw costs one
+    # retry instead of half the 1800s ERROR_WINDOW. Neither truncates a plan -- both raise the
+    # retryable error the turn loop already handles.
     max_call_chars: 60000
     max_call_s: 180
     release_date: "2026-09-21" # OpenRouter listing date
