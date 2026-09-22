@@ -94,6 +94,25 @@ models:
     input_cost_per_mtok: 5.00
     output_cost_per_mtok: 25.00
 
+  # Same shape as claude-opus-5 above (uncapped output, 200000 history budget, think high) so
+  # the two Opus rows are a straight generational comparison. Rates are Anthropic's launch
+  # pricing, read 2026-09-22: $4/$20, and cache reads at $0.20/M = 0.05x input, NOT the 0.1x
+  # AnthropicProvider assumes, hence the override. Cache writes stay at the standard 1.25x.
+  - key: claude-opus-5-5
+    provider: anthropic
+    thinking_style: adaptive
+    api_model_id: claude-opus-5-5
+    display_name: "Claude Opus 5.5"
+    family: claude
+    params: null
+    quant: null
+    context: 200000
+    think: high
+    release_date: "2026-09-21" # /v1/models created_at
+    input_cost_per_mtok: 4.00
+    output_cost_per_mtok: 20.00
+    cache_read_cost_per_mtok: 0.20
+
   - key: vertex-claude-fable-5-1
     provider: vertex
     thinking_style: adaptive

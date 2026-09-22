@@ -1402,6 +1402,20 @@ class AnthropicPromptCacheTests(unittest.TestCase):
                        "cache_read": 1_000_000, "cache_write": 1_000_000})
         self.assertAlmostEqual(cost, 5.0 + 0.5 + 6.25 + 25.0)
 
+    def test_cost_uses_a_per_row_cache_read_rate_when_set(self):
+        p = self.make()
+        p.cache_read_cost_per_mtok = 0.20
+        cost = p.cost({"prompt": 3_000_000, "completion": 1_000_000,
+                       "cache_read": 1_000_000, "cache_write": 1_000_000})
+        self.assertAlmostEqual(cost, 5.0 + 0.2 + 6.25 + 25.0)
+
+    def test_make_provider_passes_the_cache_read_rate_to_anthropic_rows(self):
+        import run_benchmark
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test"}):
+            p = run_benchmark.make_provider(run_benchmark.load_model("claude-opus-5-5"))
+        self.assertEqual(p.cache_read_cost_per_mtok, 0.20)
+        self.assertEqual((p.input_cost_per_mtok, p.output_cost_per_mtok), (4.0, 20.0))
+
     def test_cost_matches_the_base_estimate_when_nothing_was_cached(self):
         p = self.make()
         flat = {"prompt": 1_000_000, "completion": 1_000_000}

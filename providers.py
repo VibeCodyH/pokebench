@@ -332,7 +332,8 @@ class AnthropicProvider(Provider):
     THINKING_STYLES = ("budget", "adaptive")
 
     def __init__(self, model: str, *, max_tokens: int | None = None,
-                 thinking_style: str = "budget", cache_system: bool = True, **opts):
+                 thinking_style: str = "budget", cache_system: bool = True,
+                 cache_read_cost_per_mtok: float | None = None, **opts):
         super().__init__(model, **opts)
         self.max_tokens = self.DEFAULT_MAX_TOKENS if max_tokens is None else max_tokens
         if thinking_style not in self.THINKING_STYLES:
@@ -341,6 +342,8 @@ class AnthropicProvider(Provider):
             )
         self.thinking_style = thinking_style
         self.cache_system = cache_system
+        # Per-row override for models that do not bill reads at 0.1x (Opus 5.5 is 0.05x).
+        self.cache_read_cost_per_mtok = cache_read_cost_per_mtok
 
     def _dispatch(self, payload: dict) -> dict:
         """Put a prepared Messages payload on the wire. Split out from chat() because the
@@ -433,7 +436,8 @@ class AnthropicProvider(Provider):
         return (
             uncached * self.input_cost_per_mtok
             + write * self.input_cost_per_mtok * 1.25
-            + read * self.input_cost_per_mtok * 0.1
+            + read * (self.input_cost_per_mtok * 0.1 if self.cache_read_cost_per_mtok is None
+                      else self.cache_read_cost_per_mtok)
             + tokens["completion"] * self.output_cost_per_mtok
         ) / 1_000_000
 
