@@ -467,6 +467,28 @@ models:
     input_cost_per_mtok: 2.00
     output_cost_per_mtok: 6.00
 
+  # grok-4.7, released 2026-09-21. This is the DIRECT-xAI seat; the Grok 4.6 run on the
+  # board went through azure-foundry instead, so `provider: xai` is unexercised here and the
+  # one-real-frame smoke matters more than usual. Same published shape as 4.6 — 500k context,
+  # image input, <200k rates — so the row is a clone with a new api_model_id. Whether Azure
+  # Foundry also serves 4.7 is UNCHECKED; the catalog probe returned a 404 on a path that was
+  # probably wrong, which is not evidence either way.
+  - key: grok-4.7
+    provider: xai
+    api_model_id: grok-4.7
+    display_name: "Grok 4.7"
+    family: grok
+    params: null
+    quant: null
+    context: 500000
+    think: high
+    release_date: "2026-09-21" # Public release day (Cody). /v1/models `created` reads 2026-09-02,
+    # but that field is a registration stamp, not availability: grok-4.6's created is 2026-08-06
+    # and it was still unannounced when the 4.6 row was written. The IN-FLIGHT run recorded
+    # 2026-09-02 -- patch its summary.json before the card is published.
+    input_cost_per_mtok: 2.00
+    output_cost_per_mtok: 6.00
+
   # --- Azure OpenAI via the v1 API (AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT).
   # api_model_id is the DEPLOYMENT name, not the model name. Resource pokebench-aoai-179c0197
   # in eastus2; gpt-5-mini sits on GlobalStandard at 300K TPM, the largest allocation this
