@@ -111,6 +111,8 @@ def make_provider(model):
     # "vertex" is in the set because it IS AnthropicProvider, just pointed at Google Cloud.
     if model["provider"] in {"anthropic", "vertex"} and model.get("thinking_style") is not None:
         opts["thinking_style"] = model["thinking_style"]
+    if model["provider"] in {"anthropic", "vertex"} and model.get("cache_read_cost_per_mtok") is not None:
+        opts["cache_read_cost_per_mtok"] = model["cache_read_cost_per_mtok"]
     if model["provider"] == "vertex":
         # project falls back to GOOGLE_CLOUD_PROJECT in the adapter, so a row may omit it and
         # keep the project id out of a public repo. region defaults to the global endpoint,
