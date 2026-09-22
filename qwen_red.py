@@ -48,9 +48,13 @@ SCHEMA = {
     "type": "object",
     "properties": {
         "thought": {"type": "string"},
-        # The enum is the first line of defence against a name outside ALLOWED: a provider that
-        # honours the schema cannot emit one at all. Sorted so the schema is byte-stable across
-        # runs -- a set's order is not, and this goes into the request every turn.
+        # First line of defence against a name outside ALLOWED, and only that: MEASURED
+        # 2026-09-22, Ollama accepts this schema and then ignores the enum -- qwen3:8b asked for
+        # press_down returned press_down. So the enum is worth sending, because a backend that
+        # does enforce it never emits a bad name, but the runner's own rejection is what actually
+        # holds the line. Do not remove that check on the strength of this one.
+        # Sorted so the schema is byte-stable across runs -- a set's order is not, and this goes
+        # into the request every turn.
         "actions": {"type": "array", "items": {"type": "string", "enum": sorted(ALLOWED)}},
         "key_moment": {"type": "string"},
         "notes": {"type": "string"},
