@@ -51,7 +51,7 @@
     "completion": 8000
   },
   "cost_usd": null,
-  "youtube_url": null,
+  "youtube_url": "https://www.youtube.com/watch?v=BCxotgW6sQY",
   "timestamp": "20260922_234930",
   "blackouts": [
     327,
@@ -86,7 +86,7 @@
     },
     {
       "key": "got_pokedex",
-      "label": "Got the Pok\u00e9dex",
+      "label": "Got the Pokédex",
       "turn": 203
     },
     {

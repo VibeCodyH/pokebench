@@ -36,7 +36,7 @@
     "log": "log.jsonl",
     "save_state": "azure-gpt-6-sol-20260923_010752-lnqtx5aj-auto"
   },
-  "notes": "Pewter Gym: Brock\u2019s Geodude fainted; Onix L14 is at 36/36. Bulbasaur L13 has 36/36 HP, knows Vine Whip, and has suffered Screech (-2 Defense). Battle move cursor was on Growl; select Vine Whip by moving down once.",
+  "notes": "Pewter Gym: Brock’s Geodude fainted; Onix L14 is at 36/36. Bulbasaur L13 has 36/36 HP, knows Vine Whip, and has suffered Screech (-2 Defense). Battle move cursor was on Growl; select Vine Whip by moving down once.",
   "budget_turns": 1000,
   "turns_used": 673,
   "termination_reason": "beat_brock",
@@ -51,7 +51,7 @@
     "completion": 4000
   },
   "cost_usd": null,
-  "youtube_url": null,
+  "youtube_url": "https://www.youtube.com/watch?v=vHAtGNarDXg",
   "timestamp": "20260923_031444",
   "blackouts": [],
   "milestones": [
@@ -82,7 +82,7 @@
     },
     {
       "key": "got_pokedex",
-      "label": "Got the Pok\u00e9dex",
+      "label": "Got the Pokédex",
       "turn": 89
     },
     {
