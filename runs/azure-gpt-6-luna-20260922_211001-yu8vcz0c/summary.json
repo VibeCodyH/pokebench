@@ -1,0 +1,107 @@
+{
+  "run_id": "azure-gpt-6-luna-20260922_211001-yu8vcz0c",
+  "model": "gpt-6-luna",
+  "display_name": "GPT-6 Luna",
+  "provider": "azure-foundry",
+  "family": "gpt",
+  "run_name": "azure-gpt-6-luna-20260922_170952",
+  "prompt_version": "v22",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "506b83d",
+  "harness_files_sha": "9a6b0504f8f635ce",
+  "max_output_tokens": 4000,
+  "execution_route": "azure-foundry-api",
+  "think_level": "high",
+  "num_ctx": 131072,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-22",
+  "model_release_date": "2026-09-22",
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "azure-gpt-6-luna-20260922_211001-yu8vcz0c-auto"
+  },
+  "notes": "Pewter City at (21,10), Charmander L11 healthy, no badges. Pewter Mart entrance is x23,y17 (approached by walking up from x23,y18); avoid it. Exploring north for the Gym.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 9569.1,
+  "tokens_in": 15712476,
+  "tokens_out": 557004,
+  "tokens_cache_write": 0,
+  "tokens_cache_read": 0,
+  "failed_attempts": {
+    "count": 160,
+    "prompt": 32061,
+    "completion": 8000
+  },
+  "cost_usd": null,
+  "youtube_url": "https://www.youtube.com/watch?v=BCxotgW6sQY",
+  "timestamp": "20260922_234930",
+  "blackouts": [
+    327,
+    561,
+    673
+  ],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 14
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 48
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 74
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 97
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 128
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pokédex",
+      "turn": 203
+    },
+    {
+      "key": "viridian_forest",
+      "label": "Entered Viridian Forest",
+      "turn": 299
+    },
+    {
+      "key": "pewter_city",
+      "label": "Reached Pewter City",
+      "turn": 945
+    }
+  ],
+  "furthest_key": "pewter_city",
+  "furthest_label": "Reached Pewter City",
+  "furthest_index": 7,
+  "beat_brock": false
+}
