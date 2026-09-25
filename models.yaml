@@ -374,6 +374,39 @@ models:
     input_cost_per_mtok: 0.0 # OpenRouter :free tier: genuinely free (1,000 req/day/account cap)
     output_cost_per_mtok: 0.0
 
+  # Cohere Command A+ (OpenRouter listing 2026-09-22), the first Cohere on the board. Sight-checked
+  # 2026-09-25 on a real frame: prompt_tokens 24 -> 283 with the image, and it described the title
+  # screen correctly. The listing is `is_moderated: true` (Cohere-side filter), which no other row has.
+  - key: or-command-a-plus
+    provider: openrouter
+    api_model_id: cohere/command-a-plus
+    display_name: "Command A+"
+    family: cohere
+    params: null
+    quant: null
+    context: 192000
+    think: high
+    release_date: "2026-09-22" # OpenRouter listing date
+    input_cost_per_mtok: 0.30
+    output_cost_per_mtok: 1.50
+
+  # Space Bunny Alpha: OpenRouter STEALTH model (listed 2026-09-23), vendor undisclosed, free while
+  # in stealth. Sight-checked 2026-09-25: prompt_tokens 180 -> 224 with the image, and a correct
+  # description of the title screen. Stealth ids get pulled or renamed without notice, and the free
+  # cap is the account's 1,000 req/day (resets 8 PM ET), so a 1000-turn run has to straddle a reset.
+  - key: or-space-bunny-alpha
+    provider: openrouter
+    api_model_id: stealth/space-bunny-alpha
+    display_name: "Space Bunny Alpha"
+    family: stealth
+    params: null
+    quant: null
+    context: 1000000
+    think: high
+    release_date: "2026-09-23" # OpenRouter listing date
+    input_cost_per_mtok: 0.0
+    output_cost_per_mtok: 0.0
+
   # --- DeepSeek direct (api.deepseek.com, DEEPSEEK_API_KEY). `deepseek-flash` resolves to
   # V4.1 Flash (released 2026-09-10): 552B MoE, 8B active on input / 16B on output, and the
   # first DeepSeek with a native vision encoder. Sight-checked before seating the same way the
