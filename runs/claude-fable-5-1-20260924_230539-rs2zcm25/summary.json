@@ -1,0 +1,117 @@
+{
+  "run_id": "claude-fable-5-1-20260924_230539-rs2zcm25",
+  "model": "claude-fable-5-1",
+  "display_name": "Claude Fable 5.1",
+  "provider": "anthropic",
+  "family": "claude",
+  "run_name": "claude-fable-5-1-20260924_230539",
+  "prompt_version": "v22",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "506b83d",
+  "harness_files_sha": "9a6b0504f8f635ce",
+  "max_output_tokens": 4000,
+  "execution_route": "anthropic-api",
+  "think_level": "high",
+  "num_ctx": 131072,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-25",
+  "model_release_date": "2026-08-31",
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "claude-fable-5-1-20260924_230539-rs2zcm25-auto"
+  },
+  "notes": "Named 'A', rival BLUE. Party: CHARMELEON L17 (Scratch,Growl,Ember,Leer), RATTATA L5, PIKACHU L3, CATERPIE L3. Heal: Pewter Pokecenter door (13,25) via (13,26) walk_up; nurse: stand (3,3) face up press_a. Gym door (16,17) from (16,18); path: (19,26) up to (19,16)->(18,16)->(18,13)->left to (10,13)->down (10,18)->right to (16,18)->up. Gym JR.TRAINER beaten. Fighting Brock at (4,2): Geodude beaten; Onix 4/36 — Ember should KO. After badge: leave gym, heal, head east to Route 3 / Mt. Moon. BATTLE: move cursor PERSISTS; order Scratch/Growl/Ember/Leer; cursor on Ember.",
+  "budget_turns": 1000,
+  "turns_used": 554,
+  "termination_reason": "beat_brock",
+  "wall_time_s": 11804.6,
+  "tokens_in": 9031565,
+  "tokens_out": 354706,
+  "tokens_cache_write": 1667,
+  "tokens_cache_read": 921851,
+  "failed_attempts": {
+    "count": 3,
+    "prompt": 0,
+    "completion": 0
+  },
+  "cost_usd": 99.7584585,
+  "youtube_url": "https://www.youtube.com/watch?v=UIJBJaWANuY",
+  "timestamp": "20260925_022224",
+  "blackouts": [
+    27,
+    246,
+    362
+  ],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 8
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 13
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 24
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 38
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 49
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pokédex",
+      "turn": 78
+    },
+    {
+      "key": "viridian_forest",
+      "label": "Entered Viridian Forest",
+      "turn": 138
+    },
+    {
+      "key": "pewter_city",
+      "label": "Reached Pewter City",
+      "turn": 206
+    },
+    {
+      "key": "pewter_gym",
+      "label": "Entered Brock's Gym",
+      "turn": 230
+    },
+    {
+      "key": "beat_brock",
+      "label": "Beat Brock (Boulder Badge)",
+      "turn": 554
+    }
+  ],
+  "furthest_key": "beat_brock",
+  "furthest_label": "Beat Brock (Boulder Badge)",
+  "furthest_index": 9,
+  "beat_brock": true
+}

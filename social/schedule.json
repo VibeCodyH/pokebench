@@ -104,6 +104,14 @@
       "status": "published",
       "youtube_url": "https://www.youtube.com/watch?v=g77XI-91Lns",
       "note": ""
+    },
+    {
+      "run_id": "claude-fable-5-1-20260924_230539-rs2zcm25",
+      "display_name": "Claude Fable 5.1",
+      "date": "2026-09-25",
+      "status": "published",
+      "youtube_url": "https://www.youtube.com/watch?v=UIJBJaWANuY",
+      "note": ""
     }
   ]
 }
