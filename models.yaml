@@ -629,8 +629,11 @@ models:
   # GPT-6 Sol and Luna (released 2026-09-22), same Foundry resource and env pair as Astra.
   # Verified 2026-09-22 against a real frame: vision + strict json_schema at reasoning_effort
   # high answer on /openai/v1/chat/completions (Sol 3.1s, Luna 2.4s). Deployments at capacity
-  # 150, matching Astra. Rates null: no 6-sol / 6-luna meters in the retail-prices API yet, and
-  # OpenAI's direct price ($2/$10 Sol, $0.10/$0.50 Luna) must not be copied across.
+  # 150, matching Astra. Rates are the Global (non-Data-Zone) SHORT-context westus3 meters from
+  # the retail-prices API (`contains(meterName,'6-sol ShortCo')` / `'6-luna ShortCo'`, "Std Gl"),
+  # which were not published yet on 2026-09-22 and were read 2026-09-25: Sol $2.00/$10.00, Luna
+  # $0.10/$0.50. They happen to equal OpenAI's direct price; the row takes Azure's number, not
+  # that. Both runs recorded cost_usd: null and were backfilled with the same cost() arithmetic.
   # max_output_tokens + timeout carried over from Astra (same family, same runaway risk);
   # max_call_s deliberately NOT, per the note above -- unmeasured rows keep the loose default.
   - key: azure-gpt-6-sol
@@ -643,8 +646,8 @@ models:
     context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
     think: high
     release_date: "2026-09-22"
-    input_cost_per_mtok: null
-    output_cost_per_mtok: null
+    input_cost_per_mtok: 2.00
+    output_cost_per_mtok: 10.00
     max_output_tokens: 4000
     timeout: 90
 
@@ -658,8 +661,8 @@ models:
     context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
     think: high
     release_date: "2026-09-22"
-    input_cost_per_mtok: null
-    output_cost_per_mtok: null
+    input_cost_per_mtok: 0.10
+    output_cost_per_mtok: 0.50
     max_output_tokens: 4000
     timeout: 90
 
