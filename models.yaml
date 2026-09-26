@@ -390,6 +390,23 @@ models:
     input_cost_per_mtok: 0.30
     output_cost_per_mtok: 1.50
 
+  # Qwen3.8-Flash on OpenRouter (listed 2026-08-26), the production version of the open-weights
+  # Qwen3.8-Flash-Next (125B / 6B active + 51B n-gram embedding, too big for the 3090; see
+  # docs/model-corpus.md). Requested on r/OpenAI 2026-09-25. Sight-checked 2026-09-25 on a real
+  # frame: prompt_tokens 85 -> 146 with the image, correct description of the title screen.
+  - key: or-qwen3.8-flash
+    provider: openrouter
+    api_model_id: qwen/qwen3.8-flash-20260826
+    display_name: "Qwen3.8 Flash"
+    family: qwen
+    params: null
+    quant: null
+    context: 1000000
+    think: high
+    release_date: "2026-08-26" # OpenRouter listing date
+    input_cost_per_mtok: 0.15
+    output_cost_per_mtok: 0.47
+
   # Space Bunny Alpha: OpenRouter STEALTH model (listed 2026-09-23), vendor undisclosed, free while
   # in stealth. Sight-checked 2026-09-25: prompt_tokens 180 -> 224 with the image, and a correct
   # description of the title screen. Stealth ids get pulled or renamed without notice, and the free
