@@ -53,6 +53,7 @@ Ordered by how much I'd bet on them. Sizes are Ollama Q4 tags.
 | Nemotron 3 33B Omni | 28 GB on disk at Q4 |
 | Llama 4 Scout | ~55 GB; run via API in Tier 1 |
 | Kimi K3 / K2.7, MiniMax M3 | frontier-sized open weights; Tier 1 via API |
+| Qwen3.8-Flash-Next (`Qwen/Qwen3.8-Flash-Next`, 2026-08-24) | vision, but 125B total / 6B active plus 51B n-gram embedding (180B BF16). Smallest sensible GGUF (unsloth UD-Q2_K_XL) is 79 GB against 24 GB VRAM + 31 GB RAM. Qwen's card names **Qwen3.8-Flash** as its production version: run that via OpenRouter (`qwen/qwen3.8-flash`, $0.15/$0.47, vision sight-checked 2026-09-25). Requested on r/OpenAI 2026-09-25 |
 
 ## Open questions
 - Ollama vision for `qwen3.6` was reported broken in spring 2026 (mmproj not wired); the library now lists it under vision. Verify with one turn before scheduling a run.
