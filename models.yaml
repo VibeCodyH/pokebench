@@ -447,6 +447,27 @@ models:
     input_cost_per_mtok: 0.30
     output_cost_per_mtok: 1.20
 
+  # The same V4.1 Flash through OpenRouter (added 2026-09-27) for our own recorded run: the
+  # `deepseek-flash` row above is the contributed run, unrecorded. Sight-checked 2026-09-27
+  # (prompt_tokens 47 -> 244 with a real frame). Routing is NOT pinned: both probe calls landed on
+  # DeepSeek's own host, which is what the rates below price ($0.15/$0.60 on OpenRouter; cache
+  # reads bill far lower, so cost_usd is a ceiling). OpenRouter can fall back to another host
+  # mid-run and the log does not record which one answered. structured_output is off to match the
+  # contributed run's prompt-JSON path (OpenRouter gets no response_format; the parse guard checks).
+  - key: or-deepseek-v4.1-flash
+    provider: openrouter
+    api_model_id: deepseek/deepseek-v4.1-flash
+    display_name: "DeepSeek V4.1 Flash"
+    family: deepseek
+    params: "552B-A16B"
+    structured_output: false
+    quant: null
+    context: 1000000
+    think: high
+    release_date: "2026-09-10"
+    input_cost_per_mtok: 0.15
+    output_cost_per_mtok: 0.60
+
   # --- Amazon Bedrock (bedrock-mantle OpenAI-compatible endpoint, AWS_BEARER_TOKEN_BEDROCK).
   # NOT bedrock-runtime: separate quota allocation, which is why these work while
   # bedrock-runtime sits at zero on a new account. Funded by AWS Free Tier credit, so
