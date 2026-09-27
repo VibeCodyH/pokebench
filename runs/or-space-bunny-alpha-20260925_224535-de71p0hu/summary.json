@@ -1,0 +1,83 @@
+{
+  "run_id": "or-space-bunny-alpha-20260925_224535-de71p0hu",
+  "model": "stealth/space-bunny-alpha",
+  "display_name": "Space Bunny Alpha",
+  "provider": "openrouter",
+  "family": "stealth",
+  "run_name": "space-bunny-alpha-20260925_224535",
+  "prompt_version": "v22",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "732c83a",
+  "harness_files_sha": "9a6b0504f8f635ce",
+  "max_output_tokens": null,
+  "execution_route": "openrouter-api",
+  "think_level": "high",
+  "num_ctx": 1000000,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-26",
+  "model_release_date": "2026-09-23",
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "or-space-bunny-alpha-20260925_224535-de71p0hu-auto"
+  },
+  "notes": "Viridian City (13,4), facing left after this move. The eastward item corridor dead-ends; return to the western junction and locate Oak\u2019s lab entrance.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 14669.9,
+  "tokens_in": 18049146,
+  "tokens_out": 719746,
+  "tokens_cache_write": 0,
+  "tokens_cache_read": 0,
+  "failed_attempts": {
+    "count": 35,
+    "prompt": 657084,
+    "completion": 47206
+  },
+  "cost_usd": 0.0,
+  "youtube_url": null,
+  "timestamp": "20260926_025005",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 15
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 714
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 813
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 884
+    }
+  ],
+  "furthest_key": "viridian_city",
+  "furthest_label": "Reached Viridian City",
+  "furthest_index": 3,
+  "beat_brock": false
+}
