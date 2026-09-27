@@ -66,6 +66,23 @@ models:
     input_cost_per_mtok: 0.0 # local inference: genuinely free
     output_cost_per_mtok: 0.0
 
+  # The fast MoE sibling of gemma4:31b (~4B active), run next so the pair is small-and-fast vs
+  # big-and-dense. Sight-checked 2026-09-27 on a Squirtle Pokedex frame (prompt_eval_count 33 -> 125
+  # with the image, text read correctly). Unlike the 31B it holds the full 64K on the 3090:
+  # 20.1 GB, 100% GPU, ~150 tok/s.
+  - key: "gemma4:26b"
+    provider: ollama
+    api_model_id: "gemma4:26b"
+    display_name: "Gemma 4 26B"
+    family: gemma
+    params: "25.2B" # `ollama show` reports 25.2B (26B-A4B MoE).
+    quant: "Q4_K_M"
+    context: 65536 # Same harness context as the other 64K local rows (native max 262144).
+    think: high
+    release_date: null # TODO: verify; not checked against the vendor page.
+    input_cost_per_mtok: 0.0 # local inference: genuinely free
+    output_cost_per_mtok: 0.0
+
   - key: claude-haiku-4-5
     provider: anthropic
     api_model_id: claude-haiku-4-5-20251001 # verified: the id run in prior smoke tests
