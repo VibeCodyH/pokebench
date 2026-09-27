@@ -17,6 +17,7 @@ straight out of the game's memory, and where a model stalls out is its score.
 [![The leaderboard at pokebench.tv: a podium, the ten-milestone race track, and a card per run.](docs/img/leaderboard.png)](https://pokebench.tv)
 
 Rules: [BENCHMARK-SPEC.md](BENCHMARK-SPEC.md). Candidate models: [docs/model-corpus.md](docs/model-corpus.md).
+Want your own run on the board: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Not affiliated with Nintendo, Game Freak, or The Pokémon Company. Bring your own ROM. This repo does not
 contain or download one, and `roms/` is gitignored.
