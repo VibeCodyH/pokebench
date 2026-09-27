@@ -50,6 +50,22 @@ models:
     input_cost_per_mtok: 0.0 # local inference: genuinely free
     output_cost_per_mtok: 0.0
 
+  # Ranked #2 local in docs/model-corpus.md and never run. Google's dense 31B; the GameBoyWorlds
+  # researchers built their Game Boy fine-tunes on this base, which makes it the control for a
+  # later run of their Pokemon Red adapter. Sight-checked 2026-09-27 on a Red's-house frame.
+  - key: "gemma4:31b"
+    provider: ollama
+    api_model_id: "gemma4:31b"
+    display_name: "Gemma 4 31B"
+    family: gemma
+    params: "31.3B" # `ollama show` reports 31.3B.
+    quant: "Q4_K_M"
+    context: 32768 # Largest that fits the 3090 whole: 32K = 22 GB, 100% GPU; 64K spills 9% to CPU (native max 262144).
+    think: high
+    release_date: null # TODO: verify; not checked against the vendor page.
+    input_cost_per_mtok: 0.0 # local inference: genuinely free
+    output_cost_per_mtok: 0.0
+
   - key: claude-haiku-4-5
     provider: anthropic
     api_model_id: claude-haiku-4-5-20251001 # verified: the id run in prior smoke tests
