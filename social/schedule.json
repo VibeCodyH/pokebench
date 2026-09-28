@@ -120,6 +120,14 @@
       "status": "published",
       "youtube_url": "https://www.youtube.com/watch?v=wrrjNb1DCmg",
       "note": ""
+    },
+    {
+      "run_id": "or-glm-5-3-flash-20260920_043955-gn_4h03e",
+      "display_name": "GLM 5.3 Flash",
+      "date": "2026-09-27",
+      "status": "published",
+      "youtube_url": "https://www.youtube.com/watch?v=jN2GJh-tEaU",
+      "note": "5x timelapse; raw is 14h25m, over YouTube's 12h cap"
     }
   ]
 }
