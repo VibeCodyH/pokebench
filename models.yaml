@@ -186,6 +186,23 @@ models:
     input_cost_per_mtok: 2.00 # the launch "introductory" $2/$10 is now the standard price
     output_cost_per_mtok: 10.00
 
+  # Sonnet 5.5, 2026-09-28. /v1/models: adaptive thinking only (type "enabled" unsupported),
+  # structured outputs + image input, 1M in / 128K out. $2/$10; cache reads $0.20 = 0.1x input,
+  # the AnthropicProvider default, so no override.
+  - key: claude-sonnet-5-5
+    provider: anthropic
+    thinking_style: adaptive
+    api_model_id: claude-sonnet-5-5
+    display_name: "Claude Sonnet 5.5"
+    family: claude
+    params: null
+    quant: null
+    context: 200000
+    think: high
+    release_date: "2026-09-28" # /v1/models created_at
+    input_cost_per_mtok: 2.00
+    output_cost_per_mtok: 10.00
+
   - key: gemini-3.8-flash
     provider: google
     api_model_id: gemini-3.8-flash # verified: the id run via the AI Studio route
