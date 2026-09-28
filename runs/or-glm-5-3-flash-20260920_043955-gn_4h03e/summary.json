@@ -1,6 +1,7 @@
 {
   "run_id": "or-glm-5-3-flash-20260920_043955-gn_4h03e",
   "model": "z-ai/glm-5.3-flash-20260826",
+  "display_name": "GLM 5.3 Flash",
   "provider": "openrouter",
   "family": "glm",
   "run_name": "or-glm-5.3-flash-20260920_003946",
