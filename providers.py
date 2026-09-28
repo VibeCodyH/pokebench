@@ -390,8 +390,10 @@ class AnthropicProvider(Provider):
         elif effort not in {"", "default"}:
             if self.thinking_style == "adaptive":
                 # The model decides how much to think; effort sets the ceiling. No max_tokens
-                # bump, because there is no separate budget to clear.
-                payload["thinking"] = {"type": "adaptive"}
+                # bump, because there is no separate budget to clear. `display` defaults to
+                # "omitted" on Opus 4.7 and later (empty thinking text, every Claude run through
+                # 2026-09-28 logged 0 chars); "summarized" returns readable reasoning, billed the same.
+                payload["thinking"] = {"type": "adaptive", "display": "summarized"}
                 payload["output_config"]["effort"] = effort
             else:
                 # budget_tokens extended thinking; it coexists with output_config json_schema on

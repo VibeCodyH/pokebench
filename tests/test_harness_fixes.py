@@ -1228,7 +1228,8 @@ class AnthropicThinkingStyleTests(unittest.TestCase):
 
     def test_adaptive_sends_effort_and_never_a_token_budget(self):
         payload, plan, thinking, tokens = self.capture(self.make(thinking_style="adaptive"), "high")
-        self.assertEqual(payload["thinking"], {"type": "adaptive"})
+        self.assertEqual(payload["thinking"], {"type": "adaptive", "display": "summarized"})
+        self.assertEqual(thinking, "hmm")
         self.assertEqual(payload["output_config"]["effort"], "high")
         self.assertNotIn("budget_tokens", payload["thinking"])
         # The schema still has to ride along on output_config, not get clobbered by effort.
