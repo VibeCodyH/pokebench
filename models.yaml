@@ -721,6 +721,28 @@ models:
     max_output_tokens: 4000
     timeout: 90
 
+  # GPT-6.1 Sol (released 2026-09-29), same resource and env pair as 6 Sol. Deployment
+  # GlobalStandard capacity 300, mirroring the live gpt-6-sol deployment. Verified 2026-09-29
+  # against a real frame: vision + strict json_schema at reasoning_effort high, 4.3s. Rates are
+  # null on purpose: the retail-prices API had no 6.1-sol meter on release day (checked
+  # `contains(meterName,'sol')` in westus3), same as 6 Sol. Read the "Std Gl" ShortCo meters
+  # once published and fill these in; OpenAI's direct price is $2.00/$10.00 but the row takes
+  # Azure's number.
+  - key: azure-gpt-6-1-sol
+    provider: azure-foundry
+    api_model_id: gpt-6.1-sol  # deployment name; model gpt-6.1-sol-2026-09-29
+    display_name: "GPT-6.1 Sol"
+    family: gpt
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: high
+    release_date: "2026-09-29"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+    max_output_tokens: 4000
+    timeout: 90
+
   - key: azure-grok-4.6
     provider: azure-foundry
     api_model_id: grok-4.6
