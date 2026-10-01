@@ -1,0 +1,83 @@
+{
+  "run_id": "gemma4-31b-20260927_043755-5x29rji4",
+  "model": "gemma4:31b",
+  "display_name": "Gemma 4 31B",
+  "provider": "ollama",
+  "family": "gemma",
+  "run_name": "gemma4-31b-20260927_043755",
+  "prompt_version": "v22",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "b887593",
+  "harness_files_sha": "19de2da6c8957129",
+  "max_output_tokens": null,
+  "execution_route": "ollama-local",
+  "think_level": "high",
+  "num_ctx": 32768,
+  "temperature": 0.6,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-27",
+  "model_release_date": null,
+  "model_params": "31.3B",
+  "quant": "Q4_K_M",
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "gemma4-31b-20260927_043755-5x29rji4-auto"
+  },
+  "notes": "In Pallet Town. Plan: Exit town and head north to Route 1.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 38721.4,
+  "tokens_in": 16571917,
+  "tokens_out": 89201,
+  "tokens_cache_write": 0,
+  "tokens_cache_read": 0,
+  "failed_attempts": {
+    "count": 0,
+    "prompt": 0,
+    "completion": 0
+  },
+  "cost_usd": 0.0,
+  "youtube_url": null,
+  "timestamp": "20260927_152316",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 21
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 45
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 111
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 179
+    }
+  ],
+  "furthest_key": "viridian_city",
+  "furthest_label": "Reached Viridian City",
+  "furthest_index": 3,
+  "beat_brock": false
+}
