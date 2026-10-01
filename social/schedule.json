@@ -139,10 +139,10 @@
     {
       "run_id": "gemma4-31b-20260927_043755-5x29rji4",
       "display_name": "Gemma 4 31B",
-      "date": "2026-10-02",
-      "status": "planned",
-      "youtube_url": "",
-      "note": "304 turns to heal; package in scratch/pokebench-gemma4-31b-video"
+      "date": "2026-10-01",
+      "status": "published",
+      "youtube_url": "https://www.youtube.com/watch?v=7U1wAOXGtxA",
+      "note": ""
     }
   ]
 }
