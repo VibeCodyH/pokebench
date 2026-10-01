@@ -441,6 +441,39 @@ models:
     input_cost_per_mtok: 0.0
     output_cost_per_mtok: 0.0
 
+  # Both Kimis on OpenRouter. The azure-kimi-* rows see the frame fine but sit on Azure's
+  # partner-tier quota (20 units, re-checked 2026-10-01), which 429s once history pushes a request
+  # past ~20k tokens around turn 450, so a full run goes through OpenRouter instead. Sight-checked
+  # 2026-10-01 with vision_delta.py: +293 prompt tokens with the image on both.
+  #
+  # K2.6 is seated but too slow to run: two one-frame smokes took 146s and 464s, each spending
+  # ~11k output tokens thinking (~$25 and 40-80 hours for 1000 turns). K2.7-Code took 36s and
+  # 2.2k output tokens on the same smoke, so it is the Kimi that gets the run.
+  - key: or-kimi-k2.6
+    provider: openrouter
+    api_model_id: moonshotai/kimi-k2.6
+    display_name: "Kimi K2.6"
+    family: kimi
+    params: null
+    quant: null
+    context: 262144
+    think: high
+    release_date: "2026-04-20"
+    input_cost_per_mtok: 0.43415
+    output_cost_per_mtok: 1.828
+  - key: or-kimi-k2.7-code
+    provider: openrouter
+    api_model_id: moonshotai/kimi-k2.7-code
+    display_name: "Kimi K2.7 Code"
+    family: kimi
+    params: null
+    quant: null
+    context: 262144
+    think: high
+    release_date: "2026-06-12"
+    input_cost_per_mtok: 0.6712
+    output_cost_per_mtok: 3.35
+
   # --- DeepSeek direct (api.deepseek.com, DEEPSEEK_API_KEY). `deepseek-flash` resolves to
   # V4.1 Flash (released 2026-09-10): 552B MoE, 8B active on input / 16B on output, and the
   # first DeepSeek with a native vision encoder. Sight-checked before seating the same way the
