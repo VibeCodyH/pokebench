@@ -143,6 +143,30 @@
       "status": "published",
       "youtube_url": "https://www.youtube.com/watch?v=7U1wAOXGtxA",
       "note": ""
+    },
+    {
+      "run_id": "qwen3-8-27b-20260926_032257-9rf2ninf",
+      "display_name": "Qwen3.8 27B",
+      "date": "2026-10-04",
+      "status": "planned",
+      "youtube_url": "",
+      "note": "0 Pokemon in 1000 turns; scratch/pokebench-qwen38-27b-video"
+    },
+    {
+      "run_id": "or-deepseek-v4-1-flash-20260927_173910-k35_imft",
+      "display_name": "DeepSeek V4.1 Flash",
+      "date": "2026-10-06",
+      "status": "planned",
+      "youtube_url": "",
+      "note": "out of PP, Growl; scratch/pokebench-deepseek41-or-video"
+    },
+    {
+      "run_id": "or-qwen3-8-flash-20260926_060152-4fiwyiiq",
+      "display_name": "Qwen3.8 Flash",
+      "date": "2026-10-08",
+      "status": "planned",
+      "youtube_url": "",
+      "note": "714 turns on Route 1; scratch/pokebench-qwen38-flash-video"
     }
   ]
 }
