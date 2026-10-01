@@ -1,0 +1,68 @@
+{
+  "run_id": "qwen3-8-27b-20260926_032257-9rf2ninf",
+  "model": "qwen3.8:27b",
+  "display_name": "Qwen3.8 27B",
+  "provider": "ollama",
+  "family": "qwen",
+  "run_name": "qwen3-8-27b-20260926_032256",
+  "prompt_version": "v22",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "732c83a",
+  "harness_files_sha": "9a6b0504f8f635ce",
+  "max_output_tokens": null,
+  "execution_route": "ollama-local",
+  "think_level": "high",
+  "num_ctx": 65536,
+  "temperature": 0.6,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-27",
+  "model_release_date": null,
+  "model_params": "27B",
+  "quant": "Q4_K_M",
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "qwen3-8-27b-20260926_032257-9rf2ninf-auto"
+  },
+  "notes": "OAK'S LAB. Stuck ~999 turns, NO starter, NO pokedex, party empty. Oak=white hair top-LEFT(~x1,y7-8); aide=center(~x2-3,y9-10) says 'I study POKEMON as PROF.OAKs AIDE'; Blue=right(~x7-8). Exit D mats at (4,11),(5,11) - stand on D then walk DOWN into wall to leave. PLAN: get below Oak, press A for starter, expect Pokedex+starter choice, then Blue battle, then Route 1. LESSON: stop talking to aide/signs; target the white-haired Oak at top-left specifically.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 86442.8,
+  "tokens_in": 25153805,
+  "tokens_out": 174653,
+  "tokens_cache_write": 0,
+  "tokens_cache_read": 0,
+  "failed_attempts": {
+    "count": 12,
+    "prompt": 303140,
+    "completion": 60987
+  },
+  "cost_usd": 0.0,
+  "youtube_url": null,
+  "timestamp": "20260927_032340",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 19
+    }
+  ],
+  "furthest_key": "left_house",
+  "furthest_label": "Left the house",
+  "furthest_index": 0,
+  "beat_brock": false
+}

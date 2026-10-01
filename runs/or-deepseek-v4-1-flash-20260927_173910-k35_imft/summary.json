@@ -1,0 +1,100 @@
+{
+  "run_id": "or-deepseek-v4-1-flash-20260927_173910-k35_imft",
+  "model": "deepseek/deepseek-v4.1-flash",
+  "display_name": "DeepSeek V4.1 Flash",
+  "provider": "openrouter",
+  "family": "deepseek",
+  "run_name": "deepseek-v4-1-flash-20260927_173909",
+  "prompt_version": "v22",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "b887593",
+  "harness_files_sha": "19de2da6c8957129",
+  "max_output_tokens": null,
+  "execution_route": "openrouter-api",
+  "think_level": "high",
+  "num_ctx": 1000000,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-09-28",
+  "model_release_date": "2026-09-10",
+  "model_params": "552B-A16B",
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "or-deepseek-v4-1-flash-20260927_173910-k35_imft-auto"
+  },
+  "notes": "Viridian Forest (1,18). Retrying Bug Catcher above; Tackle PP restored after blackout. In battle: press_a repeatedly to pick Tackle (top FIGHT option). Avoid pressing down/right (drains PP, causes Struggle). After win, continue north through forest to Pewter Gym; grind to L13 for Vine Whip vs Brock. Bag: 5 Poke Balls, Antidote.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 56339.6,
+  "tokens_in": 19576298,
+  "tokens_out": 6272745,
+  "tokens_cache_write": 0,
+  "tokens_cache_read": 0,
+  "failed_attempts": {
+    "count": 11,
+    "prompt": 182390,
+    "completion": 56365
+  },
+  "cost_usd": 6.700091699999999,
+  "youtube_url": null,
+  "timestamp": "20260928_091809",
+  "blackouts": [
+    870
+  ],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 19
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 30
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 57
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 79
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 133
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pok\u00e9dex",
+      "turn": 161
+    },
+    {
+      "key": "viridian_forest",
+      "label": "Entered Viridian Forest",
+      "turn": 231
+    }
+  ],
+  "furthest_key": "viridian_forest",
+  "furthest_label": "Entered Viridian Forest",
+  "furthest_index": 6,
+  "beat_brock": false
+}
