@@ -114,14 +114,6 @@
       "note": ""
     },
     {
-      "run_id": "or-space-bunny-alpha-20260925_224535-de71p0hu",
-      "display_name": "Space Bunny Alpha",
-      "date": "2026-09-27",
-      "status": "published",
-      "youtube_url": "https://www.youtube.com/watch?v=wrrjNb1DCmg",
-      "note": ""
-    },
-    {
       "run_id": "or-glm-5-3-flash-20260920_043955-gn_4h03e",
       "display_name": "GLM 5.3 Flash",
       "date": "2026-09-27",
@@ -130,11 +122,27 @@
       "note": "5x timelapse; raw is 14h25m, over YouTube's 12h cap"
     },
     {
+      "run_id": "or-space-bunny-alpha-20260925_224535-de71p0hu",
+      "display_name": "Space Bunny Alpha",
+      "date": "2026-09-27",
+      "status": "published",
+      "youtube_url": "https://www.youtube.com/watch?v=wrrjNb1DCmg",
+      "note": ""
+    },
+    {
       "run_id": "azure-gpt-6-1-sol-20260929_234329-yy_vl4xu",
       "display_name": "GPT-6.1 Sol",
       "date": "2026-09-29",
       "status": "published",
       "youtube_url": "https://www.youtube.com/watch?v=NvI0by9Lstc"
+    },
+    {
+      "run_id": "gemma4-31b-20260927_043755-5x29rji4",
+      "display_name": "Gemma 4 31B",
+      "date": "2026-10-02",
+      "status": "planned",
+      "youtube_url": "",
+      "note": "304 turns to heal; package in scratch/pokebench-gemma4-31b-video"
     }
   ]
 }
