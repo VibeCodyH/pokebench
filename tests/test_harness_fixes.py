@@ -685,6 +685,16 @@ class ProviderUsageTests(unittest.TestCase):
         self.assertEqual(caught.exception.usage, {"prompt": 500, "completion": 0})
         self.assertEqual(caught.exception.raw_output, "")
 
+    def test_ollama_tolerates_a_json_fence(self):
+        # gemma4:31b ignores `format` on no-thinking turns and fences the object (2026-09-27).
+        import providers
+        p = providers.OllamaProvider("m")
+        fenced = "```json\n{\"thought\": \"t\", \"actions\": [\"press_a\"]}\n```"
+        with patch.object(p, "_post", return_value={"message": {"content": fenced}, "prompt_eval_count": 1, "eval_count": 2}):
+            plan, _, usage = p.chat("s", "u", "", {}, "high")
+        self.assertEqual(plan, {"thought": "t", "actions": ["press_a"]})
+        self.assertEqual(usage, {"prompt": 1, "completion": 2})
+
     def test_openai_length_finish_keeps_usage_and_names_the_reason(self):
         import providers
         with patch.dict("os.environ", {"OPENAI_API_KEY": "test"}):

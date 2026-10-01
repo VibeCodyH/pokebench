@@ -301,7 +301,13 @@ class OllamaProvider(Provider):
         })
         message = body["message"]
         usage = {"prompt": int(body.get("prompt_eval_count", 0)), "completion": int(body.get("eval_count", 0))}
-        return _plan_with_usage(message["content"], usage), message.get("thinking", "") or "", usage
+        content = message["content"]
+        if isinstance(content, str):
+            # `format` is not always enforced: gemma4:31b returns a ```json fence on turns where it
+            # skips thinking (every title-screen turn, 2026-09-27). Tolerate it like the OpenAI path.
+            from qwen_red import _extract_json
+            content = _extract_json(content)
+        return _plan_with_usage(content, usage), message.get("thinking", "") or "", usage
 
     def cost(self, tokens: dict[str, int]) -> float:
         return 0.0
