@@ -142,9 +142,12 @@ def harness_fingerprint():
             git_sha = open(os.path.join(HERE, "GIT_SHA")).read().strip() or None
     try:
         blob = b""
-        for name in ("milestones.py", "providers.py", "run_benchmark.py", "qwen_red.py", "serve_live.py",
-                     "chatgpt_provider.py", "chatgpt_auth.py"):
+        for name in ("milestones.py", "providers.py", "run_benchmark.py", "qwen_red.py", "serve_live.py"):
             blob += open(os.path.join(HERE, name), "rb").read()
+        # The ChatGPT adapter is optional on a server; a missing copy must not null every run's sha.
+        for name in ("chatgpt_provider.py", "chatgpt_auth.py"):
+            if os.path.exists(os.path.join(HERE, name)):
+                blob += open(os.path.join(HERE, name), "rb").read()
         files_sha = hashlib.sha256(blob).hexdigest()[:16]
     except Exception:
         files_sha = None
