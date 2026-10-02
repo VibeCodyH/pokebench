@@ -440,6 +440,24 @@ models:
     input_cost_per_mtok: 0.0 # OpenRouter :free tier: genuinely free (1,000 req/day/account cap)
     output_cost_per_mtok: 0.0
 
+  # NVIDIA Nemotron 3 Nano Omni (30B-A3B reasoning) on OpenRouter's :free tier, the first Nemotron
+  # on the board. Cody's pick 2026-10-02 after Ling 3.1 Flash turned out text-only on OpenRouter.
+  # The listing omits response_format and structured_outputs, so like the Ling VL row above it runs
+  # prompt-JSON only (`structured_output: false`).
+  - key: or-nemotron-3-nano-omni
+    provider: openrouter
+    api_model_id: nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+    display_name: "Nemotron 3 Nano Omni"
+    family: nemotron
+    params: "30B" # 30B total / 3B active MoE per the model id
+    structured_output: false
+    quant: null
+    context: 256000 # OpenRouter context length
+    think: high
+    release_date: "2026-04-28" # OpenRouter listing date
+    input_cost_per_mtok: 0.0 # OpenRouter :free tier: genuinely free (1,000 req/day/account cap)
+    output_cost_per_mtok: 0.0
+
   # Cohere Command A+ (OpenRouter listing 2026-09-22), the first Cohere on the board. Sight-checked
   # 2026-09-25 on a real frame: prompt_tokens 24 -> 283 with the image, and it described the title
   # screen correctly. The listing is `is_moderated: true` (Cohere-side filter), which no other row has.
