@@ -1,0 +1,2 @@
+# Optional: only the ChatGPT sign-in command needs this verifier.
+PyJWT[crypto]==2.15.1

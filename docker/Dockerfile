@@ -5,10 +5,11 @@
 FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+COPY requirements.txt requirements-oauth.txt /tmp/
+RUN pip install --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-oauth.txt
 WORKDIR /app
-COPY serve_live.py qwen_red.py milestones.py stream.html /app/
+COPY serve_live.py qwen_red.py milestones.py stream.html run_benchmark.py providers.py models.yaml \
+     chatgpt_provider.py chatgpt_auth.py /app/
 # Runs record the harness commit. The image has no .git, so the build passes it in.
 ARG GIT_SHA=""
 ENV POKEBENCH_GIT_SHA=$GIT_SHA

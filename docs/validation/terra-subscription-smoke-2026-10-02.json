@@ -1,0 +1,32 @@
+{
+  "verified_on": "2026-10-02",
+  "kind": "single_image_preflight",
+  "scored": false,
+  "actions_executed": false,
+  "requested_model": "gpt-5.6-terra",
+  "served_model": "gpt-5.6-terra",
+  "think": "high",
+  "returned_reasoning_effort": "high",
+  "prompt_sha": "075673bd4fa5a025",
+  "execution_route": "openai-chatgpt-subscription",
+  "billing_mode": "subscription",
+  "cost_usd": null,
+  "image_sha256": "febb038da2b93c59592d0650bdd2f6d3d0da026cdf11c344ce328087f5a3b55f",
+  "image_input_tokens": 32,
+  "ok": true,
+  "plan": {
+    "thought": "The screen shows the Pokémon Red intro scene with Professor Oak's sprite standing above an empty dialogue box. I will wait as requested; this is a visual preflight probe and no progression input is intended.",
+    "actions": ["wait_60"],
+    "key_moment": "",
+    "notes": "At Pokémon Red intro, Professor Oak visible with blank dialogue box."
+  },
+  "tokens": {"prompt": 1046, "completion": 78},
+  "elapsed_s": 3.679,
+  "observation": "The model misidentified the visible trainer sprite as Professor Oak. Transport/schema passed; visual accuracy is not implied.",
+  "offline_tests": {"passed": 128, "elapsed_s": 0.780},
+  "limits": [
+    "Single-image smoke only; sustained subscription quota has not been measured.",
+    "Local runtime verified; no Unraid deployment or scored run was performed.",
+    "Two earlier requests reached Terra but the initial adapter lost streamed output; output-item assembly was fixed and regression-tested."
+  ]
+}

@@ -929,6 +929,9 @@ class AzureFoundryProvider(AzureOpenAIProvider):
 
 def get_provider(provider_name: str, model: str, **opts) -> Provider:
     """Construct an adapter; opts are constructor settings and registry token rates."""
+    if provider_name.strip().lower() == "chatgpt":
+        from chatgpt_provider import ChatGPTProvider
+        return ChatGPTProvider(model, **opts)
     providers = {
         "ollama": OllamaProvider, "anthropic": AnthropicProvider,
         "openai": OpenAIProvider, "google": GoogleProvider,

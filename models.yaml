@@ -375,6 +375,22 @@ models:
     input_cost_per_mtok: 0.20
     output_cost_per_mtok: 1.20
 
+  # Direct ChatGPT subscription route, smoked 2026-10-02 with a real PNG and strict JSON.
+  # Same history budget and reasoning level as Sol/Luna above; no external agent harness.
+  # Subscription usage is not assigned a per-token USD price. No scored run yet.
+  - key: chatgpt-gpt-5.6-terra
+    provider: chatgpt
+    api_model_id: gpt-5.6-terra
+    display_name: "GPT 5.6 Terra"
+    family: gpt
+    params: null
+    quant: null
+    context: 131072
+    think: high
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
   # Nex AGI N2.5 — FREE on OpenRouter ($0/M, verified vision). Agentic/computer-use pedigree;
   # prime free-seeding candidates. Free models may be rate-limited/queued on OpenRouter.
   - key: or-nex-n2.5-mini

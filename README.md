@@ -93,6 +93,10 @@ directly needs a server that already has a game loaded and running. The Ollama, 
 real frames correctly but hasn't finished one yet. The Anthropic row needs verified rates before it can
 post a score, and `openai-template` is a row shape to copy, not a runnable model.
 
+ChatGPT subscription access has a direct Responses adapter that keeps PokéBench's own
+harness. See [subscription setup and provider eligibility](docs/subscription-access.md).
+Account access and a real screenshot probe must pass before adding a scored model row.
+
 ## What's in here
 
 | File | Job |
