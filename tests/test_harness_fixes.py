@@ -465,6 +465,14 @@ class BillingPauseTests(RunnerTests):
 
     PLAN = ({"thought": "t", "actions": ["wait_60"]}, "", {"prompt": 10, "completion": 1})
 
+    def test_subscription_limit_stops_without_retry_or_consuming_a_turn(self):
+        error = self.error("subscription_sharing_usage_limit_exceeded: insufficient credits", status=429)
+        error.non_retryable = True
+        args = self.drive([error, self.PLAN], pause_on_billing=600)
+        self.assertEqual(args[-2], "provider_error")
+        self.assertEqual(args[6], 0)
+        self.assertEqual(self.slept, [])
+
     def test_without_the_flag_a_dry_balance_still_aborts(self):
         """The default is unchanged. A run that silently waited forever on a depleted key would
         be worse than the abort -- the comment on BILLING_WORDS records a 429 that looped 5,341

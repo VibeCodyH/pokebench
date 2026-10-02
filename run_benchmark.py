@@ -142,7 +142,8 @@ def harness_fingerprint():
             git_sha = open(os.path.join(HERE, "GIT_SHA")).read().strip() or None
     try:
         blob = b""
-        for name in ("milestones.py", "providers.py", "run_benchmark.py", "qwen_red.py", "serve_live.py"):
+        for name in ("milestones.py", "providers.py", "run_benchmark.py", "qwen_red.py", "serve_live.py",
+                     "chatgpt_provider.py", "chatgpt_auth.py"):
             blob += open(os.path.join(HERE, name), "rb").read()
         files_sha = hashlib.sha256(blob).hexdigest()[:16]
     except Exception:
@@ -211,12 +212,16 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         "blackouts": list(blackouts),  # turns the party whited out (leaderboard replay drops a skull there)
         **tracker.summary(),
     }
+    if getattr(provider, "billing_mode", None) == "subscription":
+        summary["billing_mode"] = "subscription"
+        summary["served_model"] = provider.served_model
     path = os.path.join(artifact_dir, "summary.json")
     with open(path, "x") as output:
         json.dump(summary, output, indent=2)
     print(f"\n=== RUN SUMMARY -> {path} ===", flush=True)
     cost = summary["cost_usd"]
-    cost_str = f"${cost:.6f}" if isinstance(cost, (int, float)) else "$? (rates unset)"
+    cost_str = ("subscription (not priced per token)" if summary.get("billing_mode") == "subscription"
+                else f"${cost:.6f}" if isinstance(cost, (int, float)) else "$? (rates unset)")
     print(f"furthest: {summary['furthest_label']} (idx {summary['furthest_index']}) | "
           f"turns {turns_used}/{budget} | tok in/out {tokens['prompt']}/{tokens['completion']} | "
           f"{cost_str} | {wall_s:.0f}s", flush=True)
@@ -505,7 +510,8 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 # Auth and billing failures never clear on their own (a depleted-credits 429 once looped
                 # 5,341 times overnight), and a provider that stays down past the window is not worth waiting on.
                 billing = any(word in body.lower() for word in BILLING_WORDS)
-                if billing and pause_on_billing and billing_waited < pause_on_billing:
+                if (billing and not getattr(exc, "non_retryable", False)
+                        and pause_on_billing and billing_waited < pause_on_billing):
                     # A dry balance is the one provider error a human can fix DURING the run,
                     # and aborting throws away everything already paid for: claude-opus-5 died
                     # this way on turn 284 of 1000 with $16.94 spent and no board result.
@@ -521,7 +527,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                     turn -= 1
                     time.sleep(wait)
                     continue
-                if status in (401, 402, 403) or billing:
+                if status in (401, 402, 403) or billing or getattr(exc, "non_retryable", False):
                     print(f"[turn {turn}] non-retryable provider error {status}, aborting: {exc} {body}", flush=True)
                     termination = "provider_error"
                     break
