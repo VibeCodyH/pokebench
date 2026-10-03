@@ -391,6 +391,21 @@ models:
     input_cost_per_mtok: null
     output_cost_per_mtok: null
 
+  # GPT-5.5 on the same ChatGPT subscription route (catalog 2026-10-02: image input, reasoning
+  # low..xhigh). The only listed model on the plan not yet on the board.
+  - key: chatgpt-gpt-5.5
+    provider: chatgpt
+    api_model_id: gpt-5.5
+    display_name: "GPT-5.5"
+    family: gpt
+    params: null
+    quant: null
+    context: 131072
+    think: high
+    release_date: null
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
   # Nex AGI N2.5 — FREE on OpenRouter ($0/M, verified vision). Agentic/computer-use pedigree;
   # prime free-seeding candidates. Free models may be rate-limited/queued on OpenRouter.
   - key: or-nex-n2.5-mini
