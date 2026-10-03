@@ -25,7 +25,17 @@ function count(text, platform) {
   return text.length;
 }
 
+// Reddit and Shorts also cap the title, and an over-long title is rejected just like a body.
+function overLimit(d) {
+  const cfg = state.platforms[d.platform] || {};
+  return Boolean((cfg.limit && count(d.body, d.platform) > cfg.limit)
+    || (cfg.title_limit && (d.title || '').length > cfg.title_limit));
+}
+
 const firstUrl = text => (String(text).match(URL_RE) || [])[0] || '';
+// Related video only accepts a video from the channel, so a run with no VOD yet has nothing
+// to link (its draft link falls back to pokebench.tv).
+const isYouTube = url => /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(url || '');
 const domainOf = url => { try { return new URL(url).hostname.replace(/^www\./, '').toUpperCase(); } catch { return ''; } };
 // The preview shows the body as the platform will: the trailing bare link becomes a card,
 // so showing it twice would misrepresent the post.
@@ -106,6 +116,21 @@ const previews = {
       <div class="cap"><div class="nm">@pokebenchtv</div><div class="body">${esc(d.body)}</div></div>
     </div>`;
   },
+  youtube_shorts(d) {
+    // The Shorts player shows the title and the Related video pill; the description sits
+    // behind a tap, and its links are not clickable, so the pill is the real link.
+    const related = isYouTube(d.link) ? d.link.replace(/^https?:\/\/(www\.)?/, '') : '';
+    return `<div class="pv pv-youtube_shorts">
+      <div class="poster">${d.media && d.media[0] ? `<img src="${esc(mediaUrl(d.media[0]))}" alt="">` : 'no clip attached — 9:16'}</div>
+      <div class="rail"><span><i>👍</i>0</span><span><i>💬</i>0</span><span><i>↗</i>0</span></div>
+      <div class="cap">
+        ${related ? `<div class="rel">▶ Related video · ${esc(related)}</div>` : ''}
+        <div class="nm">@pokebenchtv</div>
+        <div class="ttl">${esc(d.title || '(no title)')}</div>
+        <div class="hide">description hidden behind a tap</div>
+      </div>
+    </div>`;
+  },
 };
 
 function mediaBlock(d, ratio) {
@@ -122,7 +147,8 @@ const STATE_LABEL = {pending: 'Needs review', approved: 'Approved', sent_back: '
 function card(d) {
   const cfg = state.platforms[d.platform] || {label: d.platform, limit: 0};
   const used = count(d.body, d.platform);
-  const over = cfg.limit && used > cfg.limit;
+  const over = overLimit(d);
+  const titleOver = cfg.title_limit && (d.title || '').length > cfg.title_limit;
   const render = previews[d.platform];
   const canPost = d.status === 'approved';
   return `<article class="draft ${d.status === 'posted' ? 'is-posted' : ''}" data-id="${esc(d.id)}">
@@ -135,7 +161,7 @@ function card(d) {
     </div>
     <div class="preview-wrap">${render ? render(d) : `<pre>${esc(d.body)}</pre>`}</div>
     <div class="meta">
-      <span class="${over ? 'over' : ''}">${used}${cfg.limit ? ' / ' + cfg.limit : ''} ${cfg.unit === 'graphemes' ? 'graphemes' : 'chars'}${over ? ' — too long' : ''}</span>
+      <span class="${over ? 'over' : ''}">${used}${cfg.limit ? ' / ' + cfg.limit : ''} ${cfg.unit === 'graphemes' ? 'graphemes' : 'chars'}${cfg.title_limit && d.title ? ` · <span class="${titleOver ? 'over' : ''}">title ${d.title.length} / ${cfg.title_limit}</span>` : ''}${over ? ' — too long' : ''}</span>
       <span>${d.media && d.media.length ? d.media.length + ' file' + (d.media.length > 1 ? 's' : '') : 'No media'}</span>
     </div>
     ${d.note ? `<div class="note"><b>SENT BACK</b>${esc(d.note)}</div>` : ''}
@@ -347,7 +373,7 @@ function render() {
       `<button class="chip" data-plat="${k}" style="background:${state.platform === k ? '' : esc((state.platforms[k] || {}).chip || '#E8E6DE')}" aria-pressed="${state.platform === k}">${esc((state.platforms[k] || {}).label || k)} (${n})</button>`)).join('');
 
   $('view-title').textContent = (VIEWS.find(v => v[0] === state.view) || [, ''])[1];
-  const over = inView.filter(d => { const c = state.platforms[d.platform] || {}; return c.limit && count(d.body, d.platform) > c.limit; }).length;
+  const over = inView.filter(overLimit).length;
   $('summary').innerHTML = `<span>${inView.length} ${inView.length === 1 ? 'draft' : 'drafts'} · ${state.view.replace('_', ' ')}</span>
     <span class="sub">${over ? over + ' over the limit · ' : ''}Manual posting — approve, then copy and paste</span>`;
 
@@ -409,6 +435,8 @@ function openPostModal(d) {
   const dlg = $('post-modal');
   const steps = (cfg.steps || []).map((s, i) =>
     `<div class="step" data-step="${i}"><span class="n">${i + 1}</span><div class="txt">${esc(s)}</div></div>`).join('');
+  // A Short's clickable link to the full run is Studio's Related video field, not the body.
+  const related = d.platform === 'youtube_shorts' && isYouTube(d.link);
   dlg.innerHTML = `
     <div class="m-head"><h2>Post to ${esc(cfg.label || d.platform)}</h2><button class="x" data-act="close">✕</button></div>
     <div class="m-body">
@@ -417,8 +445,10 @@ function openPostModal(d) {
       <div class="field"><label>What gets copied</label>
         <textarea id="post-body" readonly>${esc(d.body)}</textarea></div>
       ${d.title ? `<div class="field"><label>Title</label><input type="text" id="post-title" readonly value="${esc(d.title)}"></div>` : ''}
+      ${related ? `<div class="field"><label>Related video (set in Studio after upload)</label><input type="text" id="post-related" readonly value="${esc(d.link)}"></div>` : ''}
       <div style="display:flex; gap:8px; flex-wrap:wrap">
         ${d.title ? '<button class="btn plain" data-act="copy-title">Copy title</button>' : ''}
+        ${related ? '<button class="btn plain" data-act="copy-link">Copy link</button>' : ''}
         <button class="btn" data-act="copy-open">Copy body &amp; open ${esc(cfg.label)} ↗</button>
       </div>
       ${steps}
@@ -436,6 +466,10 @@ function openPostModal(d) {
     if (act === 'close') return dlg.close();
     if (act === 'copy-title') {
       navigator.clipboard.writeText(d.title || '').then(() => toast('Title copied'), () => toast('Copy failed'));
+      return;
+    }
+    if (act === 'copy-link') {
+      navigator.clipboard.writeText(d.link || '').then(() => toast('Link copied'), () => toast('Copy failed'));
       return;
     }
     if (act === 'copy-open') {
@@ -466,7 +500,8 @@ function openEditModal(d) {
   dlg.innerHTML = `
     <div class="m-head"><h2>Edit — ${esc(cfg.label || d.platform)}</h2><button class="x" data-act="close">✕</button></div>
     <div class="m-body">
-      ${d.title !== undefined && d.platform === 'reddit' ? `<div class="field"><label>Title</label><input type="text" id="e-title" value="${esc(d.title || '')}"></div>` : ''}
+      ${d.title !== undefined && (d.platform === 'reddit' || d.platform === 'youtube_shorts') ? `<div class="field"><label>Title</label><input type="text" id="e-title" value="${esc(d.title || '')}">
+        ${cfg.title_limit ? '<div class="count"><span id="e-tcount"></span></div>' : ''}</div>` : ''}
       <div class="field"><label>Body</label><textarea id="e-body">${esc(d.body)}</textarea>
         <div class="count"><span id="e-count"></span><span>${esc(cfg.label || '')}</span></div></div>
     </div>
@@ -478,6 +513,15 @@ function openEditModal(d) {
     dlg.querySelector('#e-count').innerHTML = `<span class="${over ? 'over' : ''}">${used}${cfg.limit ? ' / ' + cfg.limit : ''} ${cfg.unit === 'graphemes' ? 'graphemes' : 'chars'}</span>`;
   };
   ta.oninput = tick; tick();
+  const ti = dlg.querySelector('#e-title');
+  const tcount = dlg.querySelector('#e-tcount');
+  if (ti && tcount) {
+    const ttick = () => {
+      const over = ti.value.length > cfg.title_limit;
+      tcount.innerHTML = `<span class="${over ? 'over' : ''}">title ${ti.value.length} / ${cfg.title_limit}</span>`;
+    };
+    ti.oninput = ttick; ttick();
+  }
   dlg.onclick = event => {
     const act = event.target.closest('[data-act]')?.dataset.act;
     if (act === 'close') dlg.close();

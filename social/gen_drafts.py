@@ -101,6 +101,29 @@ def headline(f):
             f"Furthest it got: {f['milestone']}.")
 
 
+def shorts_title(f):
+    """A Shorts title: the same result as headline(), phrased as a hook, under YouTube's 100.
+
+    Copying the long-form title onto the Short wastes the second shot at a viewer who
+    scrolled past the first one. Bad results still get stated, not spun.
+    """
+    if f["record"]:
+        title = f"{f['name']} just set the PokeBench record: Brock in {f['turns']} turns"
+    elif f["won"]:
+        title = f"{f['name']} beat Pokemon Red's first gym in {f['turns']} turns"
+    else:
+        budget = f"{f['budget']:,}" if isinstance(f.get("budget"), int) else "1,000"
+        # Milestone labels are already past-tense phrases ("Entered Viridian Forest").
+        milestone = f["milestone"] or ""
+        reached = (milestone[0].lower() + milestone[1:]
+                   if milestone and milestone.lower() != "start" else "never left the house")
+        title = f"{f['name']} got {budget} turns to beat Brock. It {reached}"
+    if len(title) > 100:
+        cut = title[:99]
+        title = (cut[:cut.rfind(" ")] if " " in cut else cut) + "…"
+    return title
+
+
 def receipts(f):
     bits = [f"Rank {f['rank']} of {f['total']}"]
     if f["wall"]:
@@ -113,10 +136,11 @@ def receipts(f):
 def media_for(run, platform):
     """Attach the assets a media-first platform cannot post without.
 
-    Instagram refuses a text-only post and TikTok needs a video, so for those two an empty
-    media list is not a smaller post, it is an impossible one. make_media.py writes both
-    next to the run; if it has not been run yet the list stays empty and the dashboard's
-    preview says the asset is missing instead of pretending the draft is ready.
+    Instagram refuses a text-only post and TikTok and YouTube Shorts need a video, so for
+    those an empty media list is not a smaller post, it is an impossible one. make_media.py
+    and make_clip.py write them next to the run; if they have not been run yet the list stays
+    empty and the dashboard's preview says the asset is missing instead of pretending the
+    draft is ready.
     """
     if run is None:
         return []
@@ -124,7 +148,7 @@ def media_for(run, platform):
     if platform == "instagram":
         path = out / "square.png"
         return [str(path)] if path.exists() else []
-    if platform == "tiktok":
+    if platform in ("tiktok", "youtube_shorts"):
         # Newest clip wins. make_clip.py names them by turn, so a run with several cut
         # moments keeps them all and the latest one is the one just built.
         clips = sorted(out.glob("clip-turn-*.mp4"), key=lambda p: p.stat().st_mtime)
@@ -193,6 +217,10 @@ def build_intro(g, platform):
                         f"Leaderboard at pokebench.tv"}
     if platform == "tiktok":
         return {"body": f"Can an AI beat Pokemon Red's first gym? {spread} #pokebench #ai"}
+    if platform == "youtube_shorts":
+        return {"title": "Can an AI beat Pokemon Red's first gym?",
+                "body": f"Same screen, same 11 buttons, same 1,000 turns, no hints. {spread}\n\n"
+                        f"Every turn log is at pokebench.tv\n#pokebench #ai #pokemonred"}
     return None
 
 
@@ -220,6 +248,11 @@ def build(run, f, platform):
         return {"body": f"{headline(f)}\n\n{receipts(f)}\n\nLeaderboard at pokebench.tv"}
     if platform == "tiktok":
         return {"body": f"{headline(f)} {receipts(f)} #pokebench #ai"}
+    if platform == "youtube_shorts":
+        # Description links are not clickable on a Short; the post dialog sets Related video.
+        return {"title": shorts_title(f),
+                "body": f"{headline(f)} {receipts(f)}\n\nFull run: tap the related video.\n"
+                        f"#pokebench #ai #pokemonred"}
     return None
 
 

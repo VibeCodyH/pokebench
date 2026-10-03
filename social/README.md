@@ -20,8 +20,9 @@ python3 social/serve.py                        # http://127.0.0.1:8787
 ```
 
 `--platforms x,bluesky,reddit,discord` picks which to write (that list is the default, so
-`instagram` and `tiktok` are only written when you name them); `--force` overwrites drafts
-that already exist for the run.
+`instagram`, `tiktok` and `youtube_shorts` are only written when you name them); `--force`
+overwrites drafts that already exist for the run. A `youtube_shorts` draft reuses the TikTok
+clip but gets its own title (100 characters max) rather than the long-form video's.
 
 ```bash
 python3 social/post_result.py <RUN_ID>         # announce one run in Discord #results
@@ -46,8 +47,10 @@ is the one to lead with on a new audience.
 
 ## Media
 
-Instagram will not accept a text-only post and TikTok needs a video, so for those two an empty
-`media` list is not a smaller post, it is an impossible one.
+Instagram will not accept a text-only post and TikTok and YouTube Shorts need a video, so for
+those an empty `media` list is not a smaller post, it is an impossible one. A Short's
+description links are not clickable, so the full run video is attached through Studio's
+Related video field after upload; the post dialog shows that link with its own copy button.
 
 `make_media.py <RUN_ID>` writes `square.png` (1080x1080, the run's last frame over the board's
 canvas). `make_clip.py <RUN_ID> --turn N --video <segment>` writes the vertical: the board's

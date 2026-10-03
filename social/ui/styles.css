@@ -186,6 +186,18 @@ dialog::backdrop { background:#12100Bcc; }
 .pv-tiktok .nm { font-weight:700; font-size:13px; }
 .pv-tiktok .body { font-size:12px; line-height:1.4; margin-top:4px; }
 
+/* YouTube Shorts */
+.pv-youtube_shorts { background:#0f0f0f; border-radius:12px; overflow:hidden; position:relative; aspect-ratio:9/16; max-height:420px; margin-inline:auto; width:100%; max-width:240px; color:#fff; display:flex; }
+.pv-youtube_shorts .poster { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#5a5a5a; font-size:12px; }
+.pv-youtube_shorts .poster img { width:100%; height:100%; object-fit:cover; opacity:.85; }
+.pv-youtube_shorts .rail { position:absolute; right:7px; bottom:96px; display:flex; flex-direction:column; align-items:center; gap:14px; font-size:11px; }
+.pv-youtube_shorts .rail i { font-style:normal; font-size:19px; display:block; text-align:center; }
+.pv-youtube_shorts .cap { position:absolute; left:0; right:48px; bottom:0; padding:10px 12px 12px; background:linear-gradient(transparent,#000000cc 45%); }
+.pv-youtube_shorts .rel { display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:#ffffff33; border-radius:999px; padding:3px 9px; font-size:11px; margin-bottom:6px; }
+.pv-youtube_shorts .nm { font-weight:700; font-size:12px; }
+.pv-youtube_shorts .ttl { font-size:13px; font-weight:600; line-height:1.35; margin-top:3px; overflow-wrap:anywhere; }
+.pv-youtube_shorts .hide { font-size:10px; color:#aaa; margin-top:4px; }
+
 /* ---------- release schedule ----------
    Same chrome as the queue: hard 2px borders, offset shadow, no rounded corners. A day
    carrying more than one video is the only thing coloured, because it is the only thing
