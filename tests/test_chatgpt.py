@@ -208,6 +208,24 @@ class ProviderTests(CredentialFixture):
                 ChatGPTProvider("test").chat("s", "u", "img", SCHEMA, "high")
 
     @patch("chatgpt_provider.requests.post")
+    def test_commentary_message_is_not_part_of_the_plan(self, post):
+        # Measured on gpt-5.5 2026-10-02: a commentary message, then the same JSON as final_answer.
+        completed = completion()
+        message = completed["response"]["output"].pop()
+        items = [{"type": "reasoning", "summary": []}, dict(message, phase="commentary"),
+                 {"type": "reasoning", "summary": []}, dict(message, phase="final_answer")]
+        done = [{"type": "response.output_item.done", "output_index": i, "item": item}
+                for i, item in enumerate(items)]
+        post.return_value = stream(*done, completed)
+        plan, _, _ = ChatGPTProvider("test").chat("s", "u", "img", SCHEMA, "high")
+        self.assertEqual(plan, PLAN)
+        # Without a final_answer phase every message still counts, so a doubled plan stays invalid.
+        post.return_value = stream(*done[:2], {**done[3], "output_index": 2,
+                                               "item": dict(message, phase="commentary")}, completed)
+        with self.assertRaises(ValueError):
+            ChatGPTProvider("test").chat("s", "u", "img", SCHEMA, "high")
+
+    @patch("chatgpt_provider.requests.post")
     def test_truncated_stream_and_missing_usage_never_return_plan(self, post):
         invalid = completion()
         invalid["response"].pop("usage")
