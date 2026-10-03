@@ -60,10 +60,17 @@ class ChatGPTProvider(Provider):
             raise error
         self.served_model = model
         content, reasoning = [], []
-        for item in completed.get("output", []):
+        output = completed.get("output", [])
+        # GPT-5.5 can send a `commentary` message before the `final_answer` one, often with the
+        # same text. Only the final answer is the plan; joining both doubles the JSON.
+        final_only = any(item.get("type") == "message" and item.get("phase") == "final_answer"
+                         for item in output)
+        for item in output:
             if item.get("type") == "reasoning":
                 reasoning.extend(part.get("text", "") for part in item.get("summary", []))
             elif item.get("type") == "message":
+                if final_only and item.get("phase") != "final_answer":
+                    continue
                 for part in item.get("content", []):
                     if part.get("type") == "refusal":
                         raise _plan_error("ChatGPT refused the plan", part.get("refusal"), tokens)
