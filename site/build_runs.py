@@ -28,10 +28,10 @@ def prompt_number(run):
     return int(match.group(1)) if match else None
 
 
-def main():
-    root = Path(__file__).resolve().parent.parent
+def main(root=None):
+    root = Path(root) if root else Path(__file__).resolve().parent.parent
     runs = []
-    legacy = unfinished = 0
+    legacy = unfinished = calibration = 0
     for path in sorted(root.glob("runs/*/summary.json")):
         try:
             run = json.loads(path.read_text(encoding="utf-8"))
@@ -44,6 +44,11 @@ def main():
             json.dumps(run, allow_nan=False)
         except (OSError, UnicodeError, ValueError) as exc:
             print(f"Warning: skipping {path.relative_to(root)}: {exc}", file=sys.stderr)
+            continue
+        if run.get("calibration"):
+            # A pilot run to size a category (run_benchmark.py --calibration). Never a result,
+            # whatever its category or prompt version.
+            calibration += 1
             continue
         version = prompt_number(run)
         if version is None or version < HARNESS_FLOOR:
@@ -69,7 +74,8 @@ def main():
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(runs, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     print(f"Aggregated {len(runs)} runs into site/runs.json "
-          f"({legacy} legacy runs below prompt v{HARNESS_FLOOR}, {unfinished} unfinished runs excluded)")
+          f"({legacy} legacy runs below prompt v{HARNESS_FLOOR}, {unfinished} unfinished runs, "
+          f"{calibration} calibration runs excluded)")
 
 
 if __name__ == "__main__":

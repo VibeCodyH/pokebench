@@ -159,7 +159,7 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
                   turns_used, budget, tokens, wall_s, notes, save_name,
                   harness_git_sha=None, harness_files_sha=None, blackouts=(),
                   termination="budget", failed_attempts=None, category=None, calibration=False,
-                  presses_used=None, milestone_presses=None):
+                  presses_used=None, milestone_presses=None, presses_exact=True):
     """The qwen_red.write_summary JSON keys, with registry/adapter provenance."""
     provider_name = model["provider"]
     cat = category or CATEGORIES[TAB]
@@ -226,6 +226,7 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         # up to 100 presses, wait_60 is zero. The number other pixels-and-buttons harnesses quote.
         summary["presses_used"] = presses_used
         summary["milestone_presses"] = dict(milestone_presses or {})
+        summary["presses_exact"] = bool(presses_exact)  # False: an action call failed mid-run, so this is a floor
     if getattr(provider, "billing_mode", None) == "subscription":
         summary["billing_mode"] = "subscription"
         summary["served_model"] = provider.served_model
@@ -345,6 +346,19 @@ def fit_recent(history, num_ctx, static_chars):
     return kept
 
 
+def fit_notes(notes, num_ctx, static_chars):
+    """RVB notes are uncapped on disk. When the file alone cannot fit the model's context, show
+    its head and say so in the message, so the model knows the harness cut the VIEW, not the file.
+    Returns (text to show, characters not shown)."""
+    reserve = _IMAGE_TOKENS + _OUTPUT_TOKENS + _SAFETY_TOKENS + -(-static_chars // 4)
+    budget_chars = max(0, num_ctx - reserve) * 4
+    if len(notes) <= budget_chars:
+        return notes, 0
+    keep = max(0, budget_chars - 240)
+    return (notes[:keep] + f"\n[Your notes file is {len(notes):,} characters; only the first {keep:,} fit in "
+            "your context. The full file is kept on disk. Rewrite it shorter to see all of it.]"), len(notes) - keep
+
+
 def presses_in(steps):
     """Real button presses in one turn's traced steps: a_until_dialog_end reports its own count,
     wait_N presses nothing, an action that errored before running presses nothing, anything else is one."""
@@ -431,6 +445,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
     history = []
     history_turns = []  # turn number per history entry (turns can be skipped)
     presses_used = 0
+    presses_exact = True    # False once any /action/traced call failed: presses may have landed unrecorded
     milestone_presses = {}  # milestone key -> presses_used when it was first recorded
 
     def note_presses():
@@ -499,10 +514,13 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 # Screenshot plus the model's own past. No state text, no map, no screen text, and
                 # no milestone-anchored window either: the anchor moves when RAM says a milestone
                 # was hit, and a window that jumps would itself be a signal from the harness.
-                shell = rvb_user_message(notes, [])
+                shown_notes, notes_dropped = fit_notes(notes, model["num_ctx"],
+                                                       len(system_prompt) + len(rvb_user_message("", [])))
+                shell = rvb_user_message(shown_notes, [])
                 recent = fit_recent(history, model["num_ctx"], len(system_prompt) + len(shell))
-                user = rvb_user_message(notes, recent)
+                user = rvb_user_message(shown_notes, recent)
             else:
+                notes_dropped = 0
                 head = f"NOTES:\n{notes or '(no notes yet)'}\n\nRECENT TURNS:\n"
                 tail = (f"\n\nSTATE:\n{compact(state)}\n\nSCREEN TEXT (words on screen right now):\n{screen_text}"
                         f"\n\nWALKABILITY MAP (you are @ at E5):\n{amap}"
@@ -565,9 +583,10 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 for key in ("prompt", "completion"):
                     failed_attempts[key] += int((usage or {}).get(key, 0))
                 with open(log_path, "a") as output:
-                    output.write(json.dumps({"turn": turn, "model_error": str(exc), "error_body": body,
+                    output.write(json.dumps({"turn": turn, "category": cat.id, "model_error": str(exc), "error_body": body,
                                              "raw_output": getattr(exc, "raw_output", None),
                                              "model_s": time.time() - started, "tokens": usage,
+                                             "user_message": user,  # the exact request this attempt failed on
                                              "turn_not_counted": True, **observation}) + "\n")
                 errors_in_a_row += 1
                 first_error_at = first_error_at or time.time()
@@ -636,6 +655,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             steps = []
             start = end = pose_of(state)
             tail_parts = []
+            action_failed = False
             try:
                 acted = True
                 response = requests.post(f"{server}/action/traced", json={"actions": actions}, timeout=120)
@@ -692,12 +712,28 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             except Exception as exc:
                 result = f"action error: {exc}"
                 tail_parts.append(f" action error: {exc}")
-            presses = presses_in(steps)
-            presses_used += presses
+                action_failed = True
+            # Press accounting and map milestones, step by step: a milestone map can be entered and
+            # left inside one batch, and a milestone hit on press 1 of 6 is credited at +1, not +6.
+            # (Map rungs only here; party/flags/badge rungs resolve on the full state_after below.)
+            # A failed /action/traced call means presses may have landed unrecorded: that turn's
+            # count is unknown and the summary says so, rather than reporting an exact zero.
+            presses = None if action_failed else 0
+            for step in steps:
+                n = presses_in([step])
+                if not action_failed:
+                    presses += n
+                    presses_used += n
+                after = step.get("after") if isinstance(step, dict) else None
+                if isinstance(after, dict) and after.get("map_id") is not None:
+                    record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn, epoch)
+                    note_presses()
+            if action_failed:
+                presses_exact = False
             if cat.id == RVB:
-                # Uncapped, unsteered. A non-empty string replaces the file; empty or absent
-                # leaves it alone, so a backend whose strict schema forces the field to exist
-                # cannot wipe the notes on the model's behalf.
+                # Uncapped, unsteered. A string with any non-whitespace replaces the file verbatim;
+                # empty, blank or absent leaves it alone, so a backend whose strict schema forces
+                # the field to exist cannot wipe the notes on the model's behalf.
                 if isinstance(plan.get("notes"), str) and plan["notes"].strip():
                     notes = plan["notes"]
                     with open(notes_path, "w") as output:
@@ -710,26 +746,21 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             feedback = f"turn {turn}: {fmt_pose(start)} did [{' '.join(actions)}] -> {fmt_pose(end)}{''.join(tail_parts)}"
             history.append(rvb_history_entry(turn, thought, actions) if cat.id == RVB else feedback)
             history_turns.append(turn)
+            row = {
+                "turn": turn, "category": cat.id, "state": compact(state), "thinking": thinking,
+                "plan": plan, "result": result, "model_s": elapsed, "tokens": tokens,
+                # Receipts. In TAB screen_text/map/feedback are also what the model was shown; in
+                # RVB they are harness-only, and user_message is the exact text the model got.
+                "screen_text": screen_text, "map": amap, "feedback": feedback, "steps": steps,
+                "user_message": user, "presses": presses, "presses_total": presses_used,
+                **observation,
+                "state_after": compact(state_after) if isinstance(state_after, dict) else None,
+            }
+            if notes_dropped:
+                row["notes_dropped_chars"] = notes_dropped
             with open(log_path, "a") as output:
-                output.write(json.dumps({
-                    "turn": turn, "category": cat.id, "state": compact(state), "thinking": thinking,
-                    "plan": plan, "result": result, "model_s": elapsed, "tokens": tokens,
-                    # Receipts. In TAB screen_text/map/feedback are also what the model was shown; in
-                    # RVB they are harness-only, and user_message is the exact text the model got.
-                    "screen_text": screen_text, "map": amap, "feedback": feedback, "steps": steps,
-                    "user_message": user, "presses": presses, "presses_total": presses_used,
-                    **observation,
-                    "state_after": compact(state_after) if isinstance(state_after, dict) else None,
-                }) + "\n")
+                output.write(json.dumps(row) + "\n")
             turns_done = turn
-            # A milestone map can be entered and left inside one 6-action batch; the per-step RAM
-            # poses expose those transient map_ids the pre/post-turn states miss (map rungs only —
-            # party/flags/badge rungs still resolve on the full state_after below).
-            for step in steps:
-                after = step.get("after") if isinstance(step, dict) else None
-                if isinstance(after, dict) and after.get("map_id") is not None:
-                    record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn, epoch)
-            note_presses()
             # A white-out halves the money (floor) and warps to the last Pokémon Center: no purchase does both.
             if isinstance(state_after, dict):
                 money_before = (state.get("player") or {}).get("money")
@@ -759,7 +790,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             total_tokens, time.time() - run_start, notes, save_name,
             harness_git_sha, harness_files_sha, blackouts, termination, failed_attempts,
             category=cat, calibration=calibration,
-            presses_used=presses_used, milestone_presses=milestone_presses,
+            presses_used=presses_used, milestone_presses=milestone_presses, presses_exact=presses_exact,
         )
     return summary_path
 
