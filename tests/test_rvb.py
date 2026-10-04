@@ -252,6 +252,7 @@ class RvbRequestTests(RunFixture):
         def record(server, tracker, state, turn, epoch=None):
             calls["n"] += 1
             if calls["n"] == 2:          # first per-step map check of turn 1, after the action succeeded
+                tracker.first_turn.setdefault("left_house", turn)   # the tracker updates, then the POST dies
                 raise KeyboardInterrupt
             return False
 
@@ -267,6 +268,7 @@ class RvbRequestTests(RunFixture):
                 self.assertEqual(self.summary_args[6], 1)          # turns_used
                 self.assertEqual(self.summary_kwargs["presses_used"], 6)
                 self.assertTrue(self.summary_kwargs["presses_exact"])
+                self.assertEqual(self.summary_kwargs["milestone_presses"], {"left_house": 1})  # credited at press 1
 
     def test_interrupt_with_an_action_in_flight_marks_presses_inexact(self):
         for category in ("rvb", "tab"):
@@ -294,6 +296,32 @@ class RvbRequestTests(RunFixture):
         failed = [r for r in rows if r.get("turn_not_counted")]
         self.assertEqual(failed[0]["notes_view_scale"], 0.5)
         self.assertEqual(failed[0]["user_message"], first)
+
+    def test_a_non_retryable_400_for_request_size_still_retries_after_shrinking(self):
+        # The ChatGPT/OpenAI adapters mark every HTTP 400 non-retryable; a context overflow is the
+        # one 400 the runner can fix itself, so it must not abort the run.
+        err = RuntimeError("HTTP 400: context_length_exceeded")
+        err.non_retryable = True
+        err.response = Mock(status_code=400, text='{"error": {"code": "context_length_exceeded"}}')
+        rows, _, _, posted = self.play([
+            {"thought": "t1", "actions": ["a"], "notes": "0123456789" * 40_000},
+            err,
+            {"thought": "t2", "actions": ["b"]},
+        ])
+        self.assertEqual(posted, [["a"], ["b"]])
+        self.assertEqual(len([r for r in rows if r.get("turn_not_counted")]), 1)
+
+    def test_output_truncation_does_not_shrink_the_input(self):
+        err = RuntimeError("Anthropic returned no complete plan: max_tokens")
+        rows, _, provider, posted = self.play([
+            {"thought": "t1", "actions": ["a"], "notes": "steady notes"},
+            err,
+            {"thought": "t2", "actions": ["b"]},
+        ])
+        self.assertEqual(posted, [["a"], ["b"]])
+        failed = [r for r in rows if r.get("turn_not_counted")][0]
+        self.assertNotIn("notes_view_scale", failed)
+        self.assertEqual(provider.chat.call_args_list[1].args[1], provider.chat.call_args_list[2].args[1])
 
     def test_a_failed_action_call_makes_the_press_count_a_floor_not_a_zero(self):
         rows, _, _, _ = self.play([

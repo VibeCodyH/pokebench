@@ -351,9 +351,11 @@ def fit_recent(history, num_ctx, static_chars, scale=1.0):
 # for English prose and a bad one for a notes file full of numbers or code (closer to 1.5), so RVB
 # halves its notes/history view each time it sees one of these and retries, instead of resending
 # the same oversized request until the error window expires.
-CONTEXT_WORDS = ("context length", "context_length", "maximum context", "context window", "too long",
-                 "too many tokens", "token limit", "exceeds the limit", "exceeds the maximum", "max_tokens",
-                 "input length", "prompt is too large", "request too large", "maximum number of tokens")
+# Input-side wording only. "max_tokens" and bare "too long" are OUT: Anthropic's output truncation
+# reads "returned no complete plan: max_tokens", and shrinking the input for that would be wrong.
+CONTEXT_WORDS = ("context length", "context_length", "maximum context", "context window",
+                 "prompt is too long", "input is too long", "too many tokens", "token limit",
+                 "input length", "input token", "prompt is too large", "request too large")
 
 
 def fit_notes(notes, num_ctx, static_chars, scale=1.0):
@@ -463,6 +465,13 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
     def note_presses(count=None):
         for key in tracker.first_turn:
             milestone_presses.setdefault(key, presses_used if count is None else count)
+
+    def record(state_like, turn_no, count=None):
+        """record_milestones, with the press credit noted even if the POST inside it is interrupted."""
+        try:
+            return record_milestones(server, tracker, state_like, turn_no, epoch)
+        finally:
+            note_presses(count)
     name = model.get("display_name")
     identity = (f"You are {name}, an AI playing Pokémon Red live on stream." if name
                 else resolve_identity(model["api_model_id"], model["provider"]))
@@ -516,9 +525,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 time.sleep(5)
                 continue
 
-            brock = record_milestones(server, tracker, state, turn, epoch)
-            note_presses()
-            if brock:
+            if record(state, turn):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
                 termination = "beat_brock"
                 break
@@ -627,7 +634,9 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                     turn -= 1
                     time.sleep(wait)
                     continue
-                if status in (401, 402, 403) or billing or getattr(exc, "non_retryable", False):
+                # A too-large request is the one 4xx the runner can fix itself (the view just
+                # shrank), so it retries even when the adapter calls the status non-retryable.
+                if (status in (401, 402, 403) or billing or getattr(exc, "non_retryable", False)) and not too_big:
                     print(f"[turn {turn}] non-retryable provider error {status}, aborting: {exc} {body}", flush=True)
                     termination = "provider_error"
                     break
@@ -786,8 +795,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                     running += n
                 after = step.get("after") if isinstance(step, dict) else None
                 if isinstance(after, dict) and after.get("map_id") is not None:
-                    record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn, epoch)
-                    note_presses(running)
+                    record({"map": {"map_id": after["map_id"]}}, turn, running)
             # A white-out halves the money (floor) and warps to the last Pokémon Center: no purchase does both.
             if isinstance(state_after, dict):
                 money_before = (state.get("player") or {}).get("money")
@@ -798,9 +806,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                     blackouts.append(turn)
                     print(f"💀 BLACKOUT (turn {turn})", flush=True)
             # /action supplies RAM state: credit even a milestone on the last budgeted turn.
-            brock = isinstance(state_after, dict) and record_milestones(server, tracker, state_after, turn, epoch)
-            note_presses()
-            if brock:
+            if isinstance(state_after, dict) and record(state_after, turn):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
                 termination = "beat_brock"
                 break
