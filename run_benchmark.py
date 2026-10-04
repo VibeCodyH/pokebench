@@ -23,6 +23,7 @@ import yaml
 
 from milestones import MILESTONES, MilestoneTracker
 from providers import get_provider
+from categories import CATEGORIES, RVB, RVB_MAX_PRESSES, TAB, rvb_history_entry, rvb_user_message
 from qwen_red import (
     ALLOWED,
     HARNESS_VERSION,
@@ -142,7 +143,7 @@ def harness_fingerprint():
             git_sha = open(os.path.join(HERE, "GIT_SHA")).read().strip() or None
     try:
         blob = b""
-        for name in ("milestones.py", "providers.py", "run_benchmark.py", "qwen_red.py", "serve_live.py"):
+        for name in ("milestones.py", "providers.py", "run_benchmark.py", "qwen_red.py", "serve_live.py", "categories.py"):
             blob += open(os.path.join(HERE, name), "rb").read()
         # The ChatGPT adapter is optional on a server; a missing copy must not null every run's sha.
         for name in ("chatgpt_provider.py", "chatgpt_auth.py"):
@@ -157,11 +158,16 @@ def harness_fingerprint():
 def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
                   turns_used, budget, tokens, wall_s, notes, save_name,
                   harness_git_sha=None, harness_files_sha=None, blackouts=(),
-                  termination="budget", failed_attempts=None):
+                  termination="budget", failed_attempts=None, category=None, calibration=False,
+                  presses_used=None, milestone_presses=None, presses_exact=True):
     """The qwen_red.write_summary JSON keys, with registry/adapter provenance."""
     provider_name = model["provider"]
+    cat = category or CATEGORIES[TAB]
     summary = {
         "run_id": run_id,
+        # Which board this run belongs to (categories.py). Receipts written before this field
+        # existed are TAB: that is the only harness there was.
+        "category": cat.id,
         "model": model["api_model_id"],
         # The human label. "model" stays the id actually sent to the API, which on Azure is
         # the DEPLOYMENT name, so the board had no clean name to show for those rows.
@@ -172,8 +178,8 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         "provider": provider_name,
         "family": model["family"],
         "run_name": run_name,
-        "prompt_version": PROMPT_VERSION,
-        "prompt_sha": PROMPT_SHA,
+        "prompt_version": cat.prompt_version,
+        "prompt_sha": cat.prompt_sha,
         "harness_version": HARNESS_VERSION,
         "harness_git_sha": harness_git_sha,
         "harness_files_sha": harness_files_sha,
@@ -187,7 +193,7 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         "num_ctx": model["num_ctx"],
         # Anthropic/OpenAI adapters leave temperature at the API default.
         "temperature": model["temperature"] if provider_name in {"ollama", "google"} else None,
-        "allowed_actions": sorted(ALLOWED),
+        "allowed_actions": sorted(cat.allowed),
         "run_date": time.strftime("%Y-%m-%d"),
         "model_release_date": model.get("release_date"),
         "model_params": model.get("params"),
@@ -215,9 +221,18 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         "blackouts": list(blackouts),  # turns the party whited out (leaderboard replay drops a skull there)
         **tracker.summary(),
     }
+    if presses_used is not None:
+        # Button presses, as distinct from turns and actions: a_until_dialog_end is one action and
+        # up to 100 presses, wait_60 is zero. The number other pixels-and-buttons harnesses quote.
+        summary["presses_used"] = presses_used
+        summary["milestone_presses"] = dict(milestone_presses or {})
+        summary["presses_exact"] = bool(presses_exact)  # False: an action call failed mid-run, so this is a floor
     if getattr(provider, "billing_mode", None) == "subscription":
         summary["billing_mode"] = "subscription"
         summary["served_model"] = provider.served_model
+    if calibration:
+        # A pilot that exists to size the category (budget, press cap). Never a board result.
+        summary["calibration"] = True
     path = os.path.join(artifact_dir, "summary.json")
     with open(path, "x") as output:
         json.dump(summary, output, indent=2)
@@ -315,12 +330,13 @@ def fmt_pose(p):
     return f"{p.get('map_name') or 'Unknown'} ({pos[0]},{pos[1]})"
 
 
-def fit_recent(history, num_ctx, static_chars):
+def fit_recent(history, num_ctx, static_chars, scale=1.0):
     """Newest whole history entries that fit the model's context after reserving room for the
     rest of the request. Keeps a chronological suffix; returns [] when nothing fits — never the
-    whole list, which a bare history[-0:] slice would wrongly return."""
+    whole list, which a bare history[-0:] slice would wrongly return. `scale` shrinks the budget
+    after a provider has said the request was too large (RVB only; see CONTEXT_WORDS)."""
     reserve = _IMAGE_TOKENS + _OUTPUT_TOKENS + _SAFETY_TOKENS + -(-static_chars // 4)
-    budget_chars = max(0, num_ctx - reserve) * 4  # ~4 chars/token, conservative
+    budget_chars = int(max(0, num_ctx - reserve) * 4 * scale)  # ~4 chars/token, conservative for prose
     kept, used = [], 0
     for line in reversed(history):
         used += len(line) + 1
@@ -329,6 +345,44 @@ def fit_recent(history, num_ctx, static_chars):
         kept.append(line)
     kept.reverse()
     return kept
+
+
+# A provider saying the request itself was too big. Four characters per token is a fine estimate
+# for English prose and a bad one for a notes file full of numbers or code (closer to 1.5), so RVB
+# halves its notes/history view each time it sees one of these and retries, instead of resending
+# the same oversized request until the error window expires.
+# Input-side wording only. "max_tokens" and bare "too long" are OUT: Anthropic's output truncation
+# reads "returned no complete plan: max_tokens", and shrinking the input for that would be wrong.
+CONTEXT_WORDS = ("context length", "context_length", "maximum context", "context window",
+                 "prompt is too long", "input is too long", "too many tokens", "token limit",
+                 "input length", "input token", "prompt is too large", "request too large")
+
+
+def fit_notes(notes, num_ctx, static_chars, scale=1.0):
+    """RVB notes are uncapped on disk. When the file alone cannot fit the model's context, show
+    its head and say so in the message, so the model knows the harness cut the VIEW, not the file.
+    Returns (text to show, characters not shown)."""
+    reserve = _IMAGE_TOKENS + _OUTPUT_TOKENS + _SAFETY_TOKENS + -(-static_chars // 4)
+    budget_chars = int(max(0, num_ctx - reserve) * 4 * scale)
+    if len(notes) <= budget_chars:
+        return notes, 0
+    keep = max(0, budget_chars - 240)
+    return (notes[:keep] + f"\n[Your notes file is {len(notes):,} characters; only the first {keep:,} fit in "
+            "your context. The full file is kept on disk. Rewrite it shorter to see all of it.]"), len(notes) - keep
+
+
+def presses_in(steps):
+    """Real button presses in one turn's traced steps: a_until_dialog_end reports its own count,
+    wait_N presses nothing, an action that errored before running presses nothing, anything else is one."""
+    total = 0
+    for st in steps:
+        if not isinstance(st, dict) or "error" in st:
+            continue
+        if isinstance(st.get("dialog"), dict):
+            total += int(st["dialog"].get("presses") or 0)
+        elif not str(st.get("action", "")).startswith("wait_"):
+            total += 1
+    return total
 
 
 def verify_fresh_game(server):
@@ -361,11 +415,17 @@ def verify_fresh_game(server):
 
 
 def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
-        pause_on_billing=0):
+        pause_on_billing=0, category=TAB, calibration=False):
+    cat = CATEGORIES[category]
+    if cat.id == RVB and model["provider"] == "jev":
+        # Jev discards the screenshot and reads the text state; RVB has no text state to read.
+        raise ValueError("jev cannot play RVB: it has no vision, and RVB gives the model nothing else")
     server = server.rstrip("/")
     verify_fresh_game(server)
     os.makedirs(RUNS_DIR, exist_ok=True)
     slug = re.sub(r"[^A-Za-z0-9_-]+", "-", model["key"]).strip("-")[:80] or "model"
+    if cat.id != TAB:
+        slug = f"{slug}-{cat.id}"
     prefix = f"{slug}-{time.strftime('%Y%m%d_%H%M%S')}-"
     artifact_dir = tempfile.mkdtemp(prefix=prefix, dir=RUNS_DIR)
     if not no_frames:
@@ -375,8 +435,8 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
     notes_path = os.path.join(artifact_dir, "notes.md")
     with open(log_path, "x"):
         pass
-    print(f"run artifacts -> {artifact_dir}  (prompt {PROMPT_VERSION}/{PROMPT_SHA}, "
-          f"ctx {model['num_ctx']})", flush=True)
+    print(f"run artifacts -> {artifact_dir}  (category {cat.id}, prompt {cat.prompt_version}/{cat.prompt_sha}, "
+          f"ctx {model['num_ctx']}{', CALIBRATION: not a board result' if calibration else ''})", flush=True)
 
     tracker = MilestoneTracker()
     # Read once, at the start, and carry it on every milestone post: that is what makes a post
@@ -388,7 +448,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
         requests.post(f"{server}/run_meta", json={
             "model": model["api_model_id"], "display_name": model.get("display_name") or "", "think": model["think"], "ctx": model["num_ctx"],
             "route": ("local" if model["provider"] == "ollama" else "api"),
-            "prompt_version": PROMPT_VERSION,
+            "prompt_version": cat.prompt_version, "category": cat.id,
         }, timeout=10)
     except Exception:
         pass
@@ -396,10 +456,26 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
     notes = ""
     history = []
     history_turns = []  # turn number per history entry (turns can be skipped)
+    presses_used = 0
+    presses_exact = True    # False once any /action/traced call failed: presses may have landed unrecorded
+    action_outstanding = False  # an /action/traced call is in flight: an interrupt here leaves presses unknown
+    ctx_scale = 1.0         # RVB notes/history view budget multiplier, halved on a context-size rejection
+    milestone_presses = {}  # milestone key -> cumulative presses when it was first recorded
+
+    def note_presses(count=None):
+        for key in tracker.first_turn:
+            milestone_presses.setdefault(key, presses_used if count is None else count)
+
+    def record(state_like, turn_no, count=None):
+        """record_milestones, with the press credit noted even if the POST inside it is interrupted."""
+        try:
+            return record_milestones(server, tracker, state_like, turn_no, epoch)
+        finally:
+            note_presses(count)
     name = model.get("display_name")
     identity = (f"You are {name}, an AI playing Pokémon Red live on stream." if name
                 else resolve_identity(model["api_model_id"], model["provider"]))
-    system_prompt = render_system(identity)
+    system_prompt = cat.render_system(identity)  # for TAB this is qwen_red.render_system, byte for byte
     turn = 0
     turns_done = 0  # turns whose plan reached the emulator; `turn` may be one ahead mid-attempt
     termination = "budget"
@@ -449,18 +525,29 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 time.sleep(5)
                 continue
 
-            if record_milestones(server, tracker, state, turn, epoch):
+            if record(state, turn):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
                 termination = "beat_brock"
                 break
-            head = f"NOTES:\n{notes or '(no notes yet)'}\n\nRECENT TURNS:\n"
-            tail = (f"\n\nSTATE:\n{compact(state)}\n\nSCREEN TEXT (words on screen right now):\n{screen_text}"
-                    f"\n\nWALKABILITY MAP (you are @ at E5):\n{amap}"
-                    "\n\nThe screenshot is attached. Take your turn.")
-            anchor = milestone_anchor_turn(tracker, MILESTONE_WINDOW)
-            windowed = [h for h, t in zip(history, history_turns) if t >= anchor]
-            recent = fit_recent(windowed, model["num_ctx"], len(system_prompt) + len(head) + len(tail))
-            user = head + "\n".join(recent) + tail
+            if cat.id == RVB:
+                # Screenshot plus the model's own past. No state text, no map, no screen text, and
+                # no milestone-anchored window either: the anchor moves when RAM says a milestone
+                # was hit, and a window that jumps would itself be a signal from the harness.
+                shown_notes, notes_dropped = fit_notes(notes, model["num_ctx"],
+                                                       len(system_prompt) + len(rvb_user_message("", [])), ctx_scale)
+                shell = rvb_user_message(shown_notes, [])
+                recent = fit_recent(history, model["num_ctx"], len(system_prompt) + len(shell), ctx_scale)
+                user = rvb_user_message(shown_notes, recent)
+            else:
+                notes_dropped = 0
+                head = f"NOTES:\n{notes or '(no notes yet)'}\n\nRECENT TURNS:\n"
+                tail = (f"\n\nSTATE:\n{compact(state)}\n\nSCREEN TEXT (words on screen right now):\n{screen_text}"
+                        f"\n\nWALKABILITY MAP (you are @ at E5):\n{amap}"
+                        "\n\nThe screenshot is attached. Take your turn.")
+                anchor = milestone_anchor_turn(tracker, MILESTONE_WINDOW)
+                windowed = [h for h, t in zip(history, history_turns) if t >= anchor]
+                recent = fit_recent(windowed, model["num_ctx"], len(system_prompt) + len(head) + len(tail))
+                user = head + "\n".join(recent) + tail
             frame_file = None
             if not no_frames:
                 frame_file = f"frames/turn-{turn:04d}.png"
@@ -473,7 +560,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                            "in_battle": frame.get("in_battle"), "settle": frame.get("settle")}
             started = time.time()
             try:
-                plan, thinking, tokens = provider.chat(system_prompt, user, img, SCHEMA, model["think"])
+                plan, thinking, tokens = provider.chat(system_prompt, user, img, cat.schema, model["think"])
                 # A name outside ALLOWED used to be dropped while the REST of the batch still ran, so
                 # the trailing confirmation press landed on whatever the shortened sequence left on
                 # screen: Nex turn 268 reopened FIGHT instead of selecting RUN. A plan that cannot be
@@ -481,13 +568,24 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 # path as malformed JSON. An EMPTY list still falls through to the wait_60 default
                 # below -- a model choosing to do nothing is a legal turn, an unrunnable plan is not.
                 proposed_names = plan.get("actions")
-                invalid = ([a for a in proposed_names if not (isinstance(a, str) and a in ALLOWED)]
+                invalid = ([a for a in proposed_names if not (isinstance(a, str) and a in cat.allowed)]
                            if isinstance(proposed_names, list) else [])
                 if invalid:
                     plan_error = ValueError("plan used actions outside the allowed set: "
                                             + ", ".join(repr(a) for a in invalid[:6]))
                     plan_error.raw_output = json.dumps(plan)[:2000]
                     plan_error.usage = tokens   # the rejected attempt still cost these tokens
+                    raise plan_error
+                if cat.id == RVB and (not isinstance(proposed_names, list) or len(proposed_names) > RVB_MAX_PRESSES):
+                    # TAB turns a missing list into wait_60 and silently keeps the first six. RVB
+                    # has no fallback press and no macros to hide behind: a plan that is not a list
+                    # of at most six buttons is a plan the rules do not allow, and it retries like one.
+                    # (An EMPTY list is still legal: a turn spent pressing nothing.)
+                    what = (f"plan has {len(proposed_names)} presses; the limit is {RVB_MAX_PRESSES}"
+                            if isinstance(proposed_names, list) else "plan actions must be a list of button names")
+                    plan_error = ValueError(what)
+                    plan_error.raw_output = json.dumps(plan)[:2000]
+                    plan_error.usage = tokens
                     raise plan_error
             except Exception as exc:
                 if frame_file:
@@ -503,10 +601,16 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 failed_attempts["count"] += 1
                 for key in ("prompt", "completion"):
                     failed_attempts[key] += int((usage or {}).get(key, 0))
+                too_big = cat.id == RVB and any(w in (str(exc) + " " + body).lower() for w in CONTEXT_WORDS)
+                if too_big:
+                    ctx_scale = max(ctx_scale / 2, 1 / 64)
+                    print(f"[turn {turn}] request too large for the context; notes/history view scaled to {ctx_scale:.4g}", flush=True)
                 with open(log_path, "a") as output:
-                    output.write(json.dumps({"turn": turn, "model_error": str(exc), "error_body": body,
+                    output.write(json.dumps({"turn": turn, "category": cat.id, "model_error": str(exc), "error_body": body,
                                              "raw_output": getattr(exc, "raw_output", None),
                                              "model_s": time.time() - started, "tokens": usage,
+                                             "user_message": user,  # the exact request this attempt failed on
+                                             **({"notes_view_scale": ctx_scale} if too_big else {}),
                                              "turn_not_counted": True, **observation}) + "\n")
                 errors_in_a_row += 1
                 first_error_at = first_error_at or time.time()
@@ -530,7 +634,9 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                     turn -= 1
                     time.sleep(wait)
                     continue
-                if status in (401, 402, 403) or billing or getattr(exc, "non_retryable", False):
+                # A too-large request is the one 4xx the runner can fix itself (the view just
+                # shrank), so it retries even when the adapter calls the status non-retryable.
+                if (status in (401, 402, 403) or billing or getattr(exc, "non_retryable", False)) and not too_big:
                     print(f"[turn {turn}] non-retryable provider error {status}, aborting: {exc} {body}", flush=True)
                     termination = "provider_error"
                     break
@@ -557,23 +663,32 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 total_tokens[key] = total_tokens.get(key, 0) + value
             thought = str(plan.get("thought") or "").strip()
             proposed = plan.get("actions")
-            actions = ([action for action in proposed if isinstance(action, str) and action in ALLOWED][:6]
-                       if isinstance(proposed, list) else []) or ["wait_60"]
+            if cat.id == RVB:
+                # No wait_60 fallback: an empty list is a turn spent pressing nothing. The game
+                # ticks on regardless, and the turn counts.
+                actions = ([action for action in proposed if isinstance(action, str) and action in cat.allowed]
+                           if isinstance(proposed, list) else [])
+            else:
+                actions = ([action for action in proposed if isinstance(action, str) and action in ALLOWED][:6]
+                           if isinstance(proposed, list) else []) or ["wait_60"]
             print(f"\n=== turn {turn} | {compact(state).splitlines()[0]} | model {elapsed:.0f}s ===", flush=True)
-            print(f"💭 {thought}\n  ▶ {' '.join(actions)}", flush=True)
+            print(f"💭 {thought}\n  ▶ {' '.join(actions) or '(no presses)'}", flush=True)
             event(server, "reasoning", text=thought)
-            event(server, "decision", text=" ".join(actions))
+            event(server, "decision", text=" ".join(actions) or "(no presses)")
             if plan.get("key_moment"):
                 event(server, "key_moment", description=str(plan["key_moment"])[:200], category="milestone")
             state_after = None
             steps = []
             start = end = pose_of(state)
             tail_parts = []
+            action_failed = False
             try:
                 acted = True
+                action_outstanding = True
                 response = requests.post(f"{server}/action/traced", json={"actions": actions}, timeout=120)
                 response.raise_for_status()
                 result_body = response.json()
+                action_outstanding = False
                 result = f"executed {result_body.get('actions_executed')}"
                 state_after = result_body.get("state_after")
                 steps = result_body.get("steps") or []
@@ -625,29 +740,62 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             except Exception as exc:
                 result = f"action error: {exc}"
                 tail_parts.append(f" action error: {exc}")
-            if plan.get("notes"):
+                action_failed = True
+                action_outstanding = False  # the call returned (badly); the interrupt case keeps True
+            # Press accounting, with no network in between: the completed turn is persisted below
+            # BEFORE any milestone is posted, so an interrupt mid-post cannot lose it. A failed
+            # /action/traced call means presses may have landed unrecorded: that turn's count is
+            # unknown and the summary says so, rather than reporting an exact zero.
+            step_presses = [presses_in([st]) for st in steps]
+            presses_before = presses_used
+            presses = None if action_failed else sum(step_presses)
+            if action_failed:
+                presses_exact = False
+            else:
+                presses_used += presses
+            if cat.id == RVB:
+                # Uncapped, unsteered. A string with any non-whitespace replaces the file verbatim;
+                # empty, blank or absent leaves it alone, so a backend whose strict schema forces
+                # the field to exist cannot wipe the notes on the model's behalf.
+                if isinstance(plan.get("notes"), str) and plan["notes"].strip():
+                    notes = plan["notes"]
+                    with open(notes_path, "w") as output:
+                        output.write(notes)
+            elif plan.get("notes"):
                 notes = str(plan["notes"])[:600]
                 with open(notes_path, "w") as output:
                     output.write(notes)
-            history.append(f"turn {turn}: {fmt_pose(start)} did [{' '.join(actions)}] -> {fmt_pose(end)}{''.join(tail_parts)}")
+            # The harness's account of the turn. TAB shows it to the model next turn; RVB only logs it.
+            feedback = f"turn {turn}: {fmt_pose(start)} did [{' '.join(actions)}] -> {fmt_pose(end)}{''.join(tail_parts)}"
+            history.append(rvb_history_entry(turn, thought, actions) if cat.id == RVB else feedback)
             history_turns.append(turn)
+            row = {
+                "turn": turn, "category": cat.id, "state": compact(state), "thinking": thinking,
+                "plan": plan, "result": result, "model_s": elapsed, "tokens": tokens,
+                # Receipts. In TAB screen_text/map/feedback are also what the model was shown; in
+                # RVB they are harness-only, and user_message is the exact text the model got.
+                "screen_text": screen_text, "map": amap, "feedback": feedback, "steps": steps,
+                "user_message": user, "presses": presses, "presses_total": presses_used,
+                **observation,
+                "state_after": compact(state_after) if isinstance(state_after, dict) else None,
+            }
+            if notes_dropped:
+                row["notes_dropped_chars"] = notes_dropped
             with open(log_path, "a") as output:
-                output.write(json.dumps({
-                    "turn": turn, "state": compact(state), "thinking": thinking,
-                    "plan": plan, "result": result, "model_s": elapsed, "tokens": tokens,
-                    # what the model was shown + what came back, so a run can be audited after the fact
-                    "screen_text": screen_text, "map": amap, "feedback": history[-1], "steps": steps,
-                    **observation,
-                    "state_after": compact(state_after) if isinstance(state_after, dict) else None,
-                }) + "\n")
+                output.write(json.dumps(row) + "\n")
             turns_done = turn
-            # A milestone map can be entered and left inside one 6-action batch; the per-step RAM
-            # poses expose those transient map_ids the pre/post-turn states miss (map rungs only —
-            # party/flags/badge rungs still resolve on the full state_after below).
-            for step in steps:
+            # Map milestones per step: a milestone map can be entered and left inside one 6-action
+            # batch, and the per-step RAM poses expose those transient map_ids the pre/post-turn
+            # states miss. Each is credited at the cumulative press that entered it, so a map hit
+            # on press 1 of 6 reads +1, not +6. Party/flag/badge rungs resolve on the full
+            # state_after below, at the turn's final count: those are at most 5 presses high.
+            running = presses_before
+            for step, n in zip(steps, step_presses):
+                if not action_failed:
+                    running += n
                 after = step.get("after") if isinstance(step, dict) else None
                 if isinstance(after, dict) and after.get("map_id") is not None:
-                    record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn, epoch)
+                    record({"map": {"map_id": after["map_id"]}}, turn, running)
             # A white-out halves the money (floor) and warps to the last Pokémon Center: no purchase does both.
             if isinstance(state_after, dict):
                 money_before = (state.get("player") or {}).get("money")
@@ -658,7 +806,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                     blackouts.append(turn)
                     print(f"💀 BLACKOUT (turn {turn})", flush=True)
             # /action supplies RAM state: credit even a milestone on the last budgeted turn.
-            if isinstance(state_after, dict) and record_milestones(server, tracker, state_after, turn, epoch):
+            if isinstance(state_after, dict) and record(state_after, turn):
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
                 termination = "beat_brock"
                 break
@@ -668,12 +816,16 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
         termination = "interrupted"
         raise
     finally:
+        if action_outstanding:
+            presses_exact = False  # interrupted with a batch in flight: those presses may have landed
         if acted:
             save_name = save_game(server, f"{run_id}-auto") or save_name
         summary_path = write_summary(
             artifact_dir, run_id, model, provider, run_name, tracker, turns_done, budget,
             total_tokens, time.time() - run_start, notes, save_name,
             harness_git_sha, harness_files_sha, blackouts, termination, failed_attempts,
+            category=cat, calibration=calibration,
+            presses_used=presses_used, milestone_presses=milestone_presses, presses_exact=presses_exact,
         )
     return summary_path
 
@@ -688,17 +840,28 @@ def main(argv=None):
     parser.add_argument("--pause-on-billing", type=int, default=0, metavar="SECONDS",
                         help="on an out-of-credit error, pause and re-probe every "
                              f"{BILLING_POLL_S}s for up to SECONDS instead of aborting the run")
+    parser.add_argument("--category", choices=sorted(CATEGORIES), default=TAB,
+                        help="tab = RAM state + map + macros (the original board); "
+                             "rvb = screenshot and eight buttons only (issue #102)")
+    parser.add_argument("--calibration", action="store_true",
+                        help="unscored pilot: labeled in summary.json and never a board result")
     args = parser.parse_args(argv)
     if args.turns <= 0:
         parser.error("--turns must be positive")
     try:
         model = load_model(args.model_key)
+        if args.category == RVB and model["provider"] == "jev":
+            raise ValueError("jev cannot play RVB: it has no vision, and RVB gives the model nothing else")
         provider = make_provider(model)
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))
+    run_name = args.run_name or args.model_key
+    if args.calibration:
+        run_name = f"calibration-{run_name}"
     try:
-        run(model, provider, args.server, args.turns, args.run_name or args.model_key,
-            no_frames=args.no_frames, pause_on_billing=args.pause_on_billing)
+        run(model, provider, args.server, args.turns, run_name,
+            no_frames=args.no_frames, pause_on_billing=args.pause_on_billing,
+            category=args.category, calibration=args.calibration)
     except KeyboardInterrupt:
         print("Run interrupted; partial summary written.", flush=True)
         return 130

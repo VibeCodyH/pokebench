@@ -9,7 +9,7 @@ COPY requirements.txt requirements-oauth.txt /tmp/
 RUN pip install --no-cache-dir -r /tmp/requirements.txt -r /tmp/requirements-oauth.txt
 WORKDIR /app
 COPY serve_live.py qwen_red.py milestones.py stream.html run_benchmark.py providers.py models.yaml \
-     chatgpt_provider.py chatgpt_auth.py /app/
+     categories.py chatgpt_provider.py chatgpt_auth.py /app/
 # Runs record the harness commit. The image has no .git, so the build passes it in.
 ARG GIT_SHA=""
 ENV POKEBENCH_GIT_SHA=$GIT_SHA
