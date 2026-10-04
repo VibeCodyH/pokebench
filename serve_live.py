@@ -352,13 +352,21 @@ async def _settle_warp(stale: dict) -> dict:
     return pose
 
 
+# RVB's eight raw button names (categories.py). Each is exactly one press with the timing the
+# upstream press_*/walk_* paths already use (8 frames held, 12 released); the directions go
+# through walk_* because upstream's two paths are the same press, and keeping one timing per
+# button is what makes the category auditable. TAB names pass through untouched.
+_RAW_BUTTONS = {"up": "walk_up", "down": "walk_down", "left": "walk_left", "right": "walk_right",
+                "a": "press_a", "b": "press_b", "start": "press_start", "select": "press_select"}
+
+
 async def _execute_unlocked(action_str: str):
     a = action_str.strip().lower()
     if a == "a_until_dialog_end":
         res = await _a_until_dialog_end()
         _last_settle["busy_reason"] = res["settle"]  # the helper already settled its final traced snapshot
         return res
-    res = await _orig_execute(action_str)
+    res = await _orig_execute(_RAW_BUTTONS.get(a, action_str))
     await _settle_after(a)
     return res
 

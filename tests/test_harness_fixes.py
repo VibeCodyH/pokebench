@@ -1451,3 +1451,33 @@ class AnthropicPromptCacheTests(unittest.TestCase):
                 total[key] = total.get(key, 0) + value
         self.assertEqual(total, {"prompt": 30, "completion": 6,
                                  "cache_read": 15, "cache_write": 3})
+
+
+class RawButtonDispatchTests(unittest.TestCase):
+    """RVB's eight raw names are one press each, on the upstream press_/walk_ timing; TAB names pass through."""
+
+    def dispatch(self, name):
+        calls = []
+
+        async def orig(action):
+            calls.append(action)
+
+        async def settle(action):
+            pass
+
+        with patch.object(live, "_orig_execute", orig), patch.object(live, "_settle_after", settle):
+            asyncio.run(live._execute_unlocked(name))
+        return calls
+
+    def test_raw_buttons_map_to_a_single_upstream_press(self):
+        expected = {"up": "walk_up", "down": "walk_down", "left": "walk_left", "right": "walk_right",
+                    "a": "press_a", "b": "press_b", "start": "press_start", "select": "press_select"}
+        for raw, upstream in expected.items():
+            with self.subTest(button=raw):
+                self.assertEqual(self.dispatch(raw), [upstream])
+                self.assertEqual(self.dispatch(raw.upper()), [upstream])
+
+    def test_tab_names_are_untouched(self):
+        for name in ("press_a", "walk_up", "hold_a_30", "wait_60"):
+            with self.subTest(action=name):
+                self.assertEqual(self.dispatch(name), [name])
