@@ -45,7 +45,7 @@ def frame(**flags):
 
 class RunFixture(unittest.TestCase):
     def play(self, plans, category="rvb", budget=None, provider_name="ollama", steps_for=None, record=None,
-             fail_actions_on_post=None, interrupt_on_post=None):
+             fail_actions_on_post=None, interrupt_on_post=None, rvb_goal="game"):
         """Drive runner.run with scripted plans. A plan may be an Exception to fail that call.
         Returns (log rows, artifact dir, provider mock, posted action lists)."""
         tmp = tempfile.TemporaryDirectory()
@@ -91,7 +91,8 @@ class RunFixture(unittest.TestCase):
                 patch.object(runner.requests, "post", side_effect=post), \
                 patch.object(runner.time, "sleep"), contextlib.redirect_stdout(io.StringIO()):
             try:
-                runner.run(model, provider, "http://unused", budget=budget or good, category=category)
+                runner.run(model, provider, "http://unused", budget=budget or good, category=category,
+                           rvb_goal=rvb_goal)
             except KeyboardInterrupt:
                 self.interrupted = True
         artifact = next(Path(tmp.name).iterdir())
@@ -124,6 +125,28 @@ class RvbRequestTests(RunFixture):
         self.assertEqual(rows[0]["category"], "rvb")
         self.assertIn("Pewter City", rows[0]["feedback"])
         self.assertEqual(rows[0]["screen_text"], "PROF.OAK: Hello!")
+
+    def test_brock_goal_adds_the_clock_and_records_rvb2(self):
+        rows, _, provider, _ = self.play([
+            {"thought": "Title screen.", "actions": ["start"]},
+            {"thought": "Oak talking.", "actions": ["a"]},
+        ], rvb_goal="brock")
+        system, user, _, _, _ = provider.chat.call_args_list[1].args
+        self.assertIn("Boulder Badge from Brock in Pewter City", system)
+        self.assertNotIn("beat the game", system)
+        self.assertTrue(user.startswith("TURN 2 OF 2.\n\nYOUR NOTES:"), user[:40])
+        self.assertTrue(rows[0]["user_message"].startswith("TURN 1 OF 2."))
+        for leak in LEAKS:
+            self.assertNotIn(leak, user, leak)
+            if leak != "Pewter City":  # the goal names the town on purpose; nothing observed does
+                self.assertNotIn(leak, system, leak)
+        cat = self.summary_kwargs["category"]
+        self.assertEqual((cat.id, cat.prompt_version), ("rvb", "rvb2"))
+        self.assertNotEqual(cat.prompt_sha, categories.RVB_PROMPT_SHA)
+        # the default goal is untouched: no clock, rvb1 provenance
+        rows, _, provider, _ = self.play([{"thought": "t", "actions": ["a"]}])
+        self.assertTrue(provider.chat.call_args.args[1].startswith("YOUR NOTES:"))
+        self.assertEqual(self.summary_kwargs["category"].prompt_version, "rvb1")
 
     def test_nothing_the_harness_saw_reaches_any_message_even_with_poisoned_feedback(self):
         # Steps that would make TAB's feedback line talk: a transcript, a blocked walk, a map
@@ -437,11 +460,33 @@ class CategoryConstantsTests(unittest.TestCase):
         self.assertIs(tab.schema, qwen_red.SCHEMA)
 
     def test_rvb_prompt_has_no_game_help(self):
-        for word in ("map", "RAM", "door", "warp", "walk_", "dialog", "menu", "a_until", "600"):
-            self.assertNotIn(word, categories.RVB_SYSTEM, word)
-        self.assertIn("__IDENTITY__", categories.RVB_SYSTEM)
+        for goal in categories.RVB_GOALS:
+            system = categories.rvb_category(goal).system
+            for word in ("map", "RAM", "door", "warp", "walk_", "dialog", "menu", "a_until", "600"):
+                self.assertNotIn(word, system, (goal, word))
+            self.assertIn("__IDENTITY__", system)
         self.assertEqual(categories.RVB_PROMPT_VERSION, "rvb1")
         self.assertEqual(len(categories.RVB_PROMPT_SHA), 16)
+
+    def test_rvb1_is_pinned_to_the_prompt_calibration_run_1_played(self):
+        rvb1 = categories.rvb_category("game")
+        self.assertEqual(rvb1.prompt_sha, "e571ee1b9d81f408")
+        self.assertEqual((rvb1.system, rvb1.prompt_version), (categories.RVB_SYSTEM, "rvb1"))
+        self.assertEqual(categories.CATEGORIES["rvb"].prompt_sha, rvb1.prompt_sha)
+
+    def test_rvb2_changes_only_the_goal_line(self):
+        rvb2 = categories.rvb_category("brock")
+        self.assertEqual(rvb2.prompt_version, "rvb2")
+        self.assertIn("Boulder Badge from Brock in Pewter City", rvb2.system)
+        self.assertEqual(rvb2.system.replace(categories.RVB_GOALS["brock"], categories.RVB_GOALS["game"]),
+                         categories.RVB_SYSTEM)
+        self.assertNotEqual(rvb2.prompt_sha, categories.RVB_PROMPT_SHA)
+
+    def test_clock_is_a_prefix_and_nothing_else_moves(self):
+        plain = categories.rvb_user_message("n", ["turn 1: x -> pressed [a]"])
+        timed = categories.rvb_user_message("n", ["turn 1: x -> pressed [a]"], (57, 1000))
+        self.assertEqual(timed, "TURN 57 OF 1000.\n\n" + plain)
+        self.assertTrue(plain.startswith("YOUR NOTES:\nn\n\n"))
 
 
 if __name__ == "__main__":
