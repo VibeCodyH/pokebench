@@ -145,6 +145,14 @@
       "note": ""
     },
     {
+      "run_id": "chatgpt-gpt-5-5-20261003_031654-cton7l6w",
+      "display_name": "GPT-5.5",
+      "date": "2026-10-03",
+      "status": "published",
+      "youtube_url": "https://www.youtube.com/watch?v=t0NrMSA3Dqs",
+      "note": ""
+    },
+    {
       "run_id": "qwen3-8-27b-20260926_032257-9rf2ninf",
       "display_name": "Qwen3.8 27B",
       "date": "2026-10-04",
