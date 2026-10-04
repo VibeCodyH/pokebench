@@ -330,12 +330,13 @@ def fmt_pose(p):
     return f"{p.get('map_name') or 'Unknown'} ({pos[0]},{pos[1]})"
 
 
-def fit_recent(history, num_ctx, static_chars):
+def fit_recent(history, num_ctx, static_chars, scale=1.0):
     """Newest whole history entries that fit the model's context after reserving room for the
     rest of the request. Keeps a chronological suffix; returns [] when nothing fits — never the
-    whole list, which a bare history[-0:] slice would wrongly return."""
+    whole list, which a bare history[-0:] slice would wrongly return. `scale` shrinks the budget
+    after a provider has said the request was too large (RVB only; see CONTEXT_WORDS)."""
     reserve = _IMAGE_TOKENS + _OUTPUT_TOKENS + _SAFETY_TOKENS + -(-static_chars // 4)
-    budget_chars = max(0, num_ctx - reserve) * 4  # ~4 chars/token, conservative
+    budget_chars = int(max(0, num_ctx - reserve) * 4 * scale)  # ~4 chars/token, conservative for prose
     kept, used = [], 0
     for line in reversed(history):
         used += len(line) + 1
@@ -346,12 +347,21 @@ def fit_recent(history, num_ctx, static_chars):
     return kept
 
 
-def fit_notes(notes, num_ctx, static_chars):
+# A provider saying the request itself was too big. Four characters per token is a fine estimate
+# for English prose and a bad one for a notes file full of numbers or code (closer to 1.5), so RVB
+# halves its notes/history view each time it sees one of these and retries, instead of resending
+# the same oversized request until the error window expires.
+CONTEXT_WORDS = ("context length", "context_length", "maximum context", "context window", "too long",
+                 "too many tokens", "token limit", "exceeds the limit", "exceeds the maximum", "max_tokens",
+                 "input length", "prompt is too large", "request too large", "maximum number of tokens")
+
+
+def fit_notes(notes, num_ctx, static_chars, scale=1.0):
     """RVB notes are uncapped on disk. When the file alone cannot fit the model's context, show
     its head and say so in the message, so the model knows the harness cut the VIEW, not the file.
     Returns (text to show, characters not shown)."""
     reserve = _IMAGE_TOKENS + _OUTPUT_TOKENS + _SAFETY_TOKENS + -(-static_chars // 4)
-    budget_chars = max(0, num_ctx - reserve) * 4
+    budget_chars = int(max(0, num_ctx - reserve) * 4 * scale)
     if len(notes) <= budget_chars:
         return notes, 0
     keep = max(0, budget_chars - 240)
@@ -446,11 +456,13 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
     history_turns = []  # turn number per history entry (turns can be skipped)
     presses_used = 0
     presses_exact = True    # False once any /action/traced call failed: presses may have landed unrecorded
-    milestone_presses = {}  # milestone key -> presses_used when it was first recorded
+    action_outstanding = False  # an /action/traced call is in flight: an interrupt here leaves presses unknown
+    ctx_scale = 1.0         # RVB notes/history view budget multiplier, halved on a context-size rejection
+    milestone_presses = {}  # milestone key -> cumulative presses when it was first recorded
 
-    def note_presses():
+    def note_presses(count=None):
         for key in tracker.first_turn:
-            milestone_presses.setdefault(key, presses_used)
+            milestone_presses.setdefault(key, presses_used if count is None else count)
     name = model.get("display_name")
     identity = (f"You are {name}, an AI playing Pokémon Red live on stream." if name
                 else resolve_identity(model["api_model_id"], model["provider"]))
@@ -515,9 +527,9 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 # no milestone-anchored window either: the anchor moves when RAM says a milestone
                 # was hit, and a window that jumps would itself be a signal from the harness.
                 shown_notes, notes_dropped = fit_notes(notes, model["num_ctx"],
-                                                       len(system_prompt) + len(rvb_user_message("", [])))
+                                                       len(system_prompt) + len(rvb_user_message("", [])), ctx_scale)
                 shell = rvb_user_message(shown_notes, [])
-                recent = fit_recent(history, model["num_ctx"], len(system_prompt) + len(shell))
+                recent = fit_recent(history, model["num_ctx"], len(system_prompt) + len(shell), ctx_scale)
                 user = rvb_user_message(shown_notes, recent)
             else:
                 notes_dropped = 0
@@ -582,11 +594,16 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 failed_attempts["count"] += 1
                 for key in ("prompt", "completion"):
                     failed_attempts[key] += int((usage or {}).get(key, 0))
+                too_big = cat.id == RVB and any(w in (str(exc) + " " + body).lower() for w in CONTEXT_WORDS)
+                if too_big:
+                    ctx_scale = max(ctx_scale / 2, 1 / 64)
+                    print(f"[turn {turn}] request too large for the context; notes/history view scaled to {ctx_scale:.4g}", flush=True)
                 with open(log_path, "a") as output:
                     output.write(json.dumps({"turn": turn, "category": cat.id, "model_error": str(exc), "error_body": body,
                                              "raw_output": getattr(exc, "raw_output", None),
                                              "model_s": time.time() - started, "tokens": usage,
                                              "user_message": user,  # the exact request this attempt failed on
+                                             **({"notes_view_scale": ctx_scale} if too_big else {}),
                                              "turn_not_counted": True, **observation}) + "\n")
                 errors_in_a_row += 1
                 first_error_at = first_error_at or time.time()
@@ -658,9 +675,11 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             action_failed = False
             try:
                 acted = True
+                action_outstanding = True
                 response = requests.post(f"{server}/action/traced", json={"actions": actions}, timeout=120)
                 response.raise_for_status()
                 result_body = response.json()
+                action_outstanding = False
                 result = f"executed {result_body.get('actions_executed')}"
                 state_after = result_body.get("state_after")
                 steps = result_body.get("steps") or []
@@ -713,23 +732,18 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 result = f"action error: {exc}"
                 tail_parts.append(f" action error: {exc}")
                 action_failed = True
-            # Press accounting and map milestones, step by step: a milestone map can be entered and
-            # left inside one batch, and a milestone hit on press 1 of 6 is credited at +1, not +6.
-            # (Map rungs only here; party/flags/badge rungs resolve on the full state_after below.)
-            # A failed /action/traced call means presses may have landed unrecorded: that turn's
-            # count is unknown and the summary says so, rather than reporting an exact zero.
-            presses = None if action_failed else 0
-            for step in steps:
-                n = presses_in([step])
-                if not action_failed:
-                    presses += n
-                    presses_used += n
-                after = step.get("after") if isinstance(step, dict) else None
-                if isinstance(after, dict) and after.get("map_id") is not None:
-                    record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn, epoch)
-                    note_presses()
+                action_outstanding = False  # the call returned (badly); the interrupt case keeps True
+            # Press accounting, with no network in between: the completed turn is persisted below
+            # BEFORE any milestone is posted, so an interrupt mid-post cannot lose it. A failed
+            # /action/traced call means presses may have landed unrecorded: that turn's count is
+            # unknown and the summary says so, rather than reporting an exact zero.
+            step_presses = [presses_in([st]) for st in steps]
+            presses_before = presses_used
+            presses = None if action_failed else sum(step_presses)
             if action_failed:
                 presses_exact = False
+            else:
+                presses_used += presses
             if cat.id == RVB:
                 # Uncapped, unsteered. A string with any non-whitespace replaces the file verbatim;
                 # empty, blank or absent leaves it alone, so a backend whose strict schema forces
@@ -761,6 +775,19 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             with open(log_path, "a") as output:
                 output.write(json.dumps(row) + "\n")
             turns_done = turn
+            # Map milestones per step: a milestone map can be entered and left inside one 6-action
+            # batch, and the per-step RAM poses expose those transient map_ids the pre/post-turn
+            # states miss. Each is credited at the cumulative press that entered it, so a map hit
+            # on press 1 of 6 reads +1, not +6. Party/flag/badge rungs resolve on the full
+            # state_after below, at the turn's final count: those are at most 5 presses high.
+            running = presses_before
+            for step, n in zip(steps, step_presses):
+                if not action_failed:
+                    running += n
+                after = step.get("after") if isinstance(step, dict) else None
+                if isinstance(after, dict) and after.get("map_id") is not None:
+                    record_milestones(server, tracker, {"map": {"map_id": after["map_id"]}}, turn, epoch)
+                    note_presses(running)
             # A white-out halves the money (floor) and warps to the last Pokémon Center: no purchase does both.
             if isinstance(state_after, dict):
                 money_before = (state.get("player") or {}).get("money")
@@ -783,6 +810,8 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
         termination = "interrupted"
         raise
     finally:
+        if action_outstanding:
+            presses_exact = False  # interrupted with a batch in flight: those presses may have landed
         if acted:
             save_name = save_game(server, f"{run_id}-auto") or save_name
         summary_path = write_summary(

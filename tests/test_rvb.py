@@ -45,7 +45,7 @@ def frame(**flags):
 
 class RunFixture(unittest.TestCase):
     def play(self, plans, category="rvb", budget=None, provider_name="ollama", steps_for=None, record=None,
-             fail_actions_on_post=None):
+             fail_actions_on_post=None, interrupt_on_post=None):
         """Drive runner.run with scripted plans. A plan may be an Exception to fail that call.
         Returns (log rows, artifact dir, provider mock, posted action lists)."""
         tmp = tempfile.TemporaryDirectory()
@@ -65,6 +65,8 @@ class RunFixture(unittest.TestCase):
                 posted.append(actions)
                 if fail_actions_on_post == len(posted):
                     raise RuntimeError("server went away mid-batch")
+                if interrupt_on_post == len(posted):
+                    raise KeyboardInterrupt
                 steps = steps_for(actions) if steps_for else [
                     {"action": a, "before": POSE, "after": POSE} for a in actions]
                 return Mock(json=lambda: {"actions_executed": len(actions), "steps": steps,
@@ -74,15 +76,24 @@ class RunFixture(unittest.TestCase):
         model = {"key": "test", "api_model_id": "test", "provider": provider_name, "num_ctx": 65536, "think": "off"}
         good = sum(1 for p in plans if not isinstance(p, Exception))
         self.summary_kwargs = {}
+        self.summary_args = ()
+        self.interrupted = False
+
+        def summary(*a, **k):
+            self.summary_args = a
+            self.summary_kwargs.update(k)
+
         with patch.multiple(runner, RUNS_DIR=tmp.name, harness_fingerprint=Mock(return_value=(None, None)),
                             record_milestones=Mock(side_effect=record) if record else Mock(return_value=False),
-                            save_game=Mock(return_value=None),
-                            write_summary=Mock(side_effect=lambda *a, **k: self.summary_kwargs.update(k)),
+                            save_game=Mock(return_value=None), write_summary=Mock(side_effect=summary),
                             verify_fresh_game=Mock()), \
                 patch.object(runner.requests, "get", side_effect=get), \
                 patch.object(runner.requests, "post", side_effect=post), \
                 patch.object(runner.time, "sleep"), contextlib.redirect_stdout(io.StringIO()):
-            runner.run(model, provider, "http://unused", budget=budget or good, category=category)
+            try:
+                runner.run(model, provider, "http://unused", budget=budget or good, category=category)
+            except KeyboardInterrupt:
+                self.interrupted = True
         artifact = next(Path(tmp.name).iterdir())
         rows = [json.loads(line) for line in (artifact / "log.jsonl").read_text().splitlines()]
         return rows, artifact, provider, posted
@@ -233,6 +244,56 @@ class RvbRequestTests(RunFixture):
         self.assertEqual(self.summary_kwargs["presses_used"], 6)
         self.assertTrue(self.summary_kwargs["presses_exact"])
         self.assertEqual(self.summary_kwargs["category"].id, "rvb")
+
+    def test_interrupt_during_a_milestone_post_keeps_the_completed_turn(self):
+        # The turn's log row, notes and turn count are persisted before any milestone is posted.
+        calls = {"n": 0}
+
+        def record(server, tracker, state, turn, epoch=None):
+            calls["n"] += 1
+            if calls["n"] == 2:          # first per-step map check of turn 1, after the action succeeded
+                raise KeyboardInterrupt
+            return False
+
+        for category in ("rvb", "tab"):
+            with self.subTest(category=category):
+                plan = {"thought": "go", "actions": ["up"] * 6 if category == "rvb" else ["walk_up"] * 6, "notes": "kept"}
+                calls["n"] = 0
+                rows, artifact, _, posted = self.play([plan], category=category, record=record)
+                self.assertTrue(self.interrupted)
+                self.assertEqual(len(posted), 1)
+                self.assertEqual(len(rows), 1)
+                self.assertEqual((artifact / "notes.md").read_text(), "kept")
+                self.assertEqual(self.summary_args[6], 1)          # turns_used
+                self.assertEqual(self.summary_kwargs["presses_used"], 6)
+                self.assertTrue(self.summary_kwargs["presses_exact"])
+
+    def test_interrupt_with_an_action_in_flight_marks_presses_inexact(self):
+        for category in ("rvb", "tab"):
+            with self.subTest(category=category):
+                plan = {"thought": "", "actions": ["a"] if category == "rvb" else ["press_a"]}
+                rows, _, _, _ = self.play([plan, plan], category=category, interrupt_on_post=2)
+                self.assertTrue(self.interrupted)
+                self.assertEqual(len(rows), 1)
+                self.assertEqual(self.summary_kwargs["presses_used"], 1)
+                self.assertFalse(self.summary_kwargs["presses_exact"])
+
+    def test_context_rejection_shrinks_the_notes_view_and_the_retry_fits(self):
+        digits = "".join(str(i) for i in range(70_000))   # ~340k chars of numbers; tokenizes far worse than prose
+        err = RuntimeError("prompt is too long: 184672 tokens > 65536 maximum context length")
+        rows, artifact, provider, posted = self.play([
+            {"thought": "t1", "actions": ["a"], "notes": digits},
+            err,                                           # turn 2, first attempt: provider rejects the size
+            {"thought": "t2", "actions": ["b"]},           # turn 2, retry
+        ])
+        self.assertEqual(posted, [["a"], ["b"]])
+        first, retry = provider.chat.call_args_list[1].args[1], provider.chat.call_args_list[2].args[1]
+        self.assertLess(len(retry), len(first) * 0.6)
+        self.assertIn("only the first", retry)
+        self.assertEqual((artifact / "notes.md").read_text(), digits)
+        failed = [r for r in rows if r.get("turn_not_counted")]
+        self.assertEqual(failed[0]["notes_view_scale"], 0.5)
+        self.assertEqual(failed[0]["user_message"], first)
 
     def test_a_failed_action_call_makes_the_press_count_a_floor_not_a_zero(self):
         rows, _, _, _ = self.play([
