@@ -406,6 +406,25 @@ models:
     input_cost_per_mtok: null
     output_cost_per_mtok: null
 
+  # GPT-6.1 Sol on the ChatGPT subscription route. The account's /models catalog does not list
+  # the slug (7 entries on 2026-10-04, none of them 6.1), but the plan's own picker offers it as
+  # the default and a probe with a real frame served `gpt-6.1-sol` at reasoning high with vision
+  # and strict JSON. Same 131,072 history budget as azure-gpt-6-1-sol so the two seats compare
+  # like-for-like. Subscription usage has no per-token USD price. First use: RVB calibration
+  # (issue #102, Phase 2); no scored run yet.
+  - key: chatgpt-gpt-6.1-sol
+    provider: chatgpt
+    api_model_id: gpt-6.1-sol
+    display_name: "GPT-6.1 Sol"
+    family: gpt
+    params: null
+    quant: null
+    context: 131072
+    think: high
+    release_date: "2026-09-29"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
   # Nex AGI N2.5 — FREE on OpenRouter ($0/M, verified vision). Agentic/computer-use pedigree;
   # prime free-seeding candidates. Free models may be rate-limited/queued on OpenRouter.
   - key: or-nex-n2.5-mini
