@@ -23,7 +23,7 @@ import yaml
 
 from milestones import MILESTONES, MilestoneTracker
 from providers import get_provider
-from categories import CATEGORIES, RVB, RVB_MAX_PRESSES, TAB, rvb_history_entry, rvb_user_message
+from categories import CATEGORIES, RVB, RVB_MAX_PRESSES, TAB, rvb_category, rvb_history_entry, rvb_user_message
 from qwen_red import (
     ALLOWED,
     HARNESS_VERSION,
@@ -415,8 +415,8 @@ def verify_fresh_game(server):
 
 
 def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
-        pause_on_billing=0, category=TAB, calibration=False):
-    cat = CATEGORIES[category]
+        pause_on_billing=0, category=TAB, calibration=False, rvb_goal="game"):
+    cat = rvb_category(rvb_goal) if category == RVB else CATEGORIES[category]
     if cat.id == RVB and model["provider"] == "jev":
         # Jev discards the screenshot and reads the text state; RVB has no text state to read.
         raise ValueError("jev cannot play RVB: it has no vision, and RVB gives the model nothing else")
@@ -533,11 +533,12 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 # Screenshot plus the model's own past. No state text, no map, no screen text, and
                 # no milestone-anchored window either: the anchor moves when RAM says a milestone
                 # was hit, and a window that jumps would itself be a signal from the harness.
+                clock = (turn, budget) if rvb_goal == "brock" else None
                 shown_notes, notes_dropped = fit_notes(notes, model["num_ctx"],
-                                                       len(system_prompt) + len(rvb_user_message("", [])), ctx_scale)
-                shell = rvb_user_message(shown_notes, [])
+                                                       len(system_prompt) + len(rvb_user_message("", [], clock)), ctx_scale)
+                shell = rvb_user_message(shown_notes, [], clock)
                 recent = fit_recent(history, model["num_ctx"], len(system_prompt) + len(shell), ctx_scale)
-                user = rvb_user_message(shown_notes, recent)
+                user = rvb_user_message(shown_notes, recent, clock)
             else:
                 notes_dropped = 0
                 head = f"NOTES:\n{notes or '(no notes yet)'}\n\nRECENT TURNS:\n"
@@ -845,9 +846,14 @@ def main(argv=None):
                              "rvb = screenshot and eight buttons only (issue #102)")
     parser.add_argument("--calibration", action="store_true",
                         help="unscored pilot: labeled in summary.json and never a board result")
+    parser.add_argument("--rvb-goal", choices=("game", "brock"), default="game",
+                        help="rvb only. game = 'beat the game' (rvb1); brock = name the Boulder Badge and "
+                             "show a turn clock (rvb2). The A/B that decides what scored RVB runs say.")
     args = parser.parse_args(argv)
     if args.turns <= 0:
         parser.error("--turns must be positive")
+    if args.rvb_goal != "game" and args.category != RVB:
+        parser.error("--rvb-goal only applies to --category rvb")
     try:
         model = load_model(args.model_key)
         if args.category == RVB and model["provider"] == "jev":
@@ -861,7 +867,7 @@ def main(argv=None):
     try:
         run(model, provider, args.server, args.turns, run_name,
             no_frames=args.no_frames, pause_on_billing=args.pause_on_billing,
-            category=args.category, calibration=args.calibration)
+            category=args.category, calibration=args.calibration, rvb_goal=args.rvb_goal)
     except KeyboardInterrupt:
         print("Run interrupted; partial summary written.", flush=True)
         return 130
