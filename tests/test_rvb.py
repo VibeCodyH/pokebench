@@ -500,5 +500,24 @@ class CategoryConstantsTests(unittest.TestCase):
         self.assertTrue(plain.startswith("YOUR NOTES:\nn\n\n"))
 
 
+class RvbGoalDefaultTest(unittest.TestCase):
+    def launch(self, *flags):
+        with patch.object(runner, "load_model", return_value={"provider": "anthropic"}), \
+                patch.object(runner, "make_provider"), patch.object(runner, "run") as run:
+            runner.main(["--model-key", "m", *flags])
+        return run.call_args.kwargs
+
+    def test_tab_launch_without_a_goal_still_runs(self):
+        self.assertEqual(self.launch()["category"], "tab")
+
+    def test_rvb_launch_without_a_goal_plays_rvb3(self):
+        self.assertEqual(self.launch("--category", "rvb")["rvb_goal"], "brock-finish")
+        self.assertEqual(self.launch("--category", "rvb", "--rvb-goal", "game")["rvb_goal"], "game")
+
+    def test_a_goal_on_a_tab_run_is_still_refused(self):
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            self.launch("--rvb-goal", "brock")
+
+
 if __name__ == "__main__":
     unittest.main()
