@@ -303,6 +303,8 @@ BILLING_WORDS = ("credits are depleted", "credit balance", "prepay", "insufficie
 # exponential backoff the other errors use: a human is refilling a balance, and the useful
 # question is "has it landed yet", asked at a steady rate.
 BILLING_POLL_S = 60
+# rvb3: Sol 6.1 (447 turns) and Astra (404) both finished on it in calibration, 2026-10-05.
+RVB_DEFAULT_GOAL = "brock-finish"
 
 
 def milestone_anchor_turn(tracker, keep):
@@ -415,7 +417,7 @@ def verify_fresh_game(server):
 
 
 def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
-        pause_on_billing=0, category=TAB, calibration=False, rvb_goal="game"):
+        pause_on_billing=0, category=TAB, calibration=False, rvb_goal=RVB_DEFAULT_GOAL):
     cat = rvb_category(rvb_goal) if category == RVB else CATEGORIES[category]
     if cat.id == RVB and model["provider"] == "jev":
         # Jev discards the screenshot and reads the text state; RVB has no text state to read.
@@ -846,14 +848,14 @@ def main(argv=None):
                              "rvb = screenshot and eight buttons only (issue #102)")
     parser.add_argument("--calibration", action="store_true",
                         help="unscored pilot: labeled in summary.json and never a board result")
-    parser.add_argument("--rvb-goal", choices=("game", "brock", "brock-finish"), default="game",
+    parser.add_argument("--rvb-goal", choices=("game", "brock", "brock-finish"), default=None,
                         help="rvb only. game = 'beat the game' (rvb1); brock = name the Boulder Badge and "
                              "show a turn clock (rvb2); brock-finish = rvb2 plus 'the run ends by itself, "
-                             "keep pressing' (rvb3). Calibration decides what scored RVB runs say.")
+                             "keep pressing' (rvb3, the default).")
     args = parser.parse_args(argv)
     if args.turns <= 0:
         parser.error("--turns must be positive")
-    if args.rvb_goal != "game" and args.category != RVB:
+    if args.rvb_goal is not None and args.category != RVB:
         parser.error("--rvb-goal only applies to --category rvb")
     try:
         model = load_model(args.model_key)
@@ -868,7 +870,7 @@ def main(argv=None):
     try:
         run(model, provider, args.server, args.turns, run_name,
             no_frames=args.no_frames, pause_on_billing=args.pause_on_billing,
-            category=args.category, calibration=args.calibration, rvb_goal=args.rvb_goal)
+            category=args.category, calibration=args.calibration, rvb_goal=args.rvb_goal or RVB_DEFAULT_GOAL)
     except KeyboardInterrupt:
         print("Run interrupted; partial summary written.", flush=True)
         return 130
