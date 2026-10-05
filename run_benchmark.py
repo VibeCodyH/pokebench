@@ -533,7 +533,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 # Screenshot plus the model's own past. No state text, no map, no screen text, and
                 # no milestone-anchored window either: the anchor moves when RAM says a milestone
                 # was hit, and a window that jumps would itself be a signal from the harness.
-                clock = (turn, budget) if rvb_goal == "brock" else None
+                clock = (turn, budget) if rvb_goal != "game" else None
                 shown_notes, notes_dropped = fit_notes(notes, model["num_ctx"],
                                                        len(system_prompt) + len(rvb_user_message("", [], clock)), ctx_scale)
                 shell = rvb_user_message(shown_notes, [], clock)
@@ -846,9 +846,10 @@ def main(argv=None):
                              "rvb = screenshot and eight buttons only (issue #102)")
     parser.add_argument("--calibration", action="store_true",
                         help="unscored pilot: labeled in summary.json and never a board result")
-    parser.add_argument("--rvb-goal", choices=("game", "brock"), default="game",
+    parser.add_argument("--rvb-goal", choices=("game", "brock", "brock-finish"), default="game",
                         help="rvb only. game = 'beat the game' (rvb1); brock = name the Boulder Badge and "
-                             "show a turn clock (rvb2). The A/B that decides what scored RVB runs say.")
+                             "show a turn clock (rvb2); brock-finish = rvb2 plus 'the run ends by itself, "
+                             "keep pressing' (rvb3). Calibration decides what scored RVB runs say.")
     args = parser.parse_args(argv)
     if args.turns <= 0:
         parser.error("--turns must be positive")

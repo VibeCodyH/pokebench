@@ -35,12 +35,18 @@ RVB_MAX_PRESSES = 6
 # if it were lost. rvb2 names the real objective and the clock, the way a speedrunner knows the
 # category. Calibration run 1 (Sol 6.1, 2026-10-04) played rvb1; the A/B against rvb2 decides
 # which one scored runs use. Nothing else in the prompt changes between the two.
+# rvb2 taught the model to stop: once Brock's badge text appeared it sent empty plans for 40 turns
+# ("the goal is complete, so I'll stop without further inputs") while the RAM badge flag waited for
+# the dialogue to finish. rvb3 adds the one sentence that closes that gap and changes nothing else.
+_BROCK = ("Goal: win the Boulder Badge from Brock in Pewter City. Your score is the number of turns "
+          "you use, fewer is better, and every message tells you the turn number and your turn budget.")
 RVB_GOALS = {
     "game": "Overall goal: beat the game.",
-    "brock": ("Goal: win the Boulder Badge from Brock in Pewter City. Your score is the number of turns "
-              "you use, fewer is better, and every message tells you the turn number and your turn budget."),
+    "brock": _BROCK,
+    "brock-finish": _BROCK + (" The run ends by itself when the harness reads the badge from the game's "
+                              "memory; until then keep playing."),
 }
-RVB_GOAL_VERSIONS = {"game": "rvb1", "brock": "rvb2"}
+RVB_GOAL_VERSIONS = {"game": "rvb1", "brock": "rvb2", "brock-finish": "rvb3"}
 
 RVB_SYSTEM_TEMPLATE = """__IDENTITY__ Each turn you get one screenshot of the Game Boy screen. The game keeps running in real time between turns, so the screenshot is a moment in time. Each turn you press up to six buttons, in order, one press each.
 
