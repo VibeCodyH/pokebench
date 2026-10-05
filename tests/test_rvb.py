@@ -148,6 +148,11 @@ class RvbRequestTests(RunFixture):
         self.assertTrue(provider.chat.call_args.args[1].startswith("YOUR NOTES:"))
         self.assertEqual(self.summary_kwargs["category"].prompt_version, "rvb1")
 
+    def test_every_told_goal_gets_the_clock(self):
+        for goal in ("brock", "brock-finish"):
+            rows, _, provider, _ = self.play([{"thought": "t", "actions": ["a"]}], rvb_goal=goal)
+            self.assertTrue(provider.chat.call_args.args[1].startswith("TURN 1 OF 1."), goal)
+
     def test_nothing_the_harness_saw_reaches_any_message_even_with_poisoned_feedback(self):
         # Steps that would make TAB's feedback line talk: a transcript, a blocked walk, a map
         # change, an action error. None of it may appear in any RVB system/user message.
@@ -474,13 +479,19 @@ class CategoryConstantsTests(unittest.TestCase):
         self.assertEqual((rvb1.system, rvb1.prompt_version), (categories.RVB_SYSTEM, "rvb1"))
         self.assertEqual(categories.CATEGORIES["rvb"].prompt_sha, rvb1.prompt_sha)
 
-    def test_rvb2_changes_only_the_goal_line(self):
-        rvb2 = categories.rvb_category("brock")
-        self.assertEqual(rvb2.prompt_version, "rvb2")
-        self.assertIn("Boulder Badge from Brock in Pewter City", rvb2.system)
-        self.assertEqual(rvb2.system.replace(categories.RVB_GOALS["brock"], categories.RVB_GOALS["game"]),
-                         categories.RVB_SYSTEM)
-        self.assertNotEqual(rvb2.prompt_sha, categories.RVB_PROMPT_SHA)
+    def test_rvb2_and_rvb3_change_only_the_goal_line(self):
+        for goal, version in (("brock", "rvb2"), ("brock-finish", "rvb3")):
+            cat = categories.rvb_category(goal)
+            self.assertEqual(cat.prompt_version, version)
+            self.assertIn("Boulder Badge from Brock in Pewter City", cat.system)
+            self.assertEqual(cat.system.replace(categories.RVB_GOALS[goal], categories.RVB_GOALS["game"]),
+                             categories.RVB_SYSTEM)
+            self.assertNotEqual(cat.prompt_sha, categories.RVB_PROMPT_SHA)
+        # rvb2 is pinned too: calibration run 2 played it
+        self.assertEqual(categories.rvb_category("brock").prompt_sha, "aedcd09f96b41802")
+        # rvb3 = rvb2 + the finish-line sentence, nothing else
+        self.assertTrue(categories.RVB_GOALS["brock-finish"].startswith(categories.RVB_GOALS["brock"]))
+        self.assertIn("keep playing", categories.RVB_GOALS["brock-finish"])
 
     def test_clock_is_a_prefix_and_nothing_else_moves(self):
         plain = categories.rvb_user_message("n", ["turn 1: x -> pressed [a]"])
