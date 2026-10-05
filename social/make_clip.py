@@ -34,6 +34,10 @@ REPO = ROOT.parent
 HOLE = (40, 386, 1000, 900)
 # Where the Game Boy view sits inside a 1280x720 recording of /stream.
 DEFAULT_CROP = "640:576:36:88"
+# Game Boy square waves are harsh up top: Cody's ear A/B (2026-10-05) picked a -10 dB shelf over
+# 2.5 kHz. Recordings range from -10 LUFS (pre-9/27, limiter-pinned) to -28, so land every clip
+# on -14. TikTok levels playback itself; YouTube Shorts only turns loud clips down.
+AUDIO_FILTER = "highshelf=f=2500:g=-10,loudnorm=I=-14:TP=-1.5:LRA=11"
 
 TEMPLATE = """<!doctype html><html><head><meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -128,6 +132,7 @@ def composite(chrome_png, video, out, crop):
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-i", str(chrome_png),
            "-i", str(video), "-filter_complex", chain, "-map", "[v]", "-map", "1:a?",
            "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+           "-af", AUDIO_FILTER, "-ar", "48000",
            "-c:a", "aac", "-b:a", "128k", "-shortest", str(out)]
     capped = Path("/home/cody/.local/bin/capped")
     if capped.exists():
