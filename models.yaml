@@ -425,6 +425,23 @@ models:
     input_cost_per_mtok: null
     output_cost_per_mtok: null
 
+  # GPT-6 Astra on the ChatGPT subscription route (listed in the catalog 2026-10-04; frame probe
+  # served gpt-6-astra at reasoning high with vision and strict JSON). Same 131,072 history budget
+  # as azure-gpt-6-astra. Subscription usage has no per-token USD price. First use: RVB calibration
+  # on the rvb3 prompt (issue #102, Phase 2); no scored run on this route yet.
+  - key: chatgpt-gpt-6-astra
+    provider: chatgpt
+    api_model_id: gpt-6-astra
+    display_name: "GPT-6 Astra"
+    family: gpt
+    params: null
+    quant: null
+    context: 131072
+    think: high
+    release_date: "2026-09-03"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
   # Nex AGI N2.5 — FREE on OpenRouter ($0/M, verified vision). Agentic/computer-use pedigree;
   # prime free-seeding candidates. Free models may be rate-limited/queued on OpenRouter.
   - key: or-nex-n2.5-mini
