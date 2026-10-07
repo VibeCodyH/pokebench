@@ -8,6 +8,8 @@ const local = run => String(run.provider || '').toLowerCase().includes('ollama')
 const won = run => run.furthest_index === 9;
 const price = run => local(run) ? 'FREE' : finite(run.cost_usd) ? '$' + run.cost_usd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: run.cost_usd > 0 && run.cost_usd < .01 ? 6 : 2}) : '—';
 const tokens = run => finite(run.tokens_in) && finite(run.tokens_out) ? run.tokens_in + run.tokens_out : null;
+// Play time: wall time minus what failed model calls burned. Older summaries have only wall_time_s.
+const playTime = run => finite(run.active_time_s) ? run.active_time_s : run.wall_time_s;
 const time = seconds => {
   if (!finite(seconds)) return '—';
   const s = Math.round(seconds), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
@@ -68,7 +70,7 @@ function inspect(run, compact = false) {
   return compact ? '<span class="vod-unavailable tag">VOD unavailable</span>' : `<button class="inspect" disabled title="No VOD attached" aria-label="Inspect run: ${escape(modelName(run))}, no VOD attached">inspect run ↗</button>`;
 }
 function stats(run) {
-  return `<dl class="stats"><div><dt>TURNS</dt><dd>${number(run.turns_used)} <small>/ ${number(run.budget_turns)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd>${number(tokens(run))}</dd></div><div><dt>COST</dt><dd class="${local(run) ? 'free' : ''}">${price(run)}</dd></div><div><dt>TIME</dt><dd>${time(run.wall_time_s)}</dd></div></dl>`;
+  return `<dl class="stats"><div><dt>TURNS</dt><dd>${number(run.turns_used)} <small>/ ${number(run.budget_turns)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd>${number(tokens(run))}</dd></div><div><dt>COST</dt><dd class="${local(run) ? 'free' : ''}">${price(run)}</dd></div><div><dt>TIME</dt><dd>${time(playTime(run))}</dd></div></dl>`;
 }
 function facts(entries) {
   return `<dl class="provenance">${entries.map(([label,value]) => `<dt>${escape(label)}</dt><dd>${escape(textValue(value))}</dd>`).join('')}</dl>`;
@@ -146,7 +148,7 @@ function runReplay(run, rungs) {
   return `<div class="replay-toolbar"><div class="replay-controls" role="group" aria-label="Journey replay controls"><button data-replay="play" aria-label="Play replay">Play</button><button data-replay="restart">Restart</button><button data-replay="end">Skip to end</button><span class="replay-status">Ready · ~${Math.round(6+hits*PULSE_MS/1000)}s</span></div>
     <progress class="replay-progress" max="${run.turns_used || 1}" value="0" aria-label="Replay progress in turns"></progress></div>
     ${runMap(run,rungs)}<div class="replay-body"><p class="running-label">RUNNING TOTALS <span>· tokens, cost &amp; time interpolated</span></p>
-    <dl class="stats replay-stats"><div><dt>TURNS</dt><dd><span class="counter-stage"><span data-counter="turns">0</span><span class="sparkles" aria-hidden="true"></span></span> <small>/ ${number(run.turns_used)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd data-counter="tokens">${finite(tokens(run)) ? '0' : '—'}</dd></div><div><dt>COST</dt><dd data-counter="cost">${price({...run,cost_usd:finite(run.cost_usd) ? 0 : null})}</dd></div><div><dt>TIME</dt><dd data-counter="time">${finite(run.wall_time_s) ? '0s' : '—'}</dd></div></dl>
+    <dl class="stats replay-stats"><div><dt>TURNS</dt><dd><span class="counter-stage"><span data-counter="turns">0</span><span class="sparkles" aria-hidden="true"></span></span> <small>/ ${number(run.turns_used)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd data-counter="tokens">${finite(tokens(run)) ? '0' : '—'}</dd></div><div><dt>COST</dt><dd data-counter="cost">${price({...run,cost_usd:finite(run.cost_usd) ? 0 : null})}</dd></div><div><dt>TIME</dt><dd data-counter="time">${finite(playTime(run)) ? '0s' : '—'}</dd></div></dl>
     ${runDetails(run,rungs)}</div>`;
 }
 function card(run, full = false) {
@@ -263,7 +265,7 @@ function drawReplay(replay, turn, instant = false) {
   if (celebrate) pulseTurns(replay);
   counters.tokens.textContent = number(finite(tokens(run)) ? Math.round(tokens(run)*ratio) : null);
   counters.cost.textContent = price({...run,cost_usd:finite(run.cost_usd) ? run.cost_usd*ratio : null});
-  counters.time.textContent = time(finite(run.wall_time_s) ? run.wall_time_s*ratio : null);
+  counters.time.textContent = time(finite(playTime(run)) ? playTime(run)*ratio : null);
   replay.progress.value = run.turns_used ? turn : 1;
   let darkness = 0;
   replay.faints.forEach((f,i) => {

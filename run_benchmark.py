@@ -205,6 +205,9 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         # budget | beat_brock | interrupted | stopped | provider_error — a partial run is never a scored result
         "termination_reason": termination,
         "wall_time_s": round(wall_s, 1),
+        # wall time minus what failed calls and their backoff burned (failed_attempts.seconds): the
+        # play time, which a provider outage should not inflate. The site shows this when present.
+        "active_time_s": round(wall_s - (failed_attempts or {}).get("seconds", 0), 1),
         "tokens_in": tokens["prompt"],
         "tokens_out": tokens["completion"],
         # tokens_in counts what the model SAW, so on a caching provider cost_usd is lower than
@@ -214,7 +217,8 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         "tokens_cache_write": tokens.get("cache_write", 0),
         "tokens_cache_read": tokens.get("cache_read", 0),
         # retried attempts (bad JSON, refusals, empty replies): work the model did that tokens_in/out exclude
-        "failed_attempts": dict(failed_attempts or {"count": 0, "prompt": 0, "completion": 0}),
+        "failed_attempts": {k: round(v, 1) if k == "seconds" else v
+                            for k, v in (failed_attempts or {"count": 0, "prompt": 0, "completion": 0}).items()},
         "cost_usd": provider.cost(tokens),
         "youtube_url": None,
         "timestamp": time.strftime("%Y%m%d_%H%M%S"),
@@ -468,6 +472,34 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
         for key in tracker.first_turn:
             milestone_presses.setdefault(key, presses_used if count is None else count)
 
+    stall_unsent = [False]
+
+    def sync_stall():
+        """Send the running TOTAL, not a delta: a post lost to a server hiccup is repaired by the next one.
+        No epoch, no post: the server refuses those, and the summary's accounting does not depend on it."""
+        if epoch is None:
+            return
+        try:
+            requests.post(f"{server}/stall", json={"total": round(failed_attempts["seconds"], 1), "epoch": epoch},
+                          timeout=3).raise_for_status()
+            stall_unsent[0] = False
+        except Exception:
+            stall_unsent[0] = True
+
+    def note_stall(seconds):
+        """Wall time a failed call and its backoff burned. The summary's active_time_s leaves it out,
+        and /stall tells the overlay clock to, so cutting the frozen stretch from a VOD leaves no jump."""
+        failed_attempts["seconds"] += seconds
+        sync_stall()
+
+    def stalled_sleep(seconds):
+        """Backoff counts only the time it actually slept: a Ctrl-C mid-pause must not credit the rest."""
+        slept_from = time.time()
+        try:
+            time.sleep(seconds)
+        finally:
+            note_stall(time.time() - slept_from)
+
     def record(state_like, turn_no, count=None):
         """record_milestones, with the press credit noted even if the POST inside it is interrupted."""
         try:
@@ -481,7 +513,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
     turn = 0
     turns_done = 0  # turns whose plan reached the emulator; `turn` may be one ahead mid-attempt
     termination = "budget"
-    failed_attempts = {"count": 0, "prompt": 0, "completion": 0}  # retried model calls: usage the totals exclude
+    failed_attempts = {"count": 0, "prompt": 0, "completion": 0, "seconds": 0.0}  # retried model calls: usage and time the totals exclude
     save_name = None
     acted = False
     blackouts = []
@@ -604,6 +636,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 failed_attempts["count"] += 1
                 for key in ("prompt", "completion"):
                     failed_attempts[key] += int((usage or {}).get(key, 0))
+                note_stall(time.time() - started)  # the failed call's own wall time
                 too_big = cat.id == RVB and any(w in (str(exc) + " " + body).lower() for w in CONTEXT_WORDS)
                 if too_big:
                     ctx_scale = max(ctx_scale / 2, 1 / 64)
@@ -635,7 +668,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                           flush=True)
                     errors_in_a_row, first_error_at = 0, None
                     turn -= 1
-                    time.sleep(wait)
+                    stalled_sleep(wait)
                     continue
                 # A too-large request is the one 4xx the runner can fix itself (the view just
                 # shrank), so it retries even when the adapter calls the status non-retryable.
@@ -650,10 +683,12 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 delay = min(5 * 2 ** (errors_in_a_row - 1), 300)
                 print(f"[turn {turn}] model error: {exc} {body}; retrying the same turn in {delay}s", flush=True)
                 turn -= 1
-                time.sleep(delay)
+                stalled_sleep(delay)
                 continue
             errors_in_a_row = 0
             first_error_at = None
+            if stall_unsent[0]:
+                sync_stall()
             # Per OUTAGE, not per run: a completed turn proves the balance was topped up, so a
             # second dry-out hours later gets the full budget again. It cannot spin forever --
             # clearing this requires a turn that actually went through.

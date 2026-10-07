@@ -680,6 +680,30 @@ async def post_milestone(body: dict):
     return {"success": True, "hit": _milestones}
 
 
+@S.app.post("/stall")
+async def post_stall(body: dict):
+    """Harness reports the running total of wall seconds failed model calls burned {total, epoch}.
+    Stored as the active game's stats.stall_s, which the overlay subtracts from its clock: cut the
+    frozen stretch out of a VOD and the clock reads the same on both sides of the cut. A total, not
+    a delta, so a lost post is repaired by the next; max() so a late, older post cannot rewind it."""
+    # Unlike /milestones there is no older harness to stay compatible with, so the epoch is required:
+    # a runner that never learned it cannot prove which game its total belongs to.
+    if body.get("epoch") != _game_epoch:
+        return {"success": False, "stale": True, "epoch": _game_epoch}
+    try:
+        total = float(body.get("total"))
+    except (TypeError, ValueError):
+        return {"success": False}
+    if not (0 <= total < 1e7) or S._active_session is None or S._session_mgr is None:
+        return {"success": False}
+    s = S._active_session.stats
+    s["stall_s"] = round(max(s.get("stall_s", 0), total), 1)
+    S._session_mgr.save(S._active_session)
+    # Tagged with the game, so a late push from the previous game cannot land on the next one's clock.
+    await S.broadcast({"type": "stall", "stall_s": s["stall_s"], "game": getattr(S._active_session, "id", None)})
+    return {"success": True, "stall_s": s["stall_s"]}
+
+
 _run_meta: dict = {}  # {model, think, ctx, route, prompt_version} from the harness; cleared on /games/new
 
 
