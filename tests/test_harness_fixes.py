@@ -642,7 +642,7 @@ class IntroAndAccountingTests(RunnerTests):
         plan = ({"thought": "t", "actions": ["wait_60"]}, "", {"prompt": 10, "completion": 1})
         provider.chat.side_effect = [bad, plan]
         frame = self.frame()
-        get = lambda url, **kw: Mock(json=lambda: frame if url.endswith("/frame") else {"state": "running"})
+        get = lambda url, **kw: Mock(json=lambda: frame if url.endswith("/frame") else {"state": "running", "epoch": 7})
         post = Mock(side_effect=lambda url, **kw: Mock(json=lambda: {"actions_executed": 1, "steps": [], "state_after": frame["state"]}))
         model = {"key": "test", "api_model_id": "test", "provider": "ollama", "num_ctx": 65536, "think": "off"}
         summary = Mock(return_value=None)
@@ -671,6 +671,7 @@ class IntroAndAccountingTests(RunnerTests):
         self.assertEqual(len(stalls), 2)  # the failed call, then the backoff: each sends the running total
         self.assertLessEqual(stalls[0]["total"], stalls[1]["total"])
         self.assertEqual(stalls[-1]["total"], round(failed["seconds"], 1))
+        self.assertEqual({c["epoch"] for c in stalls}, {7})
 
     def test_backoff_is_credited_only_for_time_actually_slept(self):
         tmp = tempfile.TemporaryDirectory()
@@ -1546,16 +1547,19 @@ class StallClockTests(unittest.TestCase):
             asyncio.run(live.post_stall({"total": 905, "epoch": 4}))
             late = asyncio.run(live.post_stall({"total": 100, "epoch": 4}))  # an older total arriving late
             stale = asyncio.run(live.post_stall({"total": 5000, "epoch": 3}))
-            junk = asyncio.run(live.post_stall({"total": "x"}))
-            negative = asyncio.run(live.post_stall({"total": -10}))
+            junk = asyncio.run(live.post_stall({"total": "x", "epoch": 4}))
+            negative = asyncio.run(live.post_stall({"total": -10, "epoch": 4}))
+            no_epoch = asyncio.run(live.post_stall({"total": 5000}))
         self.assertEqual(session.stats["stall_s"], 905.0)
         self.assertEqual(late["stall_s"], 905.0)
         self.assertTrue(stale["stale"])
         self.assertFalse(junk["success"])
         self.assertFalse(negative["success"])
+        self.assertTrue(no_epoch["stale"])
         self.assertEqual(sent[-1], {"type": "stall", "stall_s": 905.0, "game": "g1"})
 
     def test_no_active_game_is_a_no_op(self):
-        with patch.multiple(live.S, create=True, _active_session=None, _session_mgr=None):
-            self.assertFalse(asyncio.run(live.post_stall({"total": 5}))["success"])
+        with patch.multiple(live.S, create=True, _active_session=None, _session_mgr=None), \
+                patch.object(live, "_game_epoch", 1):
+            self.assertFalse(asyncio.run(live.post_stall({"total": 5, "epoch": 1}))["success"])
 

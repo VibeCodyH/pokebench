@@ -475,10 +475,13 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
     stall_unsent = [False]
 
     def sync_stall():
-        """Send the running TOTAL, not a delta: a post lost to a server hiccup is repaired by the next one."""
+        """Send the running TOTAL, not a delta: a post lost to a server hiccup is repaired by the next one.
+        No epoch, no post: the server refuses those, and the summary's accounting does not depend on it."""
+        if epoch is None:
+            return
         try:
             requests.post(f"{server}/stall", json={"total": round(failed_attempts["seconds"], 1), "epoch": epoch},
-                          timeout=10).raise_for_status()
+                          timeout=3).raise_for_status()
             stall_unsent[0] = False
         except Exception:
             stall_unsent[0] = True

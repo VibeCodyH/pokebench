@@ -686,8 +686,9 @@ async def post_stall(body: dict):
     Stored as the active game's stats.stall_s, which the overlay subtracts from its clock: cut the
     frozen stretch out of a VOD and the clock reads the same on both sides of the cut. A total, not
     a delta, so a lost post is repaired by the next; max() so a late, older post cannot rewind it."""
-    epoch = body.get("epoch")
-    if epoch is not None and epoch != _game_epoch:
+    # Unlike /milestones there is no older harness to stay compatible with, so the epoch is required:
+    # a runner that never learned it cannot prove which game its total belongs to.
+    if body.get("epoch") != _game_epoch:
         return {"success": False, "stale": True, "epoch": _game_epoch}
     try:
         total = float(body.get("total"))
