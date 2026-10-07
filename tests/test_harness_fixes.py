@@ -631,7 +631,7 @@ class IntroAndAccountingTests(RunnerTests):
         self.assertEqual(args[6], 2)  # turns_used: the third attempt never reached the emulator
         self.assertEqual(args[8], {"prompt": 20, "completion": 2})
         self.assertEqual(args[-2], "interrupted")
-        self.assertEqual(args[-1], {"count": 0, "prompt": 0, "completion": 0})
+        self.assertEqual(args[-1], {"count": 0, "prompt": 0, "completion": 0, "seconds": 0.0})
 
     def test_failed_attempt_usage_is_logged_and_totalled(self):
         tmp = tempfile.TemporaryDirectory()
@@ -643,7 +643,7 @@ class IntroAndAccountingTests(RunnerTests):
         provider.chat.side_effect = [bad, plan]
         frame = self.frame()
         get = lambda url, **kw: Mock(json=lambda: frame if url.endswith("/frame") else {"state": "running"})
-        post = lambda url, **kw: Mock(json=lambda: {"actions_executed": 1, "steps": [], "state_after": frame["state"]})
+        post = Mock(side_effect=lambda url, **kw: Mock(json=lambda: {"actions_executed": 1, "steps": [], "state_after": frame["state"]}))
         model = {"key": "test", "api_model_id": "test", "provider": "ollama", "num_ctx": 65536, "think": "off"}
         summary = Mock(return_value=None)
         with patch.multiple(runner, RUNS_DIR=tmp.name, harness_fingerprint=Mock(return_value=(None, None)),
@@ -662,7 +662,55 @@ class IntroAndAccountingTests(RunnerTests):
         self.assertEqual(args[6], 1)
         self.assertEqual(args[8], {"prompt": 10, "completion": 1})  # totals still exclude the failed attempt
         self.assertEqual(args[-2], "budget")
-        self.assertEqual(args[-1], {"count": 1, "prompt": 7, "completion": 0})
+        failed = args[-1]
+        self.assertEqual({k: failed[k] for k in ("count", "prompt", "completion")}, {"count": 1, "prompt": 7, "completion": 0})
+        # the failed call's time plus the backoff it actually slept (sleep is patched to 0 here)
+        self.assertGreaterEqual(failed["seconds"], 0)
+        self.assertLess(failed["seconds"], 1)
+        stalls = [c.kwargs["json"] for c in post.call_args_list if c.args[0].endswith("/stall")]
+        self.assertEqual(len(stalls), 2)  # the failed call, then the backoff: each sends the running total
+        self.assertLessEqual(stalls[0]["total"], stalls[1]["total"])
+        self.assertEqual(stalls[-1]["total"], round(failed["seconds"], 1))
+
+    def test_backoff_is_credited_only_for_time_actually_slept(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        provider = Mock()
+        provider.chat.side_effect = TimeoutError("model call exceeded max_call_s=120s")
+        frame = self.frame()
+        get = lambda url, **kw: Mock(json=lambda: frame if url.endswith("/frame") else {"state": "running"})
+        clock = itertools.count(1000, 2)  # every time.time() call advances 2s
+        model = {"key": "test", "api_model_id": "test", "provider": "ollama", "num_ctx": 65536, "think": "off"}
+        summary = Mock(return_value=None)
+        with patch.multiple(runner, RUNS_DIR=tmp.name, harness_fingerprint=Mock(return_value=(None, None)),
+                            record_milestones=Mock(return_value=False), save_game=Mock(return_value=None),
+                            write_summary=summary), \
+                patch.object(runner.requests, "get", side_effect=get), \
+                patch.object(runner.requests, "post", return_value=Mock()), \
+                patch.object(runner.time, "time", side_effect=lambda: next(clock)), \
+                patch.object(runner.time, "sleep", side_effect=KeyboardInterrupt), \
+                contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaises(KeyboardInterrupt):
+                runner.run(model, provider, "http://unused", budget=1, no_frames=True)
+        failed = summary.call_args.args[-1]
+        # a 5s backoff interrupted at once: only the clock ticks around the sleep count, never the 5s
+        self.assertLess(failed["seconds"], 5)
+
+    def test_summary_active_time_excludes_failed_call_seconds(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        provider = Mock(max_tokens=None, route="openai-chatgpt-subscription", cost=Mock(return_value=None))
+        model = {"api_model_id": "m", "provider": "chatgpt", "family": "f", "think": "high", "num_ctx": 1}
+        tracker = Mock(summary=Mock(return_value={"furthest_key": None, "furthest_label": None, "furthest_index": -1}))
+        with contextlib.redirect_stdout(io.StringIO()):
+            path = runner.write_summary(tmp.name, "id", model, provider, "run", tracker, 383, 1000,
+                                        {"prompt": 1, "completion": 1}, 12056.5, "", None, termination="beat_brock",
+                                        failed_attempts={"count": 11, "prompt": 0, "completion": 0, "seconds": 6804.04})
+        summary = json.loads(Path(path).read_text())
+        self.assertEqual(summary["wall_time_s"], 12056.5)
+        self.assertEqual(summary["active_time_s"], 5252.5)
+        self.assertEqual(summary["failed_attempts"]["seconds"], 6804.0)
+
 
     def test_summary_records_termination_and_failed_attempts(self):
         tmp = tempfile.TemporaryDirectory()
@@ -1481,3 +1529,33 @@ class RawButtonDispatchTests(unittest.TestCase):
         for name in ("press_a", "walk_up", "hold_a_30", "wait_60"):
             with self.subTest(action=name):
                 self.assertEqual(self.dispatch(name), [name])
+
+
+class StallClockTests(unittest.TestCase):
+    def test_stall_sums_into_the_active_game_and_refuses_a_stale_epoch(self):
+        session = SimpleNamespace(id="g1", stats={"turns": 3})
+        mgr = Mock()
+        sent = []
+
+        async def broadcast(message):
+            sent.append(message)
+
+        with patch.multiple(live.S, create=True, _active_session=session, _session_mgr=mgr, broadcast=broadcast), \
+                patch.object(live, "_game_epoch", 4):
+            asyncio.run(live.post_stall({"total": 900.04, "epoch": 4}))
+            asyncio.run(live.post_stall({"total": 905, "epoch": 4}))
+            late = asyncio.run(live.post_stall({"total": 100, "epoch": 4}))  # an older total arriving late
+            stale = asyncio.run(live.post_stall({"total": 5000, "epoch": 3}))
+            junk = asyncio.run(live.post_stall({"total": "x"}))
+            negative = asyncio.run(live.post_stall({"total": -10}))
+        self.assertEqual(session.stats["stall_s"], 905.0)
+        self.assertEqual(late["stall_s"], 905.0)
+        self.assertTrue(stale["stale"])
+        self.assertFalse(junk["success"])
+        self.assertFalse(negative["success"])
+        self.assertEqual(sent[-1], {"type": "stall", "stall_s": 905.0, "game": "g1"})
+
+    def test_no_active_game_is_a_no_op(self):
+        with patch.multiple(live.S, create=True, _active_session=None, _session_mgr=None):
+            self.assertFalse(asyncio.run(live.post_stall({"total": 5}))["success"])
+

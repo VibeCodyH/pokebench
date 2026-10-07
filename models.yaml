@@ -424,6 +424,11 @@ models:
     release_date: "2026-09-29"
     input_cost_per_mtok: null
     output_cost_per_mtok: null
+    # Measured on this route, RVB 2026-10-04..06: slowest SUCCESSFUL call 38s (Sol 6.1 rvb3),
+    # 31s and 30s (Astra calibration, Astra scored), across 1,234 turns. The route's failure is a
+    # stream held open on keepalives with nothing in it; at the 900s default seven of those froze
+    # 1h45m of Astra's scored run. 120s is 3x the worst real call.
+    max_call_s: 120
 
   # GPT-6 Astra on the ChatGPT subscription route (listed in the catalog 2026-10-04; frame probe
   # served gpt-6-astra at reasoning high with vision and strict JSON). Same 131,072 history budget
@@ -441,6 +446,11 @@ models:
     release_date: "2026-09-03"
     input_cost_per_mtok: null
     output_cost_per_mtok: null
+    # Measured on this route, RVB 2026-10-04..06: slowest SUCCESSFUL call 38s (Sol 6.1 rvb3),
+    # 31s and 30s (Astra calibration, Astra scored), across 1,234 turns. The route's failure is a
+    # stream held open on keepalives with nothing in it; at the 900s default seven of those froze
+    # 1h45m of Astra's scored run. 120s is 3x the worst real call.
+    max_call_s: 120
 
   # Nex AGI N2.5 — FREE on OpenRouter ($0/M, verified vision). Agentic/computer-use pedigree;
   # prime free-seeding candidates. Free models may be rate-limited/queued on OpenRouter.

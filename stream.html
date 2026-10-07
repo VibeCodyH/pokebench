@@ -216,6 +216,7 @@ function handle(m){
     case 'milestone': if(m.key){ hit[m.key]=m.turn; renderLadder(); } break;
     case 'reasoning': case 'thought': setThought(m.text); logRow(esc(m.text)); break;
     case 'decision': setInputs(m.text); break;
+    case 'stall': if(!m.game||m.game===lastGameId) stallS=Math.max(stallS,+m.stall_s||0); break;
     case 'key_moment': case 'moment':
       logRow(esc(m.description),true);
       if((m.category||'').toLowerCase()==='catch') caught++;
@@ -297,7 +298,7 @@ async function pollMeta(){
     if(gid && gid!==lastGameId){
       lastGameId=gid;
       $('log').innerHTML=''; _lastLogText=''; caught=0;
-      setThought(''); setInputs(''); sesAnchor=Date.now();
+      setThought(''); setInputs(''); sesAnchor=Date.now(); stallS=0;
     }
     if(rm&&rm.model){ const ctxTxt = rm.ctx ? ` · ${Math.round(rm.ctx/1024)}K ctx` : ''; $('tagline').textContent=`${rm.route==='api'?'API':'LOCAL'} LLM · POKÉMON RED`; $('model').textContent=`${rm.display_name||rm.model} · ${rm.route||'local'}${ctxTxt}`; if(rm.model!==lastModel){ lastModel=rm.model; applyFamily(rm.model); } }
     const p=s.player||{}, map=s.map||{}, pos=p.position||{}, fl=s.flags||{};
@@ -311,6 +312,7 @@ async function pollMeta(){
     if(ms&&ms.ladder){ ladder=ms.ladder; hit=ms.hit||{}; renderLadder(); }
     renderParty(s.party||[]);
     const st=(g.active&&g.active.stats)||{};
+    stallS=Math.max(stallS,+st.stall_s||0);  // a total that only grows: a slow poll must not rewind a newer push
     $('tActions').textContent=st.actions??0;
     $('tTurns').textContent=st.turns??0; $('turn').textContent=st.turns??0;
     $('tBlackout').textContent=st.blackouts??0;
@@ -341,7 +343,10 @@ function connect(){
   ws.onerror=()=>{ setLive('polling',true); try{ws.close();}catch(_){} };
 }
 let sesAnchor=+(localStorage.getItem('pb_ses_nogame')||Date.now());
-setInterval(()=>{ let s=Math.max(0,Math.floor((Date.now()-sesAnchor)/1000));
+// stallS = seconds failed model calls burned (POST /stall). The clock is play time, so a cut of the
+// frozen stretch from the VOD shows the same time on both sides.
+let stallS=0;
+setInterval(()=>{ let s=Math.max(0,Math.floor((Date.now()-sesAnchor)/1000-stallS));
   const h=Math.floor(s/3600), m=Math.floor(s%3600/60); s=s%60;
   $('session').textContent=h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); },1000);
 renderBadges(0); renderParty([]); pollFrame(); pollEvents(); pollMeta(); connect();
