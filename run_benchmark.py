@@ -114,6 +114,9 @@ def make_provider(model):
         opts["thinking_style"] = model["thinking_style"]
     if model["provider"] in {"anthropic", "vertex"} and model.get("cache_read_cost_per_mtok") is not None:
         opts["cache_read_cost_per_mtok"] = model["cache_read_cost_per_mtok"]
+    if model["provider"] in {"anthropic", "vertex"} and model.get("long_prompt_tokens") is not None:
+        opts["long_prompt_tokens"] = model["long_prompt_tokens"]
+        opts["long_prompt_rate_multiplier"] = model["long_prompt_rate_multiplier"]
     if model["provider"] == "vertex":
         # project falls back to GOOGLE_CLOUD_PROJECT in the adapter, so a row may omit it and
         # keep the project id out of a public repo. region defaults to the global endpoint,

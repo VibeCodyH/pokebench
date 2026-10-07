@@ -236,6 +236,25 @@ models:
     input_cost_per_mtok: 2.00
     output_cost_per_mtok: 10.00
 
+  # Same shape as the other Claude 5 rows (adaptive thinking, 200000 history budget, think
+  # high). Haiku 5.5 is the first with a long-prompt tier: a request whose prompt passes 100k
+  # tokens bills every rate at 5x ($0.50/$2.50), and RVB history grows toward the context.
+  - key: claude-haiku-5-5
+    provider: anthropic
+    thinking_style: adaptive
+    api_model_id: claude-haiku-5-5
+    display_name: "Claude Haiku 5.5"
+    family: claude
+    params: null
+    quant: null
+    context: 200000
+    think: high
+    release_date: "2026-10-07"
+    input_cost_per_mtok: 0.10
+    output_cost_per_mtok: 0.50
+    long_prompt_tokens: 100000
+    long_prompt_rate_multiplier: 5
+
   - key: gemini-3.8-flash
     provider: google
     api_model_id: gemini-3.8-flash # verified: the id run via the AI Studio route

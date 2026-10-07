@@ -339,7 +339,9 @@ class AnthropicProvider(Provider):
 
     def __init__(self, model: str, *, max_tokens: int | None = None,
                  thinking_style: str = "budget", cache_system: bool = True,
-                 cache_read_cost_per_mtok: float | None = None, **opts):
+                 cache_read_cost_per_mtok: float | None = None,
+                 long_prompt_tokens: int | None = None, long_prompt_rate_multiplier: float = 1.0,
+                 **opts):
         super().__init__(model, **opts)
         self.max_tokens = self.DEFAULT_MAX_TOKENS if max_tokens is None else max_tokens
         if thinking_style not in self.THINKING_STYLES:
@@ -350,6 +352,10 @@ class AnthropicProvider(Provider):
         self.cache_system = cache_system
         # Per-row override for models that do not bill reads at 0.1x (Opus 5.5 is 0.05x).
         self.cache_read_cost_per_mtok = cache_read_cost_per_mtok
+        # Long-prompt tier: Haiku 5.5 bills a whole request at 5x every rate once its prompt
+        # passes 100k tokens. RVB history grows with the row's context, so a late turn can cross it.
+        self.long_prompt_tokens = long_prompt_tokens
+        self.long_prompt_rate_multiplier = long_prompt_rate_multiplier
 
     def _dispatch(self, payload: dict) -> dict:
         """Put a prepared Messages payload on the wire. Split out from chat() because the
@@ -425,17 +431,31 @@ class AnthropicProvider(Provider):
         # whether or not it served from cache). The split rides along for cost().
         write = int(usage.get("cache_creation_input_tokens", 0))
         read = int(usage.get("cache_read_input_tokens", 0))
-        return _plan(content), thinking, {
+        tokens = {
             "prompt": int(usage.get("input_tokens", 0)) + write + read,
             "completion": int(usage.get("output_tokens", 0)),
             "cache_write": write,
             "cache_read": read,
         }
+        # The tier is decided per request, but cost() only ever sees run totals, so a request
+        # over the line is tagged here and its tokens summed again under long_* keys.
+        if self.long_prompt_tokens is not None and tokens["prompt"] > self.long_prompt_tokens:
+            tokens.update({f"long_{key}": value for key, value in list(tokens.items())})
+        return _plan(content), thinking, tokens
 
     def cost(self, tokens: dict[str, int]) -> float | None:
         """Cache-aware, unlike the base estimate: a 5-minute cache write bills at 1.25x the
         input rate and a read at 0.1x, so pricing the whole prompt at the standard rate would
-        overstate a cached run by most of the system prompt on every turn after the first."""
+        overstate a cached run by most of the system prompt on every turn after the first.
+        Long-prompt requests (long_* keys) add (multiplier - 1)x their standard price."""
+        standard = self._standard_cost(tokens)
+        if standard is None or not tokens.get("long_prompt"):
+            return standard
+        long_part = {key: tokens.get(f"long_{key}", 0)
+                     for key in ("prompt", "completion", "cache_write", "cache_read")}
+        return standard + (self.long_prompt_rate_multiplier - 1) * self._standard_cost(long_part)
+
+    def _standard_cost(self, tokens: dict[str, int]) -> float | None:
         if self.input_cost_per_mtok is None or self.output_cost_per_mtok is None:
             return None
         write = tokens.get("cache_write", 0)
