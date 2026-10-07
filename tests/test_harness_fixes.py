@@ -1490,6 +1490,37 @@ class AnthropicPromptCacheTests(unittest.TestCase):
         self.assertAlmostEqual(p.cost(flat), 30.0)
         self.assertAlmostEqual(p.cost(dict(flat, cache_read=0, cache_write=0)), 30.0)
 
+    def test_a_prompt_over_the_long_tier_line_is_tagged_and_one_at_it_is_not(self):
+        p = self.make(long_prompt_tokens=100_000, long_prompt_rate_multiplier=5)
+        _, over = self.capture(p, {"input_tokens": 99_000, "cache_read_input_tokens": 1_001,
+                                   "output_tokens": 400})
+        self.assertEqual((over["long_prompt"], over["long_cache_read"], over["long_completion"]),
+                         (100_001, 1_001, 400))
+        _, at = self.capture(p, {"input_tokens": 100_000, "output_tokens": 400})
+        self.assertNotIn("long_prompt", at)
+
+    def test_long_tier_requests_bill_at_the_multiplier_inside_run_totals(self):
+        """cost() only sees run totals, so the tier has to survive accumulation: one short turn
+        plus one long turn must price the long one at 5x and the short one at 1x."""
+        p = self.make(long_prompt_tokens=100_000, long_prompt_rate_multiplier=5)
+        short = {"prompt": 1_000_000, "completion": 0, "cache_write": 0, "cache_read": 0}
+        long_turn = {"prompt": 1_000_000, "completion": 1_000_000, "cache_write": 0,
+                     "cache_read": 1_000_000}
+        long_turn.update({f"long_{k}": v for k, v in list(long_turn.items())})
+        total = {}
+        for turn in (short, long_turn):
+            for key, value in turn.items():
+                total[key] = total.get(key, 0) + value
+        # short: 1M in at $5. long: (0 uncached + 1M read at $0.5 + 1M out at $25) x 5.
+        self.assertAlmostEqual(p.cost(total), 5.0 + 5 * (0.5 + 25.0))
+
+    def test_make_provider_passes_the_long_tier_to_the_haiku_5_5_row(self):
+        import run_benchmark
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test"}):
+            p = run_benchmark.make_provider(run_benchmark.load_model("claude-haiku-5-5"))
+        self.assertEqual((p.long_prompt_tokens, p.long_prompt_rate_multiplier), (100_000, 5))
+        self.assertEqual(p.thinking_style, "adaptive")
+
     def test_totals_accumulate_cache_keys_the_seed_dict_never_had(self):
         """run_benchmark seeds {prompt, completion}; iterating that would drop the cache keys
         before cost() ever sees them, making the discount invisible in the summary."""
