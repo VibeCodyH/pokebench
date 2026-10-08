@@ -433,11 +433,11 @@ function renderPosting() {
 }
 
 // ---------- storyboards ----------
-// A storyboard is the plan for one short: its beats, in order. Each beat mirrors one segment of
-// a clip build script (clip04v2/build.py made the instant-win clip): which shot and turn, where
-// to cut in and for how long, who is talking, what is on screen, the narrator's line, the
-// model's own words, keycap chips, zoom. Approving one is the go-ahead to build the clip from
-// it; the dashboard does not render video.
+// A storyboard is the plan for one short: its beats, in order. Each beat carries what one
+// segment of a multi-segment clip build needs: which shot and turn, where to cut in and for how
+// long, who is talking, what is on screen, the narrator's line, the model's own words, keycap
+// chips, zoom. Approving one is the go-ahead to build the clip from it; the dashboard does not
+// render video.
 const BOARD_LABEL = {draft: 'Needs review', approved: 'Approved', sent_back: 'Sent back'};
 const BLANK_BEAT = {id: '', label: '', turn: '', shot: '', in: '', dur: '', text: '', voice: '', quote: '', chips: '', zoom: ''};
 const runtime = beats => (beats || []).reduce((sum, b) => sum + (Number(b.dur) || 0), 0);
@@ -513,7 +513,7 @@ function openBoardModal(board) {
       <div class="beat-copy">
         ${area(i, 'text', 'On-screen text')}
         ${area(i, 'voice', 'Narrator line')}
-        <div>${area(i, 'quote', 'Model quote (verbatim)')}<button class="pull" data-pull="${i}">Pull quote from the run log</button></div>
+        <div>${area(i, 'quote', 'Model quote (verbatim)')}<button class="pull" data-pull="${i}" data-source="plan">Pull plan</button> <button class="pull" data-pull="${i}" data-source="thinking" title="The raw reasoning trace. Long: keep the lines you want, cut the rest.">Pull thinking</button></div>
       </div>
       <div class="beat-extra">
         ${input(i, 'chips', 'Keycap chips', 'text', 'placeholder="up up down down left right B A"')}
@@ -595,7 +595,8 @@ function openBoardModal(board) {
       const runId = meta.run_id, turn = String(beat.turn ?? '');
       if (!runId || !turn) return toast('Set the run id and the beat\'s turn first');
       if (beat.quote && !confirm('Replace the quote that is there?')) return;
-      const res = await fetch('/api/turn?run_id=' + encodeURIComponent(runId) + '&turn=' + encodeURIComponent(turn));
+      const res = await fetch('/api/turn?run_id=' + encodeURIComponent(runId) + '&turn=' + encodeURIComponent(turn)
+        + '&source=' + encodeURIComponent(el.dataset.source || 'plan'));
       const data = await res.json().catch(() => ({}));
       if (!res.ok) return toast(data.error || 'Could not read the log');
       // The quote has to belong to the turn it sits under. If the beat moved on while the

@@ -45,9 +45,9 @@ WRITABLE = {"status", "body", "title", "note", "posted_url", "posted_at", "subre
 SCHEDULE_WRITABLE = {"date", "status", "note", "youtube_url"}
 SCHEDULE_STATUSES = {"planned", "published"}
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-# Storyboards get a third allowlist. A beat mirrors one entry of a clip build script's
-# SEGS/TEXTS/CUES (scratch/qwen-rvb3-thinking/clip04v2/build.py made the instant-win clip),
-# so an approved board is something a build can be written from, not a separate planning doc.
+# Storyboards get a third allowlist. A beat carries the same fields a multi-segment clip build
+# needs per segment (shot, turn, in-point, length, speaker, on-screen text, narrator line, quote,
+# keycap chips, zoom), so an approved board is something a build can be written from.
 BOARD_WRITABLE = {"title", "run_id", "model", "status", "note", "beats"}
 BOARD_STATUSES = {"draft", "approved", "sent_back"}
 BEAT_TEXT = ("id", "shot", "label", "text", "voice", "quote", "chips", "zoom")
@@ -145,12 +145,14 @@ def clean_beats(raw):
     return beats
 
 
-def turn_plan(run_id, turn):
-    """The model's own plan text for one turn, from the local run log.
+def turn_text(run_id, turn, source):
+    """The model's own words for one turn, from the local run log.
 
+    source "plan" is the plan's thought (what the clips quote by default); "thinking" is the
+    raw reasoning trace, which only some providers return and which runs to many KB.
     None means there is no local log (most runs live on the server); "" means the turn is
-    there but carries no plan. Same rule as make_clip.turn_row: a failed attempt logs its
-    own row for the turn before the retry, so prefer the row that has a plan.
+    there but has no such text. Same rule as make_clip.turn_row: a failed attempt logs its
+    own row for the turn before the retry, so prefer the row that has the text.
     """
     log = (RUNS / run_id / "log.jsonl").resolve()
     if not log.is_relative_to(RUNS.resolve()) or not log.is_file():
@@ -167,9 +169,9 @@ def turn_plan(run_id, turn):
                 continue
             if row.get("turn") != turn:
                 continue
-            thought = (row.get("plan") or {}).get("thought")
-            if thought:
-                return thought
+            text = (row.get("plan") or {}).get("thought") if source == "plan" else row.get("thinking")
+            if text and isinstance(text, str):
+                return text
     return ""
 
 
@@ -279,7 +281,7 @@ class Handler(BaseHTTPRequestHandler):
         return self.send_file(target)
 
     def serve_turn(self, query):
-        """A turn's plan text, so a quote beat is pulled verbatim rather than retyped."""
+        """A turn's own text, so a quote beat is pulled verbatim rather than retyped."""
         params = dict(part.partition("=")[::2] for part in query.split("&") if part)
         run_id = unquote(params.get("run_id", ""))
         if not ID.fullmatch(run_id):
@@ -288,12 +290,16 @@ class Handler(BaseHTTPRequestHandler):
             turn = int(params.get("turn", ""))
         except ValueError:
             return self.send_json({"error": "turn must be a number"}, 400)
-        thought = turn_plan(run_id, turn)
-        if thought is None:
+        source = params.get("source", "plan")
+        if source not in ("plan", "thinking"):
+            return self.send_json({"error": "source must be plan or thinking"}, 400)
+        text = turn_text(run_id, turn, source)
+        if text is None:
             return self.send_json({"error": f"no local log for {run_id}, paste the quote from the server's"}, 404)
-        if not thought:
-            return self.send_json({"error": f"turn {turn} has no plan text in the log"}, 404)
-        return self.send_json({"run_id": run_id, "turn": turn, "quote": thought})
+        if not text:
+            what = "plan text" if source == "plan" else "thinking trace"
+            return self.send_json({"error": f"turn {turn} has no {what} in the log"}, 404)
+        return self.send_json({"run_id": run_id, "turn": turn, "source": source, "quote": text})
 
     def read_patch(self):
         """Body as a dict, or None after an error response has already been sent."""

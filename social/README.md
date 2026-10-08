@@ -100,11 +100,11 @@ header carries three buttons that act on every unposted draft in it:
 
 ## Storyboards
 
-A storyboard plans one short, beat by beat, in the same terms a clip build script uses
-(`scratch/qwen-rvb3-thinking/clip04v2/build.py` made the instant-win clip): shot and turn,
-in-point and length, who is talking, on-screen text, the narrator's line, the model's quote,
-keycap chips, zoom. **Pull quote from the run log** fills a quote from that turn's own plan text,
-so it stays verbatim; it needs the run's `log.jsonl` locally.
+A storyboard plans one short, beat by beat, with what each segment of a multi-segment clip build
+needs: shot and turn, in-point and length, who is talking, on-screen text, the narrator's line,
+the model's quote, keycap chips, zoom. **Pull plan** fills the quote from that turn's plan text
+and **Pull thinking** from its raw reasoning trace (long, so cut it down to the lines you want),
+so the words stay the model's own. Both need the run's `log.jsonl` locally.
 
 Approve a board and the clip gets built from it. The dashboard does not render video. Editing an
 approved board's title, run, model or beats puts it back to review, so an approval always covers
