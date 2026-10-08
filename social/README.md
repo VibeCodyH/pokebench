@@ -85,6 +85,31 @@ Published entries are exempt from that rule. They are a record of what happened,
 history breaks it five times over; validating it would make the file unloadable rather than make
 the past any different. Clearing a published entry's date is refused for the same reason.
 
+## Bumping a post
+
+A model launch can take the day's slot from whatever was planned. In the **Posting schedule**
+every post is grouped with its platform siblings (`<date>-<slug>-<platform>`), and the group's
+header carries three buttons that act on every unposted draft in it:
+
+- **Skip** moves it to the next day with nothing on it. A day that already had a post counts as taken.
+- **Archive** parks it in the Archived view with its date kept. **Restore** asks for a new day and
+  sends it back to review.
+- **Retire** moves the files into `drafts/_archive/<today>/` after a confirm. Posted drafts are
+  refused, because they are the record of what went out. `gen_drafts.py` only checks `drafts/`,
+  so re-running it for that run writes the draft again.
+
+## Storyboards
+
+A storyboard plans one short, beat by beat, in the same terms a clip build script uses
+(`scratch/qwen-rvb3-thinking/clip04v2/build.py` made the instant-win clip): shot and turn,
+in-point and length, who is talking, on-screen text, the narrator's line, the model's quote,
+keycap chips, zoom. **Pull quote from the run log** fills a quote from that turn's own plan text,
+so it stays verbatim; it needs the run's `log.jsonl` locally.
+
+Approve a board and the clip gets built from it. The dashboard does not render video. Editing an
+approved board's title, run, model or beats puts it back to review, so an approval always covers
+what is on the board. Boards live in `storyboards/`, gitignored for the same reason drafts are.
+
 ## What it will not do
 
 `gen_drafts.py` refuses a run that `site/build_runs.py` would drop (legacy prompt version,
@@ -117,6 +142,7 @@ Both are reflected in the card footer and the editor.
 | `schedule.json` | video release dates — **tracked**, see below |
 | `ui/` | dashboard (no build step, no dependencies) |
 | `drafts/` | one JSON per draft — **gitignored**, this repo is public |
+| `storyboards/` | one JSON per clip storyboard — **gitignored**, same reason |
 | `media/` | generated post assets, gitignored (rebuildable from the run) |
 
 `schedule.json` is tracked while `drafts/` is not, on purpose. A draft is unpublished copy

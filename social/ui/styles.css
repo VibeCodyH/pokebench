@@ -222,3 +222,29 @@ dialog::backdrop { background:#12100Bcc; }
 .sinput { font:inherit; font-size:12px; border:2px solid var(--ink); background:var(--panel); padding:4px 7px; width:100%; }
 .empty.small { padding:14px; font-size:13px; }
 .ssource { margin:22px 0 0; font-size:11px; line-height:1.6; color:var(--muted); max-width:70ch; }
+
+/* One header row per moment (the x / bluesky / tiktok drafts of one post), carrying the
+   Skip / Archive / Retire buttons that act on all of them at once. */
+.mrow { display:flex; align-items:center; gap:12px; background:var(--sub); border:2px solid var(--ink); padding:6px 14px; margin:10px 0 -2px; font-size:12px; font-weight:700; }
+.mrow .mname { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; letter-spacing:.04em; }
+.mrow button { background:var(--panel); border:2px solid var(--ink); padding:3px 9px; font-size:11px; }
+.mrow button:hover { background:var(--gold); }
+.mrow button.retire:hover { background:#F2C9C4; }
+.sbar .btn { margin-left:auto; }
+
+/* ---------- storyboard editor ---------- */
+#board-modal { width:min(1100px,calc(100% - 32px)); }
+.bmeta { display:grid; grid-template-columns:2fr 2fr 1fr; gap:12px; }
+.bmeta input, .beat input, .beat textarea { border:2px solid var(--ink); background:var(--card); padding:6px 8px; font:inherit; font-size:12px; width:100%; box-sizing:border-box; }
+.beat { border:2px solid var(--ink); background:var(--card); box-shadow:4px 4px 0 var(--ink); padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+.beat-head { display:grid; grid-template-columns:34px 1fr 1.6fr 80px 1fr 80px 80px auto; gap:8px; align-items:end; }
+.beat-head .n { font-weight:800; font-size:16px; padding-bottom:6px; }
+.beat-copy { display:grid; grid-template-columns:1fr 1fr 1.3fr; gap:8px; }
+.beat-copy textarea { min-height:74px; resize:vertical; line-height:1.5; }
+.beat-extra { display:grid; grid-template-columns:2fr 1fr; gap:8px; }
+.beat label { display:flex; flex-direction:column; gap:3px; font-size:9px; font-weight:700; letter-spacing:.14em; color:var(--muted); text-transform:uppercase; }
+.beat .moves { display:flex; gap:4px; }
+.beat .moves button, .beat .pull { background:var(--panel); border:2px solid var(--ink); padding:4px 8px; font-size:11px; }
+.beat .moves button:hover, .beat .pull:hover { background:var(--gold); }
+.beat .pull { align-self:flex-start; margin-top:2px; }
+.btotal { margin-right:auto; align-self:center; font-size:12px; font-weight:700; }

@@ -8,7 +8,7 @@ const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const URL_RE = /https?:\/\/[^\s<]+/g;
 
 let state = {drafts: [], platforms: {}, view: 'pending', platform: 'all', q: '',
-             schedule: {entries: [], unscheduled: [], source: ''}};
+             schedule: {entries: [], unscheduled: [], source: ''}, storyboards: []};
 
 // ---------- counting ----------
 // X bills every link at 23 characters regardless of its real length (t.co), so a draft
@@ -142,7 +142,8 @@ function mediaBlock(d, ratio) {
 }
 
 // ---------- cards ----------
-const STATE_LABEL = {pending: 'Needs review', approved: 'Approved', sent_back: 'Sent back', posted: 'Posted'};
+const STATE_LABEL = {pending: 'Needs review', approved: 'Approved', sent_back: 'Sent back', posted: 'Posted',
+                     archived: 'Archived'};
 
 function card(d) {
   const cfg = state.platforms[d.platform] || {label: d.platform, limit: 0};
@@ -169,6 +170,8 @@ function card(d) {
     <div class="actions">
       ${d.status === 'posted'
         ? `<button data-act="unpost">Mark unposted</button><button data-act="edit">Edit</button><button data-act="open">Open</button>`
+        : d.status === 'archived'
+        ? `<button class="go" data-act="restore">Restore</button><button data-act="edit">Edit</button><button data-act="retire">Retire</button>`
         : `<button class="go" data-act="${canPost ? 'post' : 'approve'}" ${over ? 'disabled title="Over the limit — edit it first"' : ''}>${canPost ? 'Post it' : 'Approve'}</button>
            <button data-act="sendback">Send back</button>
            <button data-act="edit">Edit</button>`}
@@ -180,7 +183,9 @@ function card(d) {
 // One video a day. Sep 18 shipped five uploads and four of them landed at 1 view or fewer;
 // Sep 20 put a real Brock win next to the record-setter and it drew 3. The server refuses a
 // clashing PLANNED date, so this view's job is to make the free days obvious beforehand.
-const TODAY = () => new Date().toISOString().slice(0, 10);
+// Local date, not UTC: after 8 PM Eastern the UTC date is already tomorrow, which would make
+// Skip jump a day and label tonight's posts as yesterday's.
+const TODAY = () => new Date().toLocaleDateString('en-CA');
 const daysBetween = (a, b) => Math.round((Date.parse(b + 'T00:00:00') - Date.parse(a + 'T00:00:00')) / 86400000);
 
 function nextFreeDate() {
@@ -295,9 +300,91 @@ function postingRow(d) {
     + '<span class="sact">' + acts + '</span></div>';
 }
 
+// ---------- moments ----------
+// One post goes out as several drafts named <date>-<slug>-<platform> (x, bluesky, tiktok...).
+// Skip / Archive / Retire act on the whole moment, so a post never goes out on half its
+// platforms. The date is part of the key because a slug like grok-4-7 recurs across days.
+const slugOf = d => String(d.id).replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(new RegExp('-' + d.platform + '$'), '');
+const momentKey = d => slugOf(d) + '|' + postDate(d);
+const momentOf = (d, keep) => state.drafts.filter(x => momentKey(x) === momentKey(d) && keep(x));
+// Still headed out: not posted, not parked.
+const live = d => d.status !== 'posted' && d.status !== 'archived';
+const addDays = (iso, n) => {
+  const t = new Date(iso + 'T00:00:00Z');
+  t.setUTCDate(t.getUTCDate() + n);
+  return t.toISOString().slice(0, 10);
+};
+
+// First day on or after `from` with no post on it. A posted draft still holds its day (that
+// slot went to something); an archived one does not, it is off the calendar.
+function nextFreePostDay(from, moving) {
+  const ids = new Set(moving.map(d => d.id));
+  const taken = new Set(state.drafts.filter(d => d.status !== 'archived' && !ids.has(d.id)).map(postDate));
+  let day = from;
+  while (taken.has(day)) day = addDays(day, 1);
+  return day;
+}
+
+// One at a time: patch() throws on the first failure, so a refusal stops the rest instead of
+// leaving a moment split across two days without saying so.
+async function patchAll(drafts, body) {
+  for (const d of drafts) await patch(d.id, body);
+}
+
+function skipMoment(d) {
+  const group = momentOf(d, live);
+  const today = TODAY();
+  const day = nextFreePostDay(addDays(postDate(d) > today ? postDate(d) : today, 1), group);
+  patchAll(group, {post_on: day}).then(() => toast('Moved to ' + day + ' · ' + whenLabel(day))).catch(() => {});
+}
+
+function archiveMoment(d) {
+  patchAll(momentOf(d, live), {status: 'archived'}).then(() => toast('Archived — find it under Archived')).catch(() => {});
+}
+
+function restoreMoment(d) {
+  const group = momentOf(d, x => x.status === 'archived');
+  const day = prompt('Post on which day? (YYYY-MM-DD)', nextFreePostDay(TODAY(), group));
+  if (day === null) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day.trim())) return toast('Use YYYY-MM-DD');
+  // Back to review rather than straight to approved: it has been parked, read it again.
+  patchAll(group, {status: 'pending', post_on: day.trim()})
+    .then(() => toast('Restored to ' + day.trim() + ' · needs review')).catch(() => {});
+}
+
+async function retireMoment(group) {
+  if (!group.length) return;
+  const names = group.map(d => (state.platforms[d.platform] || {}).label || d.platform).join(', ');
+  if (!confirm('Retire "' + slugOf(group[0]) + '" (' + names + ')?\n\nThe drafts move to drafts/_archive/ and leave the dashboard.')) return;
+  for (const d of group) {
+    const res = await fetch('/api/drafts/' + encodeURIComponent(d.id) + '/retire', {method: 'POST'});
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { toast(data.error || 'Retire failed'); break; }
+    state.drafts = state.drafts.filter(x => x.id !== d.id);
+  }
+  render();
+  toast('Retired');
+}
+
+// The moment's header row, followed by one row per platform draft in it.
+function momentRows(list) {
+  const groups = new Map();
+  list.forEach(d => {
+    const key = momentKey(d);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(d);
+  });
+  return [...groups.values()].map(g => '<div class="mrow"><span class="mname">'
+    + esc(slugOf(g[0]).replace(/-/g, ' ')) + '</span>'
+    + '<button data-m-skip="' + esc(g[0].id) + '" title="Move every platform to the next day with nothing on it">Skip</button>'
+    + '<button data-m-archive="' + esc(g[0].id) + '" title="Park it off the calendar for later">Archive</button>'
+    + '<button class="retire" data-m-retire="' + esc(g[0].id) + '" title="Remove it for good">Retire</button></div>'
+    + g.map(postingRow).join('')).join('');
+}
+
 function renderPosting() {
   const today = TODAY();
-  const queue = state.drafts.filter(d => d.status !== 'posted');
+  const queue = state.drafts.filter(live);
   const undated = queue.filter(d => !postDate(d));
   const dated = queue.filter(d => postDate(d));
   const overdue = dated.filter(d => postDate(d) < today);
@@ -308,7 +395,7 @@ function renderPosting() {
 
   const section = iso => '<h3 class="shead">' + esc(dayHead(iso))
     + ' <i>' + esc(whenLabel(iso)) + '</i></h3>'
-    + ahead.filter(d => postDate(d) === iso).map(postingRow).join('');
+    + momentRows(ahead.filter(d => postDate(d) === iso));
 
   $('schedule').innerHTML = '<div class="sbar">'
     + '<div><b>Queued</b> ' + queue.length + ' to post</div>'
@@ -316,17 +403,208 @@ function renderPosting() {
     + '<div class="sub">' + overdue.length + ' overdue · ' + posted.length + ' posted</div>'
     + '</div>'
     + (overdue.length
-        ? '<h3 class="shead">Overdue</h3>' + overdue.sort((a, b) => postDate(a).localeCompare(postDate(b)))
-            .map(postingRow).join('')
+        ? '<h3 class="shead">Overdue</h3>' + momentRows(overdue.sort((a, b) => postDate(a).localeCompare(postDate(b))))
         : '')
     + (days.length ? days.map(section).join('')
         : '<div class="empty small">Nothing on the calendar. Give a draft a date to put it here.</div>')
-    + (undated.length ? '<h3 class="shead">No date yet</h3>' + undated.map(postingRow).join('') : '')
+    + (undated.length ? '<h3 class="shead">No date yet</h3>' + momentRows(undated) : '')
     + (posted.length ? '<h3 class="shead">Already out</h3>' + posted.slice(0, 12).map(postingRow).join('') : '');
 }
 
+// ---------- storyboards ----------
+// A storyboard is the plan for one short: its beats, in order. Each beat mirrors one segment of
+// a clip build script (clip04v2/build.py made the instant-win clip): which shot and turn, where
+// to cut in and for how long, who is talking, what is on screen, the narrator's line, the
+// model's own words, keycap chips, zoom. Approving one is the go-ahead to build the clip from
+// it; the dashboard does not render video.
+const BOARD_LABEL = {draft: 'Needs review', approved: 'Approved', sent_back: 'Sent back'};
+const BLANK_BEAT = {id: '', label: '', turn: '', shot: '', in: '', dur: '', text: '', voice: '', quote: '', chips: '', zoom: ''};
+const runtime = beats => (beats || []).reduce((sum, b) => sum + (Number(b.dur) || 0), 0);
+
+function renderBoards() {
+  const boards = state.storyboards;
+  const open = boards.filter(b => b.status !== 'approved');
+  const approved = boards.filter(b => b.status === 'approved');
+  const row = b => '<div class="srow">'
+    + '<span class="sdate">' + runtime(b.beats).toFixed(1) + 's</span>'
+    + '<span class="sname">' + esc(b.title || b.id) + '<i>' + esc(b.model || b.run_id || '') + '</i></span>'
+    + '<span class="sstate">' + esc(b.error ? 'unreadable' : (BOARD_LABEL[b.status] || b.status))
+      + ' · ' + (b.beats || []).length + ' beats' + (b.clip ? ' · built' : '') + '</span>'
+    + '<span class="sact">' + (b.error ? '' : '<button data-board-open="' + esc(b.id) + '">Open</button>') + '</span></div>';
+  $('schedule').innerHTML = '<div class="sbar">'
+    + '<div><b>To review</b> ' + open.length + '</div>'
+    + '<div><b>Approved</b> ' + approved.length + '</div>'
+    + '<button class="btn" data-board-new>New storyboard</button>'
+    + '</div>'
+    + '<h3 class="shead">Needs review</h3>'
+    + (open.length ? open.map(row).join('') : '<div class="empty small">Nothing waiting on you.</div>')
+    + (approved.length ? '<h3 class="shead">Approved — ready to build</h3>' + approved.map(row).join('') : '');
+}
+
+async function saveBoard(id, body) {
+  const res = await fetch('/api/storyboards/' + encodeURIComponent(id), {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { toast(data.error || 'Save failed — storyboard left unchanged'); return null; }
+  state.storyboards = state.storyboards.map(b => b.id === data.id ? data : b);
+  render();
+  return data;
+}
+
+async function newBoard() {
+  const title = prompt('What is the clip? (a working title)');
+  if (!title || !title.trim()) return;
+  const res = await fetch('/api/storyboards', {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({title: title.trim()}),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return toast(data.error || 'Could not create it');
+  state.storyboards = state.storyboards.concat(data);
+  render();
+  openBoardModal(data);
+}
+
+function openBoardModal(board) {
+  const dlg = $('board-modal');
+  const meta = {title: board.title || '', run_id: board.run_id || '', model: board.model || ''};
+  const beats = (board.beats || []).map(b => ({...BLANK_BEAT, ...b}));
+  let dirty = false;
+
+  const input = (i, k, label, type = 'text', extra = '') =>
+    `<label>${label}<input type="${type}" data-beat="${i}" data-k="${k}" value="${esc(beats[i][k] ?? '')}" ${extra}></label>`;
+  const area = (i, k, label) =>
+    `<label>${label}<textarea data-beat="${i}" data-k="${k}">${esc(beats[i][k] ?? '')}</textarea></label>`;
+  const beatHtml = (b, i) => `<div class="beat">
+      <div class="beat-head">
+        <span class="n">${i + 1}</span>
+        ${input(i, 'id', 'Beat id', 'text', 'placeholder="hook"')}
+        ${input(i, 'label', 'Who is talking', 'text', 'list="beat-labels"')}
+        ${input(i, 'turn', 'Turn', 'number', 'min="0" step="1"')}
+        ${input(i, 'shot', 'Shot', 'text', 'placeholder="S171"')}
+        ${input(i, 'in', 'In (s)', 'number', 'min="0" step="0.1"')}
+        ${input(i, 'dur', 'Length (s)', 'number', 'min="0" step="0.1"')}
+        <div class="moves"><button data-move="-1" data-i="${i}" title="Move up">↑</button><button data-move="1" data-i="${i}" title="Move down">↓</button><button data-del="${i}" title="Delete beat">✕</button></div>
+      </div>
+      <div class="beat-copy">
+        ${area(i, 'text', 'On-screen text')}
+        ${area(i, 'voice', 'Narrator line')}
+        <div>${area(i, 'quote', 'Model quote (verbatim)')}<button class="pull" data-pull="${i}">Pull quote from the run log</button></div>
+      </div>
+      <div class="beat-extra">
+        ${input(i, 'chips', 'Keycap chips', 'text', 'placeholder="up up down down left right B A"')}
+        ${input(i, 'zoom', 'Zoom', 'text', 'placeholder="what to punch in on"')}
+      </div>
+    </div>`;
+  const totalText = () => beats.length + ' beats · ' + runtime(beats).toFixed(1) + 's';
+  const content = () => ({...meta, beats});
+
+  const draw = () => {
+    const sentBack = board.status === 'sent_back' && board.note;
+    dlg.innerHTML = `
+      <div class="m-head"><h2>Storyboard — ${esc(meta.title || board.id)}</h2>
+        <span class="state">${esc(BOARD_LABEL[board.status] || board.status)}</span>
+        <button class="x" data-act="close">✕</button></div>
+      <div class="m-body">
+        ${sentBack ? `<div class="note"><b>SENT BACK</b>${esc(board.note)}</div>` : ''}
+        ${board.clip ? `<div class="medialist"><b>Built:</b> <code>${esc(board.clip)}</code></div>` : ''}
+        <div class="bmeta">
+          <div class="field"><label>Title</label><input type="text" data-meta="title" value="${esc(meta.title)}"></div>
+          <div class="field"><label>Run id</label><input type="text" data-meta="run_id" value="${esc(meta.run_id)}" placeholder="qwen3-8-27b-rvb-20261005_061425-rp0hw9i4"></div>
+          <div class="field"><label>Model name</label><input type="text" data-meta="model" value="${esc(meta.model)}" placeholder="Qwen3.8 27B"></div>
+        </div>
+        <datalist id="beat-labels"><option value="NARRATOR">${meta.model ? `<option value="${esc(meta.model.toUpperCase())} IS THINKING">` : ''}</datalist>
+        ${beats.length ? beats.map(beatHtml).join('')
+          : '<div class="empty small">No beats yet. A beat is one segment of the clip: what is on screen, for how long, and who is talking.</div>'}
+        <div><button class="btn plain" data-act="add">+ Add beat</button></div>
+      </div>
+      <div class="m-foot">
+        <span class="btotal" id="b-total">${totalText()}</span>
+        <button class="btn plain" data-act="sendback">Send back</button>
+        <button class="btn plain" data-act="save">Save</button>
+        <button class="btn" data-act="approve">Approve</button>
+      </div>`;
+  };
+
+  dlg.oninput = event => {
+    const el = event.target;
+    if (el.dataset.meta) meta[el.dataset.meta] = el.value;
+    else if (el.dataset.beat !== undefined) beats[Number(el.dataset.beat)][el.dataset.k] = el.value;
+    else return;
+    dirty = true;
+    const total = dlg.querySelector('#b-total');
+    if (total) total.textContent = totalText();
+  };
+
+  const store = async body => {
+    const saved = await saveBoard(board.id, body);
+    if (!saved) return null;
+    board = saved;
+    dirty = false;
+    return saved;
+  };
+
+  dlg.onclick = async event => {
+    const el = event.target.closest('button');
+    if (!el) return;
+    if (el.dataset.move !== undefined) {
+      const i = Number(el.dataset.i), j = i + Number(el.dataset.move);
+      if (j < 0 || j >= beats.length) return;
+      [beats[i], beats[j]] = [beats[j], beats[i]];
+      dirty = true;
+      return draw();
+    }
+    if (el.dataset.del !== undefined) {
+      beats.splice(Number(el.dataset.del), 1);
+      dirty = true;
+      return draw();
+    }
+    if (el.dataset.pull !== undefined) {
+      const beat = beats[Number(el.dataset.pull)];
+      if (!meta.run_id || beat.turn === '' || beat.turn === null) return toast('Set the run id and the beat\'s turn first');
+      if (beat.quote && !confirm('Replace the quote that is there?')) return;
+      const res = await fetch('/api/turn?run_id=' + encodeURIComponent(meta.run_id) + '&turn=' + encodeURIComponent(beat.turn));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return toast(data.error || 'Could not read the log');
+      beat.quote = data.quote;
+      dirty = true;
+      return draw();
+    }
+    const act = el.dataset.act;
+    if (act === 'close') {
+      if (dirty && !confirm('Close without saving?')) return;
+      return dlg.close();
+    }
+    if (act === 'add') {
+      const last = beats[beats.length - 1];
+      beats.push({...BLANK_BEAT, turn: last ? last.turn : '', shot: last ? last.shot : ''});
+      dirty = true;
+      return draw();
+    }
+    if (act === 'save') {
+      if (await store(content())) { toast(board.status === 'draft' ? 'Saved — needs review' : 'Saved'); draw(); }
+      return;
+    }
+    if (act === 'approve') {
+      if (await store({...content(), status: 'approved', note: ''})) { dlg.close(); toast('Approved — ready to build'); }
+      return;
+    }
+    if (act === 'sendback') {
+      const note = prompt('What should change?', board.note || '');
+      if (note === null) return;
+      if (await store({...content(), status: 'sent_back', note})) { dlg.close(); toast('Sent back'); }
+    }
+  };
+
+  // Escape closes a dialog without going through the ✕ button, so guard it the same way.
+  dlg.oncancel = event => { if (dirty && !confirm('Close without saving?')) event.preventDefault(); };
+  draw();
+  dlg.showModal();
+}
+
 // ---------- render ----------
-const VIEWS = [['pending', 'Pending review'], ['approved', 'Approved'], ['sent_back', 'Sent back'], ['posted', 'Posted']];
+const VIEWS = [['pending', 'Pending review'], ['approved', 'Approved'], ['sent_back', 'Sent back'], ['posted', 'Posted'],
+               ['archived', 'Archived']];
 
 function visible() {
   const q = state.q.toLowerCase();
@@ -340,20 +618,30 @@ function render() {
   $('nav').innerHTML = VIEWS.map(([k, label]) =>
     `<button class="nav-item" data-view="${k}" aria-current="${state.view === k}">${label}<span class="count">${byStatus(k)}</span></button>`).join('');
   const plannedCount = state.schedule.entries.filter(d => d.status !== 'published').length;
-  const toPost = state.drafts.filter(d => d.status !== 'posted').length;
+  const toPost = state.drafts.filter(live).length;
   $('nav-release').innerHTML =
     `<button class="nav-item" data-view="schedule" aria-current="${state.view === 'schedule'}">Video schedule<span class="count">${plannedCount}</span></button>`
     + `<button class="nav-item" data-view="posting" aria-current="${state.view === 'posting'}">Posting schedule<span class="count">${toPost}</span></button>`;
+  const boardsOpen = state.storyboards.filter(b => b.status !== 'approved').length;
+  $('nav-clips').innerHTML =
+    `<button class="nav-item" data-view="storyboards" aria-current="${state.view === 'storyboards'}">Storyboards<span class="count">${boardsOpen}</span></button>`;
   $('accounts').innerHTML = Object.entries(state.platforms).map(([k, c]) =>
     `<div class="account"><span class="swatch" style="background:${esc(c.chip)}"></span>${esc(c.label)}</div>`).join('');
 
-  // Both schedules are calendars rather than filtered piles of drafts, so they replace the grid.
+  // The schedules and the storyboard list are not filtered piles of drafts, so they replace the grid.
   const onSchedule = state.view === 'schedule';
   const onPosting = state.view === 'posting';
-  $('schedule').hidden = !(onSchedule || onPosting);
-  $('grid').hidden = onSchedule || onPosting;
-  $('filters').hidden = onSchedule || onPosting;
-  $('search').hidden = onSchedule || onPosting;
+  const onBoards = state.view === 'storyboards';
+  const panel = onSchedule || onPosting || onBoards;
+  $('schedule').hidden = !panel;
+  $('grid').hidden = panel;
+  $('filters').hidden = panel;
+  $('search').hidden = panel;
+  if (onBoards) {
+    $('view-title').textContent = 'Storyboards';
+    $('summary').innerHTML = '<span>Plan the short beat by beat</span><span class="sub">Approve a board and the clip gets built from it; editing it re-opens review</span>';
+    return renderBoards();
+  }
   if (onSchedule) {
     $('view-title').textContent = 'Video schedule';
     $('summary').innerHTML = '<span>One video a day</span><span class="sub">The server refuses a planned date that already has a video</span>';
@@ -573,6 +861,23 @@ document.addEventListener('click', event => {
     return void (draft && postIt(draft));
   }
 
+  const moment = event.target.closest('[data-m-skip], [data-m-archive], [data-m-retire]');
+  if (moment) {
+    const m = moment.dataset;
+    const draft = state.drafts.find(x => x.id === (m.mSkip || m.mArchive || m.mRetire));
+    if (!draft) return;
+    if (m.mSkip) return skipMoment(draft);
+    if (m.mArchive) return archiveMoment(draft);
+    return void retireMoment(momentOf(draft, live));
+  }
+
+  const boardOpen = event.target.closest('[data-board-open]');
+  if (boardOpen) {
+    const board = state.storyboards.find(b => b.id === boardOpen.dataset.boardOpen);
+    return void (board && openBoardModal(board));
+  }
+  if (event.target.closest('[data-board-new]')) return void newBoard();
+
   const button = event.target.closest('.actions button');
   if (!button) return;
   const d = state.drafts.find(x => x.id === button.closest('.draft').dataset.id);
@@ -583,6 +888,8 @@ document.addEventListener('click', event => {
   if (act === 'edit') openEditModal(d);
   if (act === 'unpost') patch(d.id, {status: 'approved', posted_url: '', posted_at: ''}).catch(() => {});
   if (act === 'open') window.open(d.posted_url, '_blank', 'noopener');
+  if (act === 'restore') restoreMoment(d);
+  if (act === 'retire') retireMoment(momentOf(d, x => x.status === 'archived'));
   if (act === 'sendback') {
     const note = prompt('What should change?', d.note || '');
     if (note !== null) patch(d.id, {status: 'sent_back', note}).then(() => toast('Sent back')).catch(() => {});
@@ -602,13 +909,15 @@ $('search').addEventListener('input', e => { state.q = e.target.value; render();
 
 (async function load() {
   try {
-    const [data, schedule] = await Promise.all([
+    const [data, schedule, boards] = await Promise.all([
       (await fetch('/api/drafts')).json(),
       (await fetch('/api/schedule')).json(),
+      (await fetch('/api/storyboards')).json(),
     ]);
     state.drafts = data.drafts;
     state.platforms = data.platforms;
     state.schedule = schedule;
+    state.storyboards = boards.storyboards;
     render();
   } catch (err) {
     $('grid').innerHTML = `<div class="empty">Could not load drafts: ${esc(err.message)}</div>`;

@@ -13,9 +13,10 @@ import json
 import mimetypes
 import os
 import re
+import shutil
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, unquote
@@ -26,9 +27,15 @@ DRAFTS = ROOT / "drafts"
 UI = ROOT / "ui"
 SCHEDULE = ROOT / "schedule.json"
 BOARD = REPO / "site" / "runs.json"
+# Retired drafts move here instead of being deleted: drafts/ is gitignored, so an unlink
+# cannot be undone. load_drafts() only globs the top level, so a moved file drops out.
+RETIRED = DRAFTS / "_archive"
+STORYBOARDS = ROOT / "storyboards"
+RUNS = REPO / "runs"
 # A draft id becomes a filename, so it may not contain a separator or a dot segment.
 ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$")
-STATUSES = {"pending", "approved", "sent_back", "posted"}
+# archived = parked off the calendar. It keeps its date, so Restore can say where it came from.
+STATUSES = {"pending", "approved", "sent_back", "posted", "archived"}
 # Only these keys may be written from the browser. Anything else in the payload is
 # dropped rather than merged, so a stray field cannot rewrite run provenance.
 WRITABLE = {"status", "body", "title", "note", "posted_url", "posted_at", "subreddit", "post_on"}
@@ -37,6 +44,13 @@ WRITABLE = {"status", "body", "title", "note", "posted_url", "posted_at", "subre
 SCHEDULE_WRITABLE = {"date", "status", "note", "youtube_url"}
 SCHEDULE_STATUSES = {"planned", "published"}
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# Storyboards get a third allowlist. A beat mirrors one entry of a clip build script's
+# SEGS/TEXTS/CUES (scratch/qwen-rvb3-thinking/clip04v2/build.py made the instant-win clip),
+# so an approved board is something a build can be written from, not a separate planning doc.
+BOARD_WRITABLE = {"title", "run_id", "model", "status", "note", "beats"}
+BOARD_STATUSES = {"draft", "approved", "sent_back"}
+BEAT_TEXT = ("id", "shot", "label", "text", "voice", "quote", "chips", "zoom")
+BEAT_NUM = ("turn", "in", "dur")
 # Discord is the one platform that can be posted from here, because a channel webhook is a
 # URL rather than an account credential: it can write to exactly one channel and read nothing.
 # Every other platform stays copy-and-paste. The URL lives outside the repo, which is public.
@@ -70,6 +84,88 @@ def load_drafts():
         draft.setdefault("id", path.stem)
         out.append(draft)
     return out
+
+
+def write_json(path, doc):
+    # Write through a temp file in the same dir so a crash mid-write cannot leave a
+    # half-written file where a readable one used to be.
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
+def board_path(board_id):
+    """Same containment rule as draft_path, for the storyboards dir."""
+    if not ID.fullmatch(board_id or ""):
+        return None
+    path = (STORYBOARDS / f"{board_id}.json").resolve()
+    return path if path.parent == STORYBOARDS.resolve() else None
+
+
+def load_boards():
+    out = []
+    for path in sorted(STORYBOARDS.glob("*.json")):
+        try:
+            board = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ValueError) as exc:
+            out.append({"id": path.stem, "title": path.stem, "status": "draft", "beats": [],
+                        "error": f"unreadable storyboard: {exc}"})
+            continue
+        board.setdefault("id", path.stem)
+        out.append(board)
+    return out
+
+
+def clean_beats(raw):
+    """Beats reduced to the known keys, or ValueError naming the bad one."""
+    if not isinstance(raw, list):
+        raise ValueError("beats must be a list")
+    beats = []
+    for i, beat in enumerate(raw, 1):
+        if not isinstance(beat, dict):
+            raise ValueError(f"beat {i} is not an object")
+        clean = {k: str(beat.get(k) or "") for k in BEAT_TEXT}
+        for k in BEAT_NUM:
+            value = beat.get(k)
+            if value is None or value == "":
+                clean[k] = None
+                continue
+            try:
+                clean[k] = int(value) if k == "turn" else round(float(value), 2)
+            except (TypeError, ValueError):
+                raise ValueError(f"beat {i}: {k} must be a number") from None
+            if clean[k] < 0:
+                raise ValueError(f"beat {i}: {k} cannot be negative")
+        beats.append(clean)
+    return beats
+
+
+def turn_plan(run_id, turn):
+    """The model's own plan text for one turn, from the local run log.
+
+    None means there is no local log (most runs live on the server); "" means the turn is
+    there but carries no plan. Same rule as make_clip.turn_row: a failed attempt logs its
+    own row for the turn before the retry, so prefer the row that has a plan.
+    """
+    log = (RUNS / run_id / "log.jsonl").resolve()
+    if not log.is_relative_to(RUNS.resolve()) or not log.is_file():
+        return None
+    needle = str(turn)
+    with log.open(encoding="utf-8") as fh:
+        for line in fh:
+            # Logs run to tens of MB. Skip the parse unless the number appears at all.
+            if needle not in line:
+                continue
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if row.get("turn") != turn:
+                continue
+            thought = (row.get("plan") or {}).get("thought")
+            if thought:
+                return thought
+    return ""
 
 
 def load_schedule():
@@ -145,6 +241,10 @@ class Handler(BaseHTTPRequestHandler):
                                    "platforms": json.loads((ROOT / "platforms.json").read_text())})
         if path == "/api/schedule":
             return self.send_json(schedule_payload())
+        if path == "/api/storyboards":
+            return self.send_json({"storyboards": load_boards()})
+        if path == "/api/turn":
+            return self.serve_turn(route.query)
         if path == "/api/media":
             return self.serve_media(route.query)
         if path.startswith("/ui/"):
@@ -173,6 +273,23 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"error": "outside repo"}, 403)
         return self.send_file(target)
 
+    def serve_turn(self, query):
+        """A turn's plan text, so a quote beat is pulled verbatim rather than retyped."""
+        params = dict(part.partition("=")[::2] for part in query.split("&") if part)
+        run_id = unquote(params.get("run_id", ""))
+        if not ID.fullmatch(run_id):
+            return self.send_json({"error": "bad run id"}, 400)
+        try:
+            turn = int(params.get("turn", ""))
+        except ValueError:
+            return self.send_json({"error": "turn must be a number"}, 400)
+        thought = turn_plan(run_id, turn)
+        if thought is None:
+            return self.send_json({"error": f"no local log for {run_id}, paste the quote from the server's"}, 404)
+        if not thought:
+            return self.send_json({"error": f"turn {turn} has no plan text in the log"}, 404)
+        return self.send_json({"run_id": run_id, "turn": turn, "quote": thought})
+
     def read_patch(self):
         """Body as a dict, or None after an error response has already been sent."""
         try:
@@ -191,6 +308,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.post_schedule(route.path[len("/api/schedule/"):])
         if route.path.startswith("/api/drafts/") and route.path.endswith("/publish"):
             return self.publish_draft(route.path[len("/api/drafts/"):-len("/publish")])
+        if route.path.startswith("/api/drafts/") and route.path.endswith("/retire"):
+            return self.retire_draft(route.path[len("/api/drafts/"):-len("/retire")])
+        if route.path == "/api/storyboards":
+            return self.create_board()
+        if route.path.startswith("/api/storyboards/"):
+            return self.patch_board(route.path[len("/api/storyboards/"):])
         if not route.path.startswith("/api/drafts/"):
             return self.send_json({"error": "not found"}, 404)
         path = draft_path(route.path[len("/api/drafts/"):])
@@ -207,12 +330,79 @@ class Handler(BaseHTTPRequestHandler):
 
         draft = json.loads(path.read_text(encoding="utf-8"))
         draft.update({k: v for k, v in patch.items() if k in WRITABLE})
-        # Write through a temp file in the same dir so a crash mid-write cannot leave a
-        # half-written draft where a readable one used to be.
-        tmp = path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(draft, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        tmp.replace(path)
+        write_json(path, draft)
         return self.send_json(draft)
+
+    def retire_draft(self, draft_id):
+        """Take a draft off the dashboard for good by moving it under drafts/_archive/<today>/.
+
+        A posted draft is refused: it is the record of what went out and where.
+        """
+        path = draft_path(draft_id)
+        if path is None or not path.exists():
+            return self.send_json({"error": "no such draft"}, 404)
+        draft = json.loads(path.read_text(encoding="utf-8"))
+        if draft.get("status") == "posted":
+            return self.send_json({"error": "a posted draft is the record of what went out, it stays"}, 409)
+        dest = RETIRED / date.today().isoformat() / path.name
+        if dest.exists():
+            return self.send_json({"error": f"{dest} already exists"}, 409)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(path), str(dest))
+        return self.send_json({"id": draft_id, "retired_to": str(dest)})
+
+    def create_board(self):
+        patch = self.read_patch()
+        if patch is None:
+            return
+        title = str(patch.get("title") or "").strip()
+        if not title:
+            return self.send_json({"error": "a storyboard needs a title"}, 400)
+        run_id = str(patch.get("run_id") or "").strip()
+        if run_id and not ID.fullmatch(run_id):
+            return self.send_json({"error": "bad run id"}, 400)
+        slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:48] or "board"
+        base = f"{date.today().isoformat()}-{slug}"
+        board_id, n = base, 2
+        while (STORYBOARDS / f"{board_id}.json").exists():
+            board_id, n = f"{base}-{n}", n + 1
+        now = datetime.now(timezone.utc).isoformat()
+        board = {"id": board_id, "title": title, "run_id": run_id,
+                 "model": str(patch.get("model") or "").strip(), "status": "draft", "note": "",
+                 "beats": [], "clip": "", "created": now, "updated": now}
+        STORYBOARDS.mkdir(exist_ok=True)
+        write_json(board_path(board_id), board)
+        return self.send_json(board, 201)
+
+    def patch_board(self, board_id):
+        path = board_path(board_id)
+        if path is None or not path.exists():
+            return self.send_json({"error": "no such storyboard"}, 404)
+        patch = self.read_patch()
+        if patch is None:
+            return
+        if "status" in patch and patch["status"] not in BOARD_STATUSES:
+            return self.send_json({"error": f"status must be one of {sorted(BOARD_STATUSES)}"}, 400)
+        if patch.get("run_id") and not ID.fullmatch(str(patch["run_id"])):
+            return self.send_json({"error": "bad run id"}, 400)
+        update = {k: v for k, v in patch.items() if k in BOARD_WRITABLE}
+        if "beats" in update:
+            try:
+                update["beats"] = clean_beats(update["beats"])
+            except ValueError as exc:
+                return self.send_json({"error": str(exc)}, 400)
+        board = json.loads(path.read_text(encoding="utf-8"))
+        # Approval is the gate a clip gets built from, so it covers the board as it stood when
+        # approved. A content change that does not also set a status re-opens review.
+        changed = any(k in update and update[k] != board.get(k) for k in ("title", "run_id", "model", "beats"))
+        if changed and "status" not in update:
+            update["status"] = "draft"
+        if update.get("status") == "approved" and not update.get("beats", board.get("beats")):
+            return self.send_json({"error": "nothing to approve, add a beat first"}, 400)
+        board.update(update)
+        board["updated"] = datetime.now(timezone.utc).isoformat()
+        write_json(path, board)
+        return self.send_json(board)
 
     def publish_draft(self, draft_id):
         """Send a Discord draft to the channel webhook and record where it landed.
@@ -262,9 +452,7 @@ class Handler(BaseHTTPRequestHandler):
         link = f"https://discord.com/channels/{guild}/{channel}/{message}" if guild and channel else ""
         draft.update({"status": "posted", "posted_url": link,
                       "posted_at": datetime.now(timezone.utc).isoformat()})
-        tmp = path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(draft, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        tmp.replace(path)
+        write_json(path, draft)
         return self.send_json(draft)
 
     def post_schedule(self, run_id):
