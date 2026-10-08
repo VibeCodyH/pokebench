@@ -303,9 +303,10 @@ function postingRow(d) {
 // ---------- moments ----------
 // One post goes out as several drafts named <date>-<slug>-<platform> (x, bluesky, tiktok...).
 // Skip / Archive / Retire act on the whole moment, so a post never goes out on half its
-// platforms. The date is part of the key because a slug like grok-4-7 recurs across days.
+// platforms. The key is the id minus the platform, which never changes: keying on the post
+// date would merge two different posts the day one of them is moved onto the other's day.
 const slugOf = d => String(d.id).replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(new RegExp('-' + d.platform + '$'), '');
-const momentKey = d => slugOf(d) + '|' + postDate(d);
+const momentKey = d => String(d.id).replace(new RegExp('-' + d.platform + '$'), '');
 const momentOf = (d, keep) => state.drafts.filter(x => momentKey(x) === momentKey(d) && keep(x));
 // Still headed out: not posted, not parked.
 const live = d => d.status !== 'posted' && d.status !== 'archived';
@@ -331,39 +332,59 @@ async function patchAll(drafts, body) {
   for (const d of drafts) await patch(d.id, body);
 }
 
+// One moment action at a time. Two Skips fired before either save lands would both see the
+// same day as free and both take it.
+let momentBusy = false;
+async function oneAtATime(job) {
+  if (momentBusy) return toast('Still saving the last one');
+  momentBusy = true;
+  try { await job(); } catch { /* patch() already said why */ } finally { momentBusy = false; }
+}
+
 function skipMoment(d) {
-  const group = momentOf(d, live);
-  const today = TODAY();
-  const day = nextFreePostDay(addDays(postDate(d) > today ? postDate(d) : today, 1), group);
-  patchAll(group, {post_on: day}).then(() => toast('Moved to ' + day + ' · ' + whenLabel(day))).catch(() => {});
+  return oneAtATime(async () => {
+    const group = momentOf(d, live);
+    const today = TODAY();
+    const day = nextFreePostDay(addDays(postDate(d) > today ? postDate(d) : today, 1), group);
+    await patchAll(group, {post_on: day});
+    toast('Moved to ' + day + ' · ' + whenLabel(day));
+  });
 }
 
 function archiveMoment(d) {
-  patchAll(momentOf(d, live), {status: 'archived'}).then(() => toast('Archived — find it under Archived')).catch(() => {});
+  return oneAtATime(async () => {
+    await patchAll(momentOf(d, live), {status: 'archived'});
+    toast('Archived — find it under Archived');
+  });
 }
 
 function restoreMoment(d) {
   const group = momentOf(d, x => x.status === 'archived');
-  const day = prompt('Post on which day? (YYYY-MM-DD)', nextFreePostDay(TODAY(), group));
-  if (day === null) return;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day.trim())) return toast('Use YYYY-MM-DD');
+  const day = (prompt('Post on which day? (YYYY-MM-DD)', nextFreePostDay(TODAY(), group)) ?? '').trim();
+  if (!day) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return toast('Use YYYY-MM-DD');
   // Back to review rather than straight to approved: it has been parked, read it again.
-  patchAll(group, {status: 'pending', post_on: day.trim()})
-    .then(() => toast('Restored to ' + day.trim() + ' · needs review')).catch(() => {});
+  return oneAtATime(async () => {
+    await patchAll(group, {status: 'pending', post_on: day});
+    toast('Restored to ' + day + ' · needs review');
+  });
 }
 
-async function retireMoment(group) {
+function retireMoment(group) {
   if (!group.length) return;
   const names = group.map(d => (state.platforms[d.platform] || {}).label || d.platform).join(', ');
   if (!confirm('Retire "' + slugOf(group[0]) + '" (' + names + ')?\n\nThe drafts move to drafts/_archive/ and leave the dashboard.')) return;
-  for (const d of group) {
-    const res = await fetch('/api/drafts/' + encodeURIComponent(d.id) + '/retire', {method: 'POST'});
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) { toast(data.error || 'Retire failed'); break; }
-    state.drafts = state.drafts.filter(x => x.id !== d.id);
-  }
-  render();
-  toast('Retired');
+  return oneAtATime(async () => {
+    let failed = '';
+    for (const d of group) {
+      const res = await fetch('/api/drafts/' + encodeURIComponent(d.id) + '/retire', {method: 'POST'});
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { failed = data.error || 'Retire failed'; break; }
+      state.drafts = state.drafts.filter(x => x.id !== d.id);
+    }
+    render();
+    toast(failed || 'Retired');
+  });
 }
 
 // The moment's header row, followed by one row per platform draft in it.
@@ -469,7 +490,10 @@ function openBoardModal(board) {
   const dlg = $('board-modal');
   const meta = {title: board.title || '', run_id: board.run_id || '', model: board.model || ''};
   const beats = (board.beats || []).map(b => ({...BLANK_BEAT, ...b}));
-  let dirty = false;
+  // Count edits rather than flag them: a save only clears what it actually sent, so typing
+  // while it is in flight still counts as unsaved.
+  let edits = 0, saved = 0;
+  const dirty = () => edits !== saved;
 
   const input = (i, k, label, type = 'text', extra = '') =>
     `<label>${label}<input type="${type}" data-beat="${i}" data-k="${k}" value="${esc(beats[i][k] ?? '')}" ${extra}></label>`;
@@ -531,17 +555,24 @@ function openBoardModal(board) {
     if (el.dataset.meta) meta[el.dataset.meta] = el.value;
     else if (el.dataset.beat !== undefined) beats[Number(el.dataset.beat)][el.dataset.k] = el.value;
     else return;
-    dirty = true;
+    edits++;
     const total = dlg.querySelector('#b-total');
     if (total) total.textContent = totalText();
   };
 
   const store = async body => {
-    const saved = await saveBoard(board.id, body);
-    if (!saved) return null;
-    board = saved;
-    dirty = false;
-    return saved;
+    const rev = edits;
+    const result = await saveBoard(board.id, body);
+    if (!result) return null;
+    board = result;
+    saved = rev;
+    return result;
+  };
+  // Approve and Send back close the dialog, which would drop anything typed after they fired.
+  const closeIfSaved = msg => {
+    if (dirty()) { draw(); return toast(msg + ' — newer edits are not saved yet'); }
+    dlg.close();
+    toast(msg);
   };
 
   dlg.onclick = async event => {
@@ -551,34 +582,40 @@ function openBoardModal(board) {
       const i = Number(el.dataset.i), j = i + Number(el.dataset.move);
       if (j < 0 || j >= beats.length) return;
       [beats[i], beats[j]] = [beats[j], beats[i]];
-      dirty = true;
+      edits++;
       return draw();
     }
     if (el.dataset.del !== undefined) {
       beats.splice(Number(el.dataset.del), 1);
-      dirty = true;
+      edits++;
       return draw();
     }
     if (el.dataset.pull !== undefined) {
       const beat = beats[Number(el.dataset.pull)];
-      if (!meta.run_id || beat.turn === '' || beat.turn === null) return toast('Set the run id and the beat\'s turn first');
+      const runId = meta.run_id, turn = String(beat.turn ?? '');
+      if (!runId || !turn) return toast('Set the run id and the beat\'s turn first');
       if (beat.quote && !confirm('Replace the quote that is there?')) return;
-      const res = await fetch('/api/turn?run_id=' + encodeURIComponent(meta.run_id) + '&turn=' + encodeURIComponent(beat.turn));
+      const res = await fetch('/api/turn?run_id=' + encodeURIComponent(runId) + '&turn=' + encodeURIComponent(turn));
       const data = await res.json().catch(() => ({}));
       if (!res.ok) return toast(data.error || 'Could not read the log');
+      // The quote has to belong to the turn it sits under. If the beat moved on while the
+      // log was being read, drop the answer rather than file it under the wrong turn.
+      if (!beats.includes(beat) || meta.run_id !== runId || String(beat.turn ?? '') !== turn) {
+        return toast('The run or turn changed while loading, pull it again');
+      }
       beat.quote = data.quote;
-      dirty = true;
+      edits++;
       return draw();
     }
     const act = el.dataset.act;
     if (act === 'close') {
-      if (dirty && !confirm('Close without saving?')) return;
+      if (dirty() && !confirm('Close without saving?')) return;
       return dlg.close();
     }
     if (act === 'add') {
       const last = beats[beats.length - 1];
       beats.push({...BLANK_BEAT, turn: last ? last.turn : '', shot: last ? last.shot : ''});
-      dirty = true;
+      edits++;
       return draw();
     }
     if (act === 'save') {
@@ -586,18 +623,18 @@ function openBoardModal(board) {
       return;
     }
     if (act === 'approve') {
-      if (await store({...content(), status: 'approved', note: ''})) { dlg.close(); toast('Approved — ready to build'); }
+      if (await store({...content(), status: 'approved', note: ''})) closeIfSaved('Approved — ready to build');
       return;
     }
     if (act === 'sendback') {
       const note = prompt('What should change?', board.note || '');
       if (note === null) return;
-      if (await store({...content(), status: 'sent_back', note})) { dlg.close(); toast('Sent back'); }
+      if (await store({...content(), status: 'sent_back', note})) closeIfSaved('Sent back');
     }
   };
 
   // Escape closes a dialog without going through the ✕ button, so guard it the same way.
-  dlg.oncancel = event => { if (dirty && !confirm('Close without saving?')) event.preventDefault(); };
+  dlg.oncancel = event => { if (dirty() && !confirm('Close without saving?')) event.preventDefault(); };
   draw();
   dlg.showModal();
 }

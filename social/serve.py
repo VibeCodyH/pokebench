@@ -10,6 +10,7 @@ to the LAN.
 """
 
 import json
+import math
 import mimetypes
 import os
 import re
@@ -131,9 +132,13 @@ def clean_beats(raw):
                 clean[k] = None
                 continue
             try:
-                clean[k] = int(value) if k == "turn" else round(float(value), 2)
+                number = float(value)
             except (TypeError, ValueError):
                 raise ValueError(f"beat {i}: {k} must be a number") from None
+            # json.dumps writes inf as Infinity, which the browser's JSON.parse rejects.
+            if not math.isfinite(number):
+                raise ValueError(f"beat {i}: {k} must be a finite number")
+            clean[k] = int(number) if k == "turn" else round(number, 2)
             if clean[k] < 0:
                 raise ValueError(f"beat {i}: {k} cannot be negative")
         beats.append(clean)
@@ -381,11 +386,15 @@ class Handler(BaseHTTPRequestHandler):
         patch = self.read_patch()
         if patch is None:
             return
-        if "status" in patch and patch["status"] not in BOARD_STATUSES:
+        if "status" in patch and (not isinstance(patch["status"], str) or patch["status"] not in BOARD_STATUSES):
             return self.send_json({"error": f"status must be one of {sorted(BOARD_STATUSES)}"}, 400)
         if patch.get("run_id") and not ID.fullmatch(str(patch["run_id"])):
             return self.send_json({"error": "bad run id"}, 400)
         update = {k: v for k, v in patch.items() if k in BOARD_WRITABLE}
+        # The editor treats these as strings; a stored number or list would break it on open.
+        for k in ("title", "run_id", "model", "note"):
+            if k in update:
+                update[k] = str(update[k] or "")
         if "beats" in update:
             try:
                 update["beats"] = clean_beats(update["beats"])
@@ -420,6 +429,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"error": f"nothing posts to {platform} from here, copy and paste it"}, 400)
         if draft.get("status") == "posted":
             return self.send_json({"error": "already posted"}, 409)
+        if draft.get("status") == "archived":
+            return self.send_json({"error": "archived, restore it before posting"}, 409)
         if draft.get("media"):
             return self.send_json({"error": "file upload is not wired yet, post this one by hand"}, 400)
         body = (draft.get("body") or "").strip()
