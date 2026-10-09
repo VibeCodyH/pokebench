@@ -974,6 +974,22 @@ models:
     input_cost_per_mtok: 2.00
     output_cost_per_mtok: 6.00
 
+  # Grok 4.7 on the Foundry resource. Unlike 4.6 it refuses deploymentless inference, so it has
+  # a named deployment `grok-4.7` (GlobalStandard, capacity 50, created 2026-10-08). Rates mirror
+  # the xAI row, the same assumption the 4.6 row above makes; Azure's own xAI price is unchecked.
+  - key: azure-grok-4.7
+    provider: azure-foundry
+    api_model_id: grok-4.7
+    display_name: "Grok 4.7"
+    family: grok
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, not a vendor claim. See azure-grok-4-20-reasoning.
+    think: high
+    release_date: "2026-09-21"
+    input_cost_per_mtok: 2.00
+    output_cost_per_mtok: 6.00
+
   - key: azure-grok-4-20-reasoning
     provider: azure-foundry
     api_model_id: grok-4-20-reasoning
