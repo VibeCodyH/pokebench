@@ -562,7 +562,8 @@ async function loadRuns() {
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) pauseReplay(); });
 
-// LIVE pill: the Worker answers /api/live from Twitch (worker.js). It reads OFFLINE until a poll says otherwise.
+// LIVE pill: the Worker answers /api/live from Twitch (worker.js). The recorder pushes the same encode to Twitch and
+// YouTube, so Twitch live means YouTube live; the pill links to YouTube. It reads OFFLINE until a poll says otherwise.
 async function pollLive() {
   try {
     const response = await fetch('/api/live', {cache: 'no-store'});
@@ -571,7 +572,7 @@ async function pollLive() {
     state.live = status.live === true;
     $('live-pill').classList.toggle('live', state.live);
     $('live-text').textContent = state.live ? 'LIVE' : 'OFFLINE';
-    $('live-pill').title = state.live ? `Live on Twitch: ${status.title || ''}`.trim() : 'PokeBenchTV on Twitch';
+    $('live-pill').title = state.live ? `Live on YouTube: ${status.title || ''}`.trim() : 'PokéBench live on YouTube';
   } catch { /* unreachable: leave the pill as it was */ }
 }
 pollLive(); setInterval(pollLive, 60000);
