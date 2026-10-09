@@ -3,7 +3,7 @@
 A local 27B model plays Pokémon Red on stream. Frontier models get the same seat, the same prompt, and the
 same 1,000-turn budget. Furthest milestone wins, fewer turns breaks ties, and Brock is the ceiling.
 
-**[Watch live on Twitch](https://twitch.tv/pokebenchtv)** · **[VODs on YouTube](https://youtube.com/@pokebenchtv)** · **[Leaderboard at pokebench.tv](https://pokebench.tv)**
+**[Watch live on YouTube](https://www.youtube.com/@Pokebenchtv/live)** (also on [Twitch](https://twitch.tv/pokebenchtv)) · **[Leaderboard at pokebench.tv](https://pokebench.tv)**
 
 ![Gemini 3.8 Flash mid-run in Viridian Forest. The panel on the right shows the reasoning it wrote that turn: Squirtle has 17 HP, takes 1 poison damage every 4 steps, and the North Gate is straight up.](docs/img/stream.png)
 
