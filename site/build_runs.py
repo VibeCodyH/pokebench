@@ -29,8 +29,10 @@ def finished(run):
 
 
 def category(run):
-    # Summaries written before RVB existed carry no category; they are all TAB.
-    return run.get("category") or "tab"
+    # Summaries written before RVB existed carry no category; they are all TAB. A category that
+    # is not a string matches no board.
+    value = run.get("category") or "tab"
+    return value if isinstance(value, str) else None
 
 
 def prompt_number(run):
