@@ -443,7 +443,8 @@ class TabUnchangedTests(RunFixture):
                     ("rvb-below-floor", {"prompt_version": "rvb2", "category": "rvb"}),
                     ("tab-prompt-on-rvb", {"prompt_version": "v21", "category": "rvb"}),
                     ("rvb-prompt-no-category", {"prompt_version": "rvb3"}),
-                    ("unknown-category", {"prompt_version": "v21", "category": "speedrun"})):
+                    ("unknown-category", {"prompt_version": "v21", "category": "speedrun"}),
+                    ("malformed-category", {"prompt_version": "rvb3", "category": ["rvb"]})):
                 d = Path(root, "runs", name)
                 d.mkdir(parents=True)
                 (d / "summary.json").write_text(json.dumps({**base, **extra, "run_id": name}))
@@ -454,7 +455,7 @@ class TabUnchangedTests(RunFixture):
                              [("tab-winner", "tab"), ("tab-old", "tab"), ("rvb-winner", "rvb"), ("rvb-scored", "rvb")])
             self.assertIn("2 TAB, 2 RVB", out.getvalue())
             self.assertIn("1 legacy runs", out.getvalue())
-            self.assertIn("3 with a category and prompt version that do not match", out.getvalue())
+            self.assertIn("4 with a category and prompt version that do not match", out.getvalue())
 
     def test_summary_provenance_per_category(self):
         tracker = Mock(summary=Mock(return_value={"furthest_label": "Left the house", "furthest_index": 0}))
