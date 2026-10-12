@@ -471,6 +471,24 @@ models:
     # 1h45m of Astra's scored run. 120s is 3x the worst real call.
     max_call_s: 120
 
+  # GPT-6 Luna on the ChatGPT subscription route. Frame probe 2026-10-11 served gpt-6-luna at reasoning
+  # high with vision and strict JSON. Same 131,072 history budget as azure-gpt-6-luna. Subscription usage
+  # has no per-token USD price. First use: the rvb4 RVB rerun (Cody: the Foundry credits are trial
+  # credits; Luna moves to the subscription like Sol 6.1 and Astra did).
+  - key: chatgpt-gpt-6-luna
+    provider: chatgpt
+    api_model_id: gpt-6-luna
+    display_name: "GPT-6 Luna"
+    family: gpt
+    params: null
+    quant: null
+    context: 131072
+    think: high
+    release_date: "2026-09-22"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+    max_call_s: 120  # same route and stall pattern as Sol 6.1 and Astra
+
   # Nex AGI N2.5 — FREE on OpenRouter ($0/M, verified vision). Agentic/computer-use pedigree;
   # prime free-seeding candidates. Free models may be rate-limited/queued on OpenRouter.
   - key: or-nex-n2.5-mini
