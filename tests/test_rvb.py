@@ -510,25 +510,18 @@ class RvbGoalDefaultTest(unittest.TestCase):
     def test_tab_launch_without_a_goal_still_runs(self):
         self.assertEqual(self.launch()["category"], "tab")
 
-    def test_rvb_launch_without_a_goal_plays_rvb3(self):
-        self.assertEqual(self.launch("--category", "rvb")["rvb_goal"], "brock-finish")
+    def test_rvb_launch_without_a_goal_plays_rvb4(self):
+        self.assertEqual(self.launch("--category", "rvb")["rvb_goal"], "brock-finish-cached")
+        self.assertEqual(self.launch("--category", "rvb", "--rvb-goal", "brock-finish")["rvb_goal"], "brock-finish")
         self.assertEqual(self.launch("--category", "rvb", "--rvb-goal", "game")["rvb_goal"], "game")
 
     def test_a_goal_on_a_tab_run_is_still_refused(self):
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             self.launch("--rvb-goal", "brock")
 
-    def test_rvb4_only_launches_on_an_anthropic_seat(self):
-        # launch() hands run() a Mock provider: anything but AnthropicProvider would put the
-        # screenshot first, which is not the rvb4 prompt, so it must be refused.
-        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
-            self.launch("--category", "rvb", "--rvb-goal", "brock-finish-cached")
-        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test"}):
-            seat = providers.AnthropicProvider("claude-test", thinking_style="adaptive")
-        with patch.object(runner, "load_model", return_value={"provider": "anthropic"}), \
-                patch.object(runner, "make_provider", return_value=seat), patch.object(runner, "run") as run:
-            runner.main(["--model-key", "m", "--category", "rvb", "--rvb-goal", "brock-finish-cached"])
-        self.assertEqual(run.call_args.kwargs["rvb_goal"], "brock-finish-cached")
+    def test_rvb4_launches_on_any_seat(self):
+        self.assertEqual(self.launch("--category", "rvb", "--rvb-goal", "brock-finish-cached")["rvb_goal"],
+                         "brock-finish-cached")
 
 
 class Rvb4CacheLayoutTests(unittest.TestCase):
@@ -600,10 +593,27 @@ class Rvb4CacheLayoutTests(unittest.TestCase):
         # one entry fits: it is shown, not dropped by the chunking
         self.assertEqual(runner.rvb4_window(history[:10], history[9:10], 0), (history[9:10], 9))
 
-    def test_run_refuses_rvb4_on_a_seat_that_cannot_send_it(self):
-        with self.assertRaises(ValueError):
-            runner.run({"provider": "google", "key": "g"}, Mock(), "http://x", category="rvb",
-                       rvb_goal="brock-finish-cached")
+    def test_every_other_seat_sends_rvb4_as_its_text_then_the_screenshot(self):
+        # OpenAI-style, Google and ChatGPT adapters already put text before the image, so a CachedUser
+        # arrives exactly in rvb4 order; their providers cache the repeated start on their own.
+        user = categories.rvb_user_parts("my notes", self.RECENT, (4, 1000))
+        reply = {"choices": [{"message": {"content": "{\"thought\": \"ok\", \"actions\": []}"}}],
+                 "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "k", "GOOGLE_API_KEY": "k"}):
+            openai = providers.OpenAIProvider("m")
+            google = providers.GoogleProvider("gemini-test")
+        with patch.object(openai, "_post_stream", return_value=reply) as post:
+            openai.chat("sys", user, "aGk=", categories.RVB_SCHEMA, "high")
+        content = post.call_args.args[1]["messages"][1]["content"]
+        self.assertEqual([c["type"] for c in content], ["text", "image_url"])
+        self.assertEqual(content[0]["text"], str(user))
+        greply = {"candidates": [{"content": {"parts": [{"text": "{\"thought\": \"ok\", \"actions\": []}"}]}}],
+                  "usageMetadata": {"promptTokenCount": 1, "candidatesTokenCount": 1}}
+        with patch.object(google, "_post", return_value=greply) as gpost:
+            google.chat("sys", user, "aGk=", categories.RVB_SCHEMA, "high")
+        parts = gpost.call_args.args[1]["contents"][0]["parts"]
+        self.assertEqual(parts[0], {"text": str(user)})
+        self.assertIn("inlineData", parts[1])
 
     def test_rvb3_and_tab_requests_are_unchanged(self):
         for user in (categories.rvb_user_message("n", self.RECENT, (4, 1000)), "STATE: tab text"):

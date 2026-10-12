@@ -22,8 +22,8 @@ import requests
 import yaml
 
 from milestones import MILESTONES, MilestoneTracker
-from providers import AnthropicProvider, get_provider
-from categories import (CATEGORIES, RVB, RVB_CACHED_GOALS, RVB_MAX_PRESSES, TAB, rvb_category, rvb_history_entry,
+from providers import get_provider
+from categories import (CATEGORIES, RVB, RVB_MAX_PRESSES, TAB, rvb_category, rvb_history_entry,
                         rvb_user_message, rvb_user_parts)
 from qwen_red import (
     ALLOWED,
@@ -311,8 +311,9 @@ BILLING_WORDS = ("credits are depleted", "credit balance", "prepay", "insufficie
 # exponential backoff the other errors use: a human is refilling a balance, and the useful
 # question is "has it landed yet", asked at a steady rate.
 BILLING_POLL_S = 60
-# rvb3: Sol 6.1 (447 turns) and Astra (404) both finished on it in calibration, 2026-10-05.
-RVB_DEFAULT_GOAL = "brock-finish"
+# rvb4 (2026-10-11): rvb3's words in a cache-friendly order, plus the two wording changes Anthropic's
+# refusal filter needed. Every RVB seat reruns on it, so it's the default; rvb3 stays selectable.
+RVB_DEFAULT_GOAL = "brock-finish-cached"
 
 
 def milestone_anchor_turn(tracker, keep):
@@ -443,10 +444,6 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
     if cat.id == RVB and model["provider"] == "jev":
         # Jev discards the screenshot and reads the text state; RVB has no text state to read.
         raise ValueError("jev cannot play RVB: it has no vision, and RVB gives the model nothing else")
-    if cat.cached_layout and not isinstance(provider, AnthropicProvider):
-        # Only the Anthropic adapter sends a CachedUser as history blocks then screenshot; any other
-        # adapter would flatten it into its own layout, which is not the rvb4 prompt.
-        raise ValueError("rvb4 (--rvb-goal brock-finish-cached) is only wired for Anthropic seats so far")
     server = server.rstrip("/")
     verify_fresh_game(server)
     os.makedirs(RUNS_DIR, exist_ok=True)
@@ -910,8 +907,9 @@ def main(argv=None):
     parser.add_argument("--rvb-goal", choices=("game", "brock", "brock-finish", "brock-finish-cached"), default=None,
                         help="rvb only. game = 'beat the game' (rvb1); brock = name the Boulder Badge and "
                              "show a turn clock (rvb2); brock-finish = rvb2 plus 'the run ends by itself, "
-                             "keep pressing' (rvb3, the default); brock-finish-cached = rvb3's words with the "
-                             "recent turns first and the screenshot last, so the history is prompt-cached (rvb4).")
+                             "keep pressing' (rvb3); brock-finish-cached = rvb3's instructions with the recent "
+                             "turns first and the screenshot last, so the history is prompt-cached, plus the two "
+                             "wording changes Anthropic's refusal filter needed (rvb4, the default).")
     args = parser.parse_args(argv)
     if args.turns <= 0:
         parser.error("--turns must be positive")
@@ -922,9 +920,6 @@ def main(argv=None):
         if args.category == RVB and model["provider"] == "jev":
             raise ValueError("jev cannot play RVB: it has no vision, and RVB gives the model nothing else")
         provider = make_provider(model)
-        if args.rvb_goal in RVB_CACHED_GOALS and not isinstance(provider, AnthropicProvider):
-            # Same check as run(), surfaced as a clean usage error before anything starts.
-            raise ValueError("rvb4 (--rvb-goal brock-finish-cached) is only wired for Anthropic seats so far")
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))
     run_name = args.run_name or args.model_key
