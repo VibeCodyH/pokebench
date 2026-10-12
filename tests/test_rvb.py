@@ -538,13 +538,18 @@ class Rvb4CacheLayoutTests(unittest.TestCase):
     def test_rvb4_is_rvb3_word_for_word_in_a_different_order(self):
         rvb3, rvb4 = categories.rvb_category("brock-finish"), categories.rvb_category("brock-finish-cached")
         self.assertEqual(rvb3.prompt_sha, "cb1c7c8e501ff0c9")          # rvb3 itself must not move
-        self.assertEqual((rvb4.prompt_version, rvb4.system), ("rvb4", rvb3.system))
+        # rvb4 = rvb3 plus exactly the two wording changes Anthropic's refusal filter needed
+        self.assertEqual(rvb4.prompt_version, "rvb4")
+        self.assertEqual(rvb4.system, rvb3.system.replace(*categories.RVB4_THOUGHT))
+        self.assertNotEqual(rvb4.system, rvb3.system)
         self.assertNotEqual(rvb4.prompt_sha, rvb3.prompt_sha)
         self.assertTrue(rvb4.cached_layout)
         self.assertFalse(rvb3.cached_layout)
         old = categories.rvb_user_message("my notes", self.RECENT, (4, 1000))
         new = categories.rvb_user_parts("my notes", self.RECENT, (4, 1000))
-        self.assertEqual(sorted(old.split("\n")), sorted(str(new).split("\n")))
+        relabelled = old.replace("YOUR RECENT TURNS (what you thought and what you pressed):\n",
+                                 categories.RVB4_HISTORY_HEADER)
+        self.assertEqual(sorted(relabelled.split("\n")), sorted(str(new).split("\n")))
         self.assertTrue(str(new).startswith("YOUR RECENT TURNS"))
         self.assertTrue(str(new).endswith("The screenshot is attached. Take your turn."))
         self.assertEqual("".join(new.cache_blocks) + new.tail, str(new))
