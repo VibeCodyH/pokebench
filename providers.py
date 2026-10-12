@@ -738,6 +738,27 @@ class OpenRouterProvider(OpenAIProvider):
     api_key_env = "OPENROUTER_API_KEY"
     base_url = "https://openrouter.ai/api/v1"
 
+    def __init__(self, model: str, *, cache_read_cost_per_mtok: float | None = None, **opts):
+        super().__init__(model, **opts)
+        # Opt-in per row. Some backends cache the prompt prefix on their own (Meta's Muse Wonder
+        # served 6,516 of 6,582 prompt tokens from cache on a repeat call, 2026-10-12) and bill
+        # those reads far below the input rate. Unset keeps the flat base estimate.
+        self.cache_read_cost_per_mtok = cache_read_cost_per_mtok
+
+    def _tokens(self, usage: dict) -> dict[str, int]:
+        # prompt_tokens is already the full count, cached or not, so `prompt` keeps meaning
+        # "tokens the model saw" and cache_read is the part of it served from cache.
+        tokens = super()._tokens(usage)
+        tokens["cache_read"] = int((usage.get("prompt_tokens_details") or {}).get("cached_tokens") or 0)
+        return tokens
+
+    def cost(self, tokens: dict[str, int]) -> float | None:
+        flat = super().cost(tokens)
+        if flat is None or self.cache_read_cost_per_mtok is None:
+            return flat
+        read = min(tokens.get("cache_read", 0), tokens["prompt"])
+        return flat - read * (self.input_cost_per_mtok - self.cache_read_cost_per_mtok) / 1_000_000
+
 
 class JevDecisionProvider(Provider):
     """TypeSafe's Jev on OpenRouter's /api/alpha/decisions endpoint.

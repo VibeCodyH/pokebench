@@ -1533,6 +1533,51 @@ class AnthropicPromptCacheTests(unittest.TestCase):
                                  "cache_read": 15, "cache_write": 3})
 
 
+class OpenRouterPromptCacheTests(unittest.TestCase):
+    """Oracle = the two real meta/muse-wonder responses from 2026-10-12: a cold call and a
+    repeat of it. Meta's own bill for each (usage.cost_details.upstream_inference_cost) is
+    what cost() must reproduce at the row's $4 / $20 / $0.20 rates."""
+
+    COLD = {"prompt_tokens": 6582, "completion_tokens": 125,
+            "prompt_tokens_details": {"cached_tokens": 0, "cache_write_tokens": 0}}
+    WARM = {"prompt_tokens": 6582, "completion_tokens": 242,
+            "prompt_tokens_details": {"cached_tokens": 6516, "cache_write_tokens": 0}}
+
+    def make(self, **opts):
+        import providers
+        with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test"}):
+            return providers.OpenRouterProvider(
+                "meta/muse-wonder", input_cost_per_mtok=4.0, output_cost_per_mtok=20.0, **opts)
+
+    def capture(self, p, usage):
+        body = {"choices": [{"message": {"content": "{\"thought\": \"ok\", \"actions\": []}"},
+                             "finish_reason": "stop"}], "usage": usage}
+        with patch.object(p, "_post_stream", return_value=body):
+            _, _, tokens = p.chat("SYS", "u", "aGk=", {"type": "object"}, "high")
+        return tokens
+
+    def test_cached_tokens_are_recorded_and_prompt_stays_the_full_count(self):
+        tokens = self.capture(self.make(cache_read_cost_per_mtok=0.20), self.WARM)
+        self.assertEqual((tokens["prompt"], tokens["cache_read"], tokens["completion"]),
+                         (6582, 6516, 242))
+
+    def test_cost_matches_metas_bill_cold_and_warm(self):
+        p = self.make(cache_read_cost_per_mtok=0.20)
+        self.assertAlmostEqual(p.cost(self.capture(p, self.COLD)), 0.028828)
+        self.assertAlmostEqual(p.cost(self.capture(p, self.WARM)), 0.0064072)
+
+    def test_a_row_without_a_cache_rate_keeps_the_flat_estimate(self):
+        p = self.make()
+        self.assertAlmostEqual(p.cost(self.capture(p, self.WARM)), (6582 * 4 + 242 * 20) / 1e6)
+
+    def test_make_provider_passes_the_cache_read_rate_to_openrouter_rows(self):
+        import run_benchmark
+        with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test"}):
+            p = run_benchmark.make_provider(run_benchmark.load_model("or-muse-wonder"))
+        self.assertEqual(p.cache_read_cost_per_mtok, 0.20)
+        self.assertEqual((p.input_cost_per_mtok, p.output_cost_per_mtok), (4.0, 20.0))
+
+
 class RawButtonDispatchTests(unittest.TestCase):
     """RVB's eight raw names are one press each, on the upstream press_/walk_ timing; TAB names pass through."""
 
