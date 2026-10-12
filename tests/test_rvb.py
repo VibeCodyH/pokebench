@@ -590,6 +590,10 @@ class Rvb4CacheLayoutTests(unittest.TestCase):
         self.assertLessEqual(len(firsts), 8)          # a handful of drops, not one per turn past 40
         # nothing to trim: the whole history, floor untouched
         self.assertEqual(runner.rvb4_window(history[:10], history[:10], 0), (history[:10], 0))
+        # nothing fits: an empty view, and the floor stays put for when room comes back
+        self.assertEqual(runner.rvb4_window(history[:10], [], 3), ([], 3))
+        # one entry fits: it is shown, not dropped by the chunking
+        self.assertEqual(runner.rvb4_window(history[:10], history[9:10], 0), (history[9:10], 9))
 
     def test_run_refuses_rvb4_on_a_seat_that_cannot_send_it(self):
         with self.assertRaises(ValueError):

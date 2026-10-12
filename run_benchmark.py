@@ -362,9 +362,11 @@ def rvb4_window(history, fitted, floor):
     kept. Dropping one oldest entry per turn would change the first cached block every turn and
     turn every cache read into a write, so when the window must shrink it drops a quarter at once
     and the prefix stays put until the next drop. Returns (entries, new floor)."""
+    if not fitted:                      # nothing fits: show nothing, but don't move the floor
+        return [], floor
     start = len(history) - len(fitted)
     if start > floor:
-        floor = start + max(1, len(fitted) // 4)
+        floor = start + len(fitted) // 4   # a window under 4 entries trims only what it must
     return history[floor:], floor
 
 
