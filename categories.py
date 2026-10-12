@@ -52,6 +52,15 @@ RVB_GOALS["brock-finish-cached"] = RVB_GOALS["brock-finish"]
 RVB_GOAL_VERSIONS = {"game": "rvb1", "brock": "rvb2", "brock-finish": "rvb3", "brock-finish-cached": "rvb4"}
 RVB_CACHED_GOALS = frozenset({"brock-finish-cached"})
 RVB4_LAYOUT = "layout: recent turns first, then turn clock and notes, screenshot last (rvb4)"
+# rvb4 also carries the two wording changes Anthropic's API needed (2026-10-11). On rvb3 wording, every
+# Opus 5.5 / Sonnet 5.5 request came back `stop_reason: refusal` with 0 output tokens, on any frame,
+# while Haiku 5.5 and every non-Anthropic seat answered. Bisected over ~70 requests: an unbounded
+# "what you intend, why" thought field, and a history labelled "what you thought", are what trip it.
+# TAB's own "2-3 sentences:" bound plus a relabelled history passed 18/18 across turn 1, a 40-turn
+# history and Sonnet. Reported to Anthropic (feedback ref db8bd689-3cae-4f3c-bd32-e6f86b8db302).
+RVB4_THOUGHT = ('"thought": "<what you see, what you intend, why>"',
+                '"thought": "<2-3 sentences: what you see, what you intend, why>"')
+RVB4_HISTORY_HEADER = "YOUR RECENT TURNS (your thought line and the buttons you pressed):\n"
 
 RVB_SYSTEM_TEMPLATE = """__IDENTITY__ Each turn you get one screenshot of the Game Boy screen. The game keeps running in real time between turns, so the screenshot is a moment in time. Each turn you press up to six buttons, in order, one press each.
 
@@ -88,7 +97,8 @@ def _sha16(text: str) -> str:
 
 
 def rvb_system(goal: str = "game") -> str:
-    return RVB_SYSTEM_TEMPLATE.replace("__GOAL__", RVB_GOALS[goal])
+    system = RVB_SYSTEM_TEMPLATE.replace("__GOAL__", RVB_GOALS[goal])
+    return system.replace(*RVB4_THOUGHT) if goal in RVB_CACHED_GOALS else system
 
 
 # Provenance namespace for RVB prompts: rvb1, rvb2, ... (TAB stays vNN). The site admits per category.
@@ -147,7 +157,7 @@ class CachedUser(str):
 def rvb_user_parts(notes: str, recent: list, clock: tuple | None = None) -> CachedUser:
     """rvb4: rvb_user_message's words, reordered so everything that changes every turn (the clock,
     the notes, the screenshot) comes after the history, which only ever grows at the end."""
-    header = "YOUR RECENT TURNS (what you thought and what you pressed):\n"
+    header = RVB4_HISTORY_HEADER
     blocks = [header + (recent[0] if recent else "(none yet)")] + ["\n" + line for line in recent[1:]]
     head = f"TURN {clock[0]} OF {clock[1]}.\n\n" if clock else ""
     tail = f"\n\n{head}YOUR NOTES:\n{notes or '(no notes yet)'}\n\nThe screenshot is attached. Take your turn."
