@@ -518,6 +518,95 @@ class RvbGoalDefaultTest(unittest.TestCase):
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             self.launch("--rvb-goal", "brock")
 
+    def test_rvb4_only_launches_on_an_anthropic_seat(self):
+        # launch() hands run() a Mock provider: anything but AnthropicProvider would put the
+        # screenshot first, which is not the rvb4 prompt, so it must be refused.
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            self.launch("--category", "rvb", "--rvb-goal", "brock-finish-cached")
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test"}):
+            seat = providers.AnthropicProvider("claude-test", thinking_style="adaptive")
+        with patch.object(runner, "load_model", return_value={"provider": "anthropic"}), \
+                patch.object(runner, "make_provider", return_value=seat), patch.object(runner, "run") as run:
+            runner.main(["--model-key", "m", "--category", "rvb", "--rvb-goal", "brock-finish-cached"])
+        self.assertEqual(run.call_args.kwargs["rvb_goal"], "brock-finish-cached")
+
+
+class Rvb4CacheLayoutTests(unittest.TestCase):
+    RECENT = ["turn 1: I see Oak. -> pressed [a a]", "turn 2: Dialogue. -> pressed [a]",
+              "turn 3: Stairs ahead. -> pressed [up up]"]
+
+    def test_rvb4_is_rvb3_word_for_word_in_a_different_order(self):
+        rvb3, rvb4 = categories.rvb_category("brock-finish"), categories.rvb_category("brock-finish-cached")
+        self.assertEqual(rvb3.prompt_sha, "cb1c7c8e501ff0c9")          # rvb3 itself must not move
+        self.assertEqual((rvb4.prompt_version, rvb4.system), ("rvb4", rvb3.system))
+        self.assertNotEqual(rvb4.prompt_sha, rvb3.prompt_sha)
+        self.assertTrue(rvb4.cached_layout)
+        self.assertFalse(rvb3.cached_layout)
+        old = categories.rvb_user_message("my notes", self.RECENT, (4, 1000))
+        new = categories.rvb_user_parts("my notes", self.RECENT, (4, 1000))
+        self.assertEqual(sorted(old.split("\n")), sorted(str(new).split("\n")))
+        self.assertTrue(str(new).startswith("YOUR RECENT TURNS"))
+        self.assertTrue(str(new).endswith("The screenshot is attached. Take your turn."))
+        self.assertEqual("".join(new.cache_blocks) + new.tail, str(new))
+
+    def test_each_turn_extends_the_last_turns_cached_prefix(self):
+        # The whole point: turn N+1's blocks start with turn N's blocks, unchanged, plus one.
+        for n in range(1, len(self.RECENT)):
+            before = categories.rvb_user_parts("a", self.RECENT[:n], (n, 1000)).cache_blocks
+            after = categories.rvb_user_parts("b, rewritten", self.RECENT[:n + 1], (n + 1, 1000)).cache_blocks
+            self.assertEqual(after[:n], before)
+            self.assertEqual(len(after), n + 1)
+
+    def capture(self, user):
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test"}):
+            seat = providers.AnthropicProvider("claude-test", thinking_style="adaptive")
+        body = {"content": [{"type": "text", "text": "{\"thought\": \"ok\", \"actions\": []}"}],
+                "stop_reason": "end_turn", "usage": {"input_tokens": 5, "output_tokens": 6,
+                                                     "cache_read_input_tokens": 700, "cache_creation_input_tokens": 40}}
+        with patch.object(seat, "_post", return_value=body) as post:
+            _, _, tokens = seat.chat("sys", user, "aGk=", categories.RVB_SCHEMA, "high")
+        return post.call_args.args[1], tokens
+
+    def test_anthropic_sends_rvb4_history_first_with_one_breakpoint_and_the_screenshot_last(self):
+        user = categories.rvb_user_parts("my notes", self.RECENT, (4, 1000))
+        payload, tokens = self.capture(user)
+        content = payload["messages"][0]["content"]
+        self.assertEqual([c["text"] for c in content[:-1]], user.cache_blocks + [user.tail])
+        self.assertEqual(content[-1]["type"], "image")
+        marked = [i for i, c in enumerate(content) if "cache_control" in c]
+        self.assertEqual(marked, [len(user.cache_blocks) - 1])
+        self.assertEqual(payload["system"][0]["cache_control"], {"type": "ephemeral"})
+        self.assertEqual(tokens["prompt"], 5 + 700 + 40)               # still "tokens the model saw"
+
+    def test_rvb4_window_drops_in_chunks_so_the_prefix_holds(self):
+        history = [f"turn {i}: thought -> pressed [a]" for i in range(1, 101)]
+        floor, shown = 0, []
+        for n in range(1, 101):                       # a context that only ever fits 40 entries
+            fitted = history[:n][-40:]
+            view, floor = runner.rvb4_window(history[:n], fitted, floor)
+            self.assertTrue(len(view) <= 40)
+            shown.append(view[0] if view else None)
+        firsts = [x for i, x in enumerate(shown) if i == 0 or x != shown[i - 1]]
+        self.assertLessEqual(len(firsts), 8)          # a handful of drops, not one per turn past 40
+        # nothing to trim: the whole history, floor untouched
+        self.assertEqual(runner.rvb4_window(history[:10], history[:10], 0), (history[:10], 0))
+        # nothing fits: an empty view, and the floor stays put for when room comes back
+        self.assertEqual(runner.rvb4_window(history[:10], [], 3), ([], 3))
+        # one entry fits: it is shown, not dropped by the chunking
+        self.assertEqual(runner.rvb4_window(history[:10], history[9:10], 0), (history[9:10], 9))
+
+    def test_run_refuses_rvb4_on_a_seat_that_cannot_send_it(self):
+        with self.assertRaises(ValueError):
+            runner.run({"provider": "google", "key": "g"}, Mock(), "http://x", category="rvb",
+                       rvb_goal="brock-finish-cached")
+
+    def test_rvb3_and_tab_requests_are_unchanged(self):
+        for user in (categories.rvb_user_message("n", self.RECENT, (4, 1000)), "STATE: tab text"):
+            payload, _ = self.capture(user)
+            self.assertEqual(payload["messages"], [{"role": "user", "content": [
+                {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "aGk="}},
+                {"type": "text", "text": user}]}])
+
 
 if __name__ == "__main__":
     unittest.main()

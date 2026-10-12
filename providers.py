@@ -11,6 +11,8 @@ from urllib.parse import quote
 
 import requests
 
+from categories import CachedUser
+
 
 ChatResult = tuple[dict, str, dict[str, int]]
 
@@ -384,14 +386,19 @@ class AnthropicProvider(Provider):
         # Haiku's 2048, where the API declines to cache and simply bills normally.
         system_block = [{"type": "text", "text": system,
                          "cache_control": {"type": "ephemeral"}}] if self.cache_system else system
+        image = {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": image_b64}}
+        if isinstance(user, CachedUser):
+            # rvb4: the recent turns first, one block each with the breakpoint on the newest, so
+            # this turn reads everything the last turn wrote and writes one entry. The clock,
+            # notes and screenshot change every turn and go after it.
+            content = [{"type": "text", "text": block} for block in user.cache_blocks]
+            content[-1]["cache_control"] = {"type": "ephemeral"}
+            content += [{"type": "text", "text": user.tail}, image]
+        else:
+            content = [image, {"type": "text", "text": user}]
         payload = {
             "model": self.model, "max_tokens": self.max_tokens, "system": system_block,
-            "messages": [{"role": "user", "content": [
-                {"type": "image", "source": {
-                    "type": "base64", "media_type": "image/png", "data": image_b64,
-                }},
-                {"type": "text", "text": user},
-            ]}],
+            "messages": [{"role": "user", "content": content}],
             "output_config": {"format": {
                 "type": "json_schema", "schema": _schema_for(schema, "anthropic"),
             }},
