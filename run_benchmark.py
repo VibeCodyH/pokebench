@@ -357,6 +357,17 @@ def fit_recent(history, num_ctx, static_chars, scale=1.0):
     return kept
 
 
+def rvb4_window(history, fitted, floor):
+    """rvb4's view of the history: everything from `floor` on, where `fitted` is what fit_recent
+    kept. Dropping one oldest entry per turn would change the first cached block every turn and
+    turn every cache read into a write, so when the window must shrink it drops a quarter at once
+    and the prefix stays put until the next drop. Returns (entries, new floor)."""
+    start = len(history) - len(fitted)
+    if start > floor:
+        floor = start + max(1, len(fitted) // 4)
+    return history[floor:], floor
+
+
 # A provider saying the request itself was too big. Four characters per token is a fine estimate
 # for English prose and a bad one for a notes file full of numbers or code (closer to 1.5), so RVB
 # halves its notes/history view each time it sees one of these and retries, instead of resending
@@ -430,6 +441,10 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
     if cat.id == RVB and model["provider"] == "jev":
         # Jev discards the screenshot and reads the text state; RVB has no text state to read.
         raise ValueError("jev cannot play RVB: it has no vision, and RVB gives the model nothing else")
+    if cat.cached_layout and not isinstance(provider, AnthropicProvider):
+        # Only the Anthropic adapter sends a CachedUser as history blocks then screenshot; any other
+        # adapter would flatten it into its own layout, which is not the rvb4 prompt.
+        raise ValueError("rvb4 (--rvb-goal brock-finish-cached) is only wired for Anthropic seats so far")
     server = server.rstrip("/")
     verify_fresh_game(server)
     os.makedirs(RUNS_DIR, exist_ok=True)
@@ -470,6 +485,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
     presses_exact = True    # False once any /action/traced call failed: presses may have landed unrecorded
     action_outstanding = False  # an /action/traced call is in flight: an interrupt here leaves presses unknown
     ctx_scale = 1.0         # RVB notes/history view budget multiplier, halved on a context-size rejection
+    cache_floor = 0         # rvb4: oldest history entry shown; only moves in chunks (see below)
     milestone_presses = {}  # milestone key -> cumulative presses when it was first recorded
 
     def note_presses(count=None):
@@ -576,6 +592,8 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                                                        len(system_prompt) + len(rvb_user_message("", [], clock)), ctx_scale)
                 shell = rvb_user_message(shown_notes, [], clock)
                 recent = fit_recent(history, model["num_ctx"], len(system_prompt) + len(shell), ctx_scale)
+                if cat.cached_layout:
+                    recent, cache_floor = rvb4_window(history, recent, cache_floor)
                 user = (rvb_user_parts if cat.cached_layout else rvb_user_message)(shown_notes, recent, clock)
             else:
                 notes_dropped = 0
@@ -903,7 +921,7 @@ def main(argv=None):
             raise ValueError("jev cannot play RVB: it has no vision, and RVB gives the model nothing else")
         provider = make_provider(model)
         if args.rvb_goal in RVB_CACHED_GOALS and not isinstance(provider, AnthropicProvider):
-            # Every other adapter would put the screenshot first, which is not the rvb4 prompt.
+            # Same check as run(), surfaced as a clean usage error before anything starts.
             raise ValueError("rvb4 (--rvb-goal brock-finish-cached) is only wired for Anthropic seats so far")
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))

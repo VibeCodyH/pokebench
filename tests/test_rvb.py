@@ -578,6 +578,24 @@ class Rvb4CacheLayoutTests(unittest.TestCase):
         self.assertEqual(payload["system"][0]["cache_control"], {"type": "ephemeral"})
         self.assertEqual(tokens["prompt"], 5 + 700 + 40)               # still "tokens the model saw"
 
+    def test_rvb4_window_drops_in_chunks_so_the_prefix_holds(self):
+        history = [f"turn {i}: thought -> pressed [a]" for i in range(1, 101)]
+        floor, shown = 0, []
+        for n in range(1, 101):                       # a context that only ever fits 40 entries
+            fitted = history[:n][-40:]
+            view, floor = runner.rvb4_window(history[:n], fitted, floor)
+            self.assertTrue(len(view) <= 40)
+            shown.append(view[0] if view else None)
+        firsts = [x for i, x in enumerate(shown) if i == 0 or x != shown[i - 1]]
+        self.assertLessEqual(len(firsts), 8)          # a handful of drops, not one per turn past 40
+        # nothing to trim: the whole history, floor untouched
+        self.assertEqual(runner.rvb4_window(history[:10], history[:10], 0), (history[:10], 0))
+
+    def test_run_refuses_rvb4_on_a_seat_that_cannot_send_it(self):
+        with self.assertRaises(ValueError):
+            runner.run({"provider": "google", "key": "g"}, Mock(), "http://x", category="rvb",
+                       rvb_goal="brock-finish-cached")
+
     def test_rvb3_and_tab_requests_are_unchanged(self):
         for user in (categories.rvb_user_message("n", self.RECENT, (4, 1000)), "STATE: tab text"):
             payload, _ = self.capture(user)
