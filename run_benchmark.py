@@ -22,8 +22,9 @@ import requests
 import yaml
 
 from milestones import MILESTONES, MilestoneTracker
-from providers import get_provider
-from categories import CATEGORIES, RVB, RVB_MAX_PRESSES, TAB, rvb_category, rvb_history_entry, rvb_user_message
+from providers import AnthropicProvider, get_provider
+from categories import (CATEGORIES, RVB, RVB_CACHED_GOALS, RVB_MAX_PRESSES, TAB, rvb_category, rvb_history_entry,
+                        rvb_user_message, rvb_user_parts)
 from qwen_red import (
     ALLOWED,
     HARNESS_VERSION,
@@ -575,7 +576,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                                                        len(system_prompt) + len(rvb_user_message("", [], clock)), ctx_scale)
                 shell = rvb_user_message(shown_notes, [], clock)
                 recent = fit_recent(history, model["num_ctx"], len(system_prompt) + len(shell), ctx_scale)
-                user = rvb_user_message(shown_notes, recent, clock)
+                user = (rvb_user_parts if cat.cached_layout else rvb_user_message)(shown_notes, recent, clock)
             else:
                 notes_dropped = 0
                 head = f"NOTES:\n{notes or '(no notes yet)'}\n\nRECENT TURNS:\n"
@@ -886,10 +887,11 @@ def main(argv=None):
                              "rvb = screenshot and eight buttons only (issue #102)")
     parser.add_argument("--calibration", action="store_true",
                         help="unscored pilot: labeled in summary.json and never a board result")
-    parser.add_argument("--rvb-goal", choices=("game", "brock", "brock-finish"), default=None,
+    parser.add_argument("--rvb-goal", choices=("game", "brock", "brock-finish", "brock-finish-cached"), default=None,
                         help="rvb only. game = 'beat the game' (rvb1); brock = name the Boulder Badge and "
                              "show a turn clock (rvb2); brock-finish = rvb2 plus 'the run ends by itself, "
-                             "keep pressing' (rvb3, the default).")
+                             "keep pressing' (rvb3, the default); brock-finish-cached = rvb3's words with the "
+                             "recent turns first and the screenshot last, so the history is prompt-cached (rvb4).")
     args = parser.parse_args(argv)
     if args.turns <= 0:
         parser.error("--turns must be positive")
@@ -900,6 +902,9 @@ def main(argv=None):
         if args.category == RVB and model["provider"] == "jev":
             raise ValueError("jev cannot play RVB: it has no vision, and RVB gives the model nothing else")
         provider = make_provider(model)
+        if args.rvb_goal in RVB_CACHED_GOALS and not isinstance(provider, AnthropicProvider):
+            # Every other adapter would put the screenshot first, which is not the rvb4 prompt.
+            raise ValueError("rvb4 (--rvb-goal brock-finish-cached) is only wired for Anthropic seats so far")
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))
     run_name = args.run_name or args.model_key

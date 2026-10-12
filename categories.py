@@ -46,7 +46,12 @@ RVB_GOALS = {
     "brock-finish": _BROCK + (" The run ends by itself when the harness reads the badge from the game's "
                               "memory; until then keep playing."),
 }
-RVB_GOAL_VERSIONS = {"game": "rvb1", "brock": "rvb2", "brock-finish": "rvb3"}
+# rvb4 is rvb3's words in a cache-friendly order (see rvb_user_parts): same system prompt, same goal
+# line, so the layout is folded into its prompt_sha to keep the two apart in summary.json.
+RVB_GOALS["brock-finish-cached"] = RVB_GOALS["brock-finish"]
+RVB_GOAL_VERSIONS = {"game": "rvb1", "brock": "rvb2", "brock-finish": "rvb3", "brock-finish-cached": "rvb4"}
+RVB_CACHED_GOALS = frozenset({"brock-finish-cached"})
+RVB4_LAYOUT = "layout: recent turns first, then turn clock and notes, screenshot last (rvb4)"
 
 RVB_SYSTEM_TEMPLATE = """__IDENTITY__ Each turn you get one screenshot of the Game Boy screen. The game keeps running in real time between turns, so the screenshot is a moment in time. Each turn you press up to six buttons, in order, one press each.
 
@@ -101,6 +106,7 @@ class Category:
     system: str          # with the __IDENTITY__ placeholder
     allowed: frozenset
     schema: dict
+    cached_layout: bool = False   # rvb4: user message is a CachedUser, screenshot goes last
 
     def render_system(self, identity: str) -> str:
         return self.system.replace("__IDENTITY__", identity)
@@ -108,7 +114,9 @@ class Category:
 
 def rvb_category(goal: str = "game") -> Category:
     system = rvb_system(goal)
-    return Category(RVB, RVB_GOAL_VERSIONS[goal], _sha16(system), system, RVB_ALLOWED, RVB_SCHEMA)
+    cached = goal in RVB_CACHED_GOALS
+    sha = _sha16(system + "\n" + RVB4_LAYOUT) if cached else _sha16(system)
+    return Category(RVB, RVB_GOAL_VERSIONS[goal], sha, system, RVB_ALLOWED, RVB_SCHEMA, cached)
 
 
 CATEGORIES = {
@@ -121,6 +129,29 @@ def rvb_history_entry(turn: int, thought: str, actions: list) -> str:
     """One line of the model's own past: what it said and what it pressed. Nothing observed by the harness."""
     pressed = " ".join(actions) if actions else "nothing"
     return f"turn {turn}: {thought} -> pressed [{pressed}]"
+
+
+class CachedUser(str):
+    """An rvb4 user message. As a str it is exactly the text the model reads, in order, so logs,
+    receipts and size budgets treat it like any other message. Providers that cache send it as
+    `cache_blocks` (the recent turns, one block per entry, append-only so each turn's prefix is the
+    last turn's prefix plus one block) followed by `tail` (clock, notes, the closing line), then the
+    screenshot. Anthropic only finds cache hits at block boundaries, which is why it is per entry."""
+
+    def __new__(cls, cache_blocks: list, tail: str):
+        obj = super().__new__(cls, "".join(cache_blocks) + tail)
+        obj.cache_blocks, obj.tail = list(cache_blocks), tail
+        return obj
+
+
+def rvb_user_parts(notes: str, recent: list, clock: tuple | None = None) -> CachedUser:
+    """rvb4: rvb_user_message's words, reordered so everything that changes every turn (the clock,
+    the notes, the screenshot) comes after the history, which only ever grows at the end."""
+    header = "YOUR RECENT TURNS (what you thought and what you pressed):\n"
+    blocks = [header + (recent[0] if recent else "(none yet)")] + ["\n" + line for line in recent[1:]]
+    head = f"TURN {clock[0]} OF {clock[1]}.\n\n" if clock else ""
+    tail = f"\n\n{head}YOUR NOTES:\n{notes or '(no notes yet)'}\n\nThe screenshot is attached. Take your turn."
+    return CachedUser(blocks, tail)
 
 
 def rvb_user_message(notes: str, recent: list, clock: tuple | None = None) -> str:
