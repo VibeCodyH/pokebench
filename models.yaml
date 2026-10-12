@@ -313,6 +313,24 @@ models:
     input_cost_per_mtok: 0.10
     output_cost_per_mtok: 0.20
 
+  # Meta's frontier reasoning model, listed 2026-10-12 (canonical slug meta/muse-wonder-20261012;
+  # the undated id is used because OR dropped Spark's dated one). Reasoning is mandatory, vision on,
+  # one provider (Meta). No contributor tier. Meta caches the prompt prefix on its own: a repeat
+  # call on 2026-10-12 read 6,516 of 6,582 prompt tokens from cache at $0.20/Mtok.
+  - key: or-muse-wonder
+    provider: openrouter
+    api_model_id: meta/muse-wonder
+    display_name: "Muse Wonder"
+    family: meta
+    params: null
+    quant: null
+    context: 131072 # Harness history budget, same as the other frontier OpenRouter rows.
+    think: high
+    release_date: "2026-10-12"
+    input_cost_per_mtok: 4.00
+    output_cost_per_mtok: 20.00
+    cache_read_cost_per_mtok: 0.20
+
   # Vision verified on the pinned id 2026-09-20: input_modalities is text+image+video, which is
   # the gate for this seat because the harness sends a PNG every turn. OpenRouter routes this
   # model across several providers whose rates differ ($0.075-0.09 in, $0.25-0.30 out), so the
