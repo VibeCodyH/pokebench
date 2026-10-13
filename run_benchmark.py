@@ -118,10 +118,11 @@ def make_provider(model):
     if model["provider"] in {"anthropic", "vertex"} and model.get("long_prompt_tokens") is not None:
         opts["long_prompt_tokens"] = model["long_prompt_tokens"]
         opts["long_prompt_rate_multiplier"] = model["long_prompt_rate_multiplier"]
-    if model["provider"] == "vertex":
+    if model["provider"] in {"vertex", "google"}:
         # project falls back to GOOGLE_CLOUD_PROJECT in the adapter, so a row may omit it and
-        # keep the project id out of a public repo. region defaults to the global endpoint,
-        # which is the one WITHOUT the 10% regional premium.
+        # keep the project id out of a public repo. On "vertex" region defaults to the global
+        # endpoint, which is the one WITHOUT the 10% regional premium; on "google" it is opt-in
+        # and only moves a Vertex Express key off the default endpoint.
         for name in ("project", "region"):
             if model.get(name) is not None:
                 opts[name] = model[name]
@@ -129,6 +130,12 @@ def make_provider(model):
         opts["num_ctx"] = model["num_ctx"]
     if model["provider"] in {"ollama", "google"}:
         opts["temperature"] = model["temperature"]
+    # A row with a published rate change carries the last day its rates hold. Past it, cost()
+    # would quietly record the old, lower rate, so refuse to start until the row is re-priced.
+    until = model.get("rates_valid_until")
+    if until and time.strftime("%Y-%m-%d") > str(until):
+        raise ValueError(f"{model['key']}: rates were valid through {until}; update "
+                         "input_cost_per_mtok / output_cost_per_mtok before running")
     provider = get_provider(model["provider"], model["api_model_id"], **opts)
     # Reject missing hosted rates before starting a run, rather than at summary time.
     provider.cost({"prompt": 0, "completion": 0})
