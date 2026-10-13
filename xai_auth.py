@@ -1,17 +1,19 @@
-"""PokéBench xAI subscription sign-in PROBE (SuperGrok / X Premium+ / X Subscription plans).
+"""PokéBench xAI subscription sign-in (SuperGrok / X Premium+ / X Subscription plans).
 
-Answers one question before any harness wiring: does this account's plan serve Grok over
-xAI's OAuth API access? xAI has no dynamic client registration (auth.x.ai's discovery document
-lists no registration_endpoint), so this uses the shared Grok CLI public client that Hermes
-Agent and OpenClaw also use; the consent screen will name Grok Build. Device-code flow
-(RFC 8628), no local callback. Tokens stay outside the repo.
+Lets a Grok seat run on the account's plan instead of XAI_API_KEY, the way chatgpt_auth.py does
+for ChatGPT. xAI has no dynamic client registration (auth.x.ai's discovery document lists no
+registration_endpoint), so this uses the shared Grok CLI public client that Hermes Agent and
+OpenClaw also use; the consent screen names Grok Build. Device-code flow (RFC 8628), no local
+callback. Tokens stay outside the repo, one file per runtime.
 
     python3 xai_auth.py login
     python3 xai_auth.py models
     python3 xai_auth.py probe --model grok-4.7 --image frame.png --think high
 """
 import argparse
+from contextlib import contextmanager
 import base64
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -19,7 +21,7 @@ import time
 
 import requests
 
-from chatgpt_auth import _atomic_json
+from chatgpt_auth import _atomic_json, auth_error
 
 ISSUER = "https://auth.x.ai"
 DEVICE_CODE = ISSUER + "/oauth2/device/code"
@@ -31,22 +33,59 @@ DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code"
 REFRESH_EARLY_S = 3600   # access tokens live ~6h
 
 
-def token_path():
+def _directory():
     directory = Path(os.environ.get("POKEBENCH_XAI_AUTH_DIR", "~/.config/pokebench/xai")).expanduser()
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-    return directory / "default.json"
+    return directory
 
 
-def save(body, previous=None):
+@contextmanager
+def _locked():
+    # A rotating refresh token must not race between a probe and a runner.
+    fd = os.open(_directory() / "default.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(fd, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
+
+
+def _read():
+    path = _directory() / "default.json"
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
+def _save(body, previous=None):
     if not body.get("access_token") or str(body.get("token_type", "")).lower() != "bearer":
-        raise ValueError("xAI returned an incomplete token set")
+        raise auth_error("xAI returned an incomplete token set", code="xai_auth_required")
     record = dict(previous or {})
     record.update(access_token=body["access_token"],
                   refresh_token=body.get("refresh_token") or record.get("refresh_token"),
                   scopes=body.get("scope", record.get("scopes", "")),
                   expires_at=time.time() + float(body.get("expires_in", 0)))
-    _atomic_json(token_path(), record)
+    _atomic_json(_directory() / "default.json", record)
     return record
+
+
+def signed_in():
+    return bool(_read().get("access_token"))
+
+
+def access_token():
+    """Current bearer, refreshed an hour before expiry. Raises a non-retryable HTTP-shaped
+    error the runner already knows how to stop on, never SystemExit."""
+    with _locked():
+        record = _read()
+        if not record.get("access_token"):
+            raise auth_error("Sign in first: python3 xai_auth.py login", code="xai_auth_required")
+        if time.time() < record.get("expires_at", 0) - REFRESH_EARLY_S:
+            return record["access_token"]
+        response = requests.post(TOKEN, data={"grant_type": "refresh_token", "client_id": CLIENT_ID,
+                                              "refresh_token": record.get("refresh_token", "")},
+                                 headers={"Accept": "application/json"}, timeout=30)
+        if not response.ok:
+            raise auth_error("xAI session refresh failed; run xai_auth.py login again",
+                             response.status_code if response.status_code in {400, 401, 403} else 401,
+                             code="xai_auth_required")
+        return _save(response.json(), record)["access_token"]
 
 
 def login():
@@ -65,7 +104,8 @@ def login():
                                  headers={"Accept": "application/json"}, timeout=30)
         body = response.json() if response.content else {}
         if response.ok:
-            record = save(body)
+            with _locked():
+                record = _save(body)
             print(f"Signed in. Scopes granted: {record['scopes'] or '(none listed)'}")
             return
         error = body.get("error")
@@ -76,31 +116,6 @@ def login():
             continue
         raise SystemExit(f"Sign-in failed: HTTP {response.status_code} {error or ''}".strip())
     raise SystemExit("Sign-in timed out; run login again")
-
-
-def access_token():
-    record = json.loads(token_path().read_text()) if token_path().exists() else {}
-    if not record.get("access_token"):
-        raise SystemExit("Sign in first: python3 xai_auth.py login")
-    if time.time() < record.get("expires_at", 0) - REFRESH_EARLY_S:
-        return record["access_token"]
-    response = requests.post(TOKEN, data={"grant_type": "refresh_token", "client_id": CLIENT_ID,
-                                          "refresh_token": record.get("refresh_token", "")},
-                             headers={"Accept": "application/json"}, timeout=30)
-    if not response.ok:
-        raise SystemExit(f"Token refresh failed: HTTP {response.status_code}; run login again")
-    return save(response.json(), record)["access_token"]
-
-
-def report_http(exc):
-    response = exc.response
-    detail = ""
-    try:
-        error = response.json().get("error", response.json())
-        detail = error.get("message", error) if isinstance(error, dict) else error
-    except (ValueError, AttributeError):
-        detail = response.text[:300]
-    raise SystemExit(f"HTTP {response.status_code}: {detail}")
 
 
 def main():
@@ -116,33 +131,31 @@ def main():
     args = parser.parse_args()
     if args.command == "login":
         return login()
-    token = access_token()
-    try:
-        if args.command == "models":
-            response = requests.get(API + "/models", headers={"Authorization": "Bearer " + token}, timeout=30)
-            response.raise_for_status()
-            print(json.dumps(sorted(m["id"] for m in response.json().get("data", [])), indent=2))
-            return
-        # The probe goes through the same provider class a scored xAI run uses, with the
-        # OAuth bearer in place of an API key (set for this process only, never written).
-        os.environ["XAI_API_KEY"] = token
-        from providers import XAIProvider
-        from qwen_red import SCHEMA, render_system
-        png = Path(args.image).read_bytes()
-        if not png.startswith(b"\x89PNG\r\n\x1a\n"):
-            raise SystemExit("--image must be a PNG screenshot")
-        provider = XAIProvider(args.model)
-        result = provider.chat(
-            render_system(f"You are {args.display_name or args.model}, an AI playing Pokémon Red live on stream."),
-            "Vision preflight: describe the visible scene in thought. Return actions [\"wait_60\"]. "
-            "This probe will not execute any actions.",
-            base64.b64encode(png).decode(), SCHEMA, args.think,
-        )
-        print(json.dumps({"served_model": getattr(provider, "served_model", None), "result": result},
-                         indent=2, default=str))
-    except requests.HTTPError as exc:
-        report_http(exc)
+    if args.command == "models":
+        response = requests.get(API + "/models", headers={"Authorization": "Bearer " + access_token()}, timeout=30)
+        response.raise_for_status()
+        print(json.dumps(sorted(m["id"] for m in response.json().get("data", [])), indent=2))
+        return
+    from providers import XAISubscriptionProvider
+    from qwen_red import SCHEMA, render_system
+    png = Path(args.image).read_bytes()
+    if not png.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise SystemExit("--image must be a PNG screenshot")
+    provider = XAISubscriptionProvider(args.model)
+    plan, _, usage = provider.chat(
+        render_system(f"You are {args.display_name or args.model}, an AI playing Pokémon Red live on stream."),
+        "Vision preflight: describe the visible scene in thought. Return actions [\"wait_60\"]. "
+        "This probe will not execute any actions.",
+        base64.b64encode(png).decode(), SCHEMA, args.think,
+    )
+    print(json.dumps({"served_model": provider.served_model, "plan": plan, "tokens": usage,
+                      "execution_route": provider.route}, indent=2))
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except requests.HTTPError as exc:
+        raise SystemExit(f"HTTP {exc.response.status_code if exc.response is not None else '?'}: {exc}") from None
+    except (requests.RequestException, ValueError) as exc:
+        raise SystemExit(str(exc)) from None
