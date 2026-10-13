@@ -1,0 +1,112 @@
+{
+  "run_id": "or-muse-wonder-20261012_191638-oyy0u_4b",
+  "category": "tab",
+  "model": "meta/muse-wonder",
+  "display_name": "Muse Wonder",
+  "provider": "openrouter",
+  "family": "meta",
+  "run_name": "or-muse-wonder-20261012_191637",
+  "prompt_version": "v22",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "0862ef4",
+  "harness_files_sha": "b9a08e12ce180289",
+  "max_output_tokens": null,
+  "execution_route": "openrouter-api",
+  "think_level": "high",
+  "num_ctx": 131072,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-10-13",
+  "model_release_date": "2026-10-12",
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "or-muse-wonder-20261012_191638-oyy0u_4b-auto"
+  },
+  "notes": "Squirtle L10 21/30 PSN, no Antidote (bag only 6 Balls). Pikachu L4, Caterpie L3. Just beat west Bug Catcher at Viridian Forest (2,19). Head north up west corridor to Pewter exit, then heal at Pewter Center ASAP due to poison. Avoid extra battles; run from wilds.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 21913.2,
+  "active_time_s": 21887.5,
+  "tokens_in": 18801890,
+  "tokens_out": 1244424,
+  "tokens_cache_write": 0,
+  "tokens_cache_read": 1062160,
+  "failed_attempts": {
+    "count": 3,
+    "prompt": 0,
+    "completion": 0,
+    "seconds": 25.6
+  },
+  "cost_usd": 96.059832,
+  "youtube_url": null,
+  "timestamp": "20261013_012151",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 12
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 20
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 43
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 59
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 107
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pok\u00e9dex",
+      "turn": 141
+    },
+    {
+      "key": "viridian_forest",
+      "label": "Entered Viridian Forest",
+      "turn": 208
+    }
+  ],
+  "furthest_key": "viridian_forest",
+  "furthest_label": "Entered Viridian Forest",
+  "furthest_index": 6,
+  "beat_brock": false,
+  "presses_used": 6428,
+  "milestone_presses": {
+    "left_house": 76,
+    "got_starter": 139,
+    "route_1": 283,
+    "viridian_city": 383,
+    "got_parcel": 636,
+    "got_pokedex": 883,
+    "viridian_forest": 1229
+  },
+  "presses_exact": true
+}
