@@ -37,6 +37,17 @@ class GoogleRegionTests(unittest.TestCase):
             p = run_benchmark.make_provider(row)
         self.assertIn("/projects/123/locations/global/", p.base_url)
 
+    def test_expired_rates_refuse_to_start(self):
+        row = dict(run_benchmark.load_model("gemini-4-argon"), rates_valid_until="2026-01-01")
+        with patch.dict(os.environ, {"GOOGLE_API_KEY": "k", "GOOGLE_CLOUD_PROJECT": "123"}, clear=True):
+            with self.assertRaises(ValueError):
+                run_benchmark.make_provider(row)
+
+    def test_rates_still_in_force_start_normally(self):
+        row = dict(run_benchmark.load_model("gemini-4-argon"), rates_valid_until="2999-12-31")
+        with patch.dict(os.environ, {"GOOGLE_API_KEY": "k", "GOOGLE_CLOUD_PROJECT": "123"}, clear=True):
+            self.assertIsNotNone(run_benchmark.make_provider(row))
+
 
 if __name__ == "__main__":
     unittest.main()

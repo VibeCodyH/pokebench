@@ -272,6 +272,7 @@ models:
     region: global
     input_cost_per_mtok: 2.00
     output_cost_per_mtok: 10.00
+    rates_valid_until: "2026-11-30"  # runs refuse to start after this until the row is re-priced
 
   - key: gemini-3.8-flash
     provider: google
@@ -287,6 +288,7 @@ models:
     # The Vertex Express route bills a Cloud project, so the run is paid for even on credits.
     input_cost_per_mtok: 0.75
     output_cost_per_mtok: 3.75
+    rates_valid_until: "2026-12-31"
 
   # TEMPLATE — not runnable as-is. Replace api_model_id with a real OpenAI-compatible model
   # before use (this is also the row shape the future NIM/ModelScope roster will copy).

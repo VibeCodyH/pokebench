@@ -130,6 +130,12 @@ def make_provider(model):
         opts["num_ctx"] = model["num_ctx"]
     if model["provider"] in {"ollama", "google"}:
         opts["temperature"] = model["temperature"]
+    # A row with a published rate change carries the last day its rates hold. Past it, cost()
+    # would quietly record the old, lower rate, so refuse to start until the row is re-priced.
+    until = model.get("rates_valid_until")
+    if until and time.strftime("%Y-%m-%d") > str(until):
+        raise ValueError(f"{model['key']}: rates were valid through {until}; update "
+                         "input_cost_per_mtok / output_cost_per_mtok before running")
     provider = get_provider(model["provider"], model["api_model_id"], **opts)
     # Reject missing hosted rates before starting a run, rather than at summary time.
     provider.cost({"prompt": 0, "completion": 0})
