@@ -3,7 +3,7 @@
 A local 27B model plays Pokémon Red on stream. Frontier models get the same seat, the same prompt, and the
 same 1,000-turn budget. Furthest milestone wins, fewer turns breaks ties, and Brock is the ceiling.
 
-**[Watch live on YouTube](https://www.youtube.com/@Pokebenchtv/live)** (also on [Twitch](https://twitch.tv/pokebenchtv)) · **[Leaderboard at pokebench.tv](https://pokebench.tv)**
+**[Watch live on YouTube](https://www.youtube.com/@Pokebenchtv/live)** (also on [Twitch](https://twitch.tv/pokebenchtv)) · **[Leaderboard at pokebench.tv](https://pokebench.tv)** · [Tip on Ko-fi](https://ko-fi.com/vibecody)
 
 ![Gemini 3.8 Flash mid-run in Viridian Forest. The panel on the right shows the reasoning it wrote that turn: Squirtle has 17 HP, takes 1 poison damage every 4 steps, and the North Gate is straight up.](docs/img/stream.png)
 
@@ -117,5 +117,10 @@ Results on the site come from `summary.json` files the harness wrote, with the p
 attached. Sample data on the site is labeled as sample data. Model behavior we think is funny (naming
 herself AAAAA, arguing with a sign) is left alone; the harness fixes things that misled her, never things she
 got wrong on her own. The line between the two is argued in `docs/reviews/`.
+
+## Support
+
+The local model runs for free. The frontier runs are paid API calls, and a full 1,000-turn run adds up fast.
+If you want to see more models on the board, tips on [Ko-fi](https://ko-fi.com/vibecody) go straight to API fees.
 
 MIT licensed; [NOTICE](NOTICE) credits the upstream code this builds on. The ROM isn't ours and isn't included.
