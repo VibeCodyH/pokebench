@@ -176,7 +176,7 @@ class Provider(ABC):
                                  timeout=self.timeout, stream=True)
         content, reasoning, refusal = [], [], []
         delivered = 0          # decoded characters of message payload, the thing max_call_chars bounds
-        finish_reason, usage = None, None
+        finish_reason, usage, served = None, None, None
         try:
             if not response.ok:
                 # Materialize the error body before raising: the turn loop reads
@@ -208,6 +208,7 @@ class Provider(ABC):
                 frame = json.loads(data)
                 if frame.get("error"):
                     raise _stream_error(frame["error"])
+                served = frame.get("model") or served
                 # include_usage delivers this as its own frame, with choices empty.
                 if frame.get("usage"):
                     usage = frame["usage"]
@@ -234,7 +235,9 @@ class Provider(ABC):
             raise ValueError("stream ended without a usage frame; stream_options unsupported?")
         message = {"content": "".join(content), "reasoning": "".join(reasoning),
                    "reasoning_content": "".join(reasoning), "refusal": "".join(refusal)}
-        return {"choices": [{"message": message, "finish_reason": finish_reason}], "usage": usage}
+        # The model the backend says served the call; subscription routes record it on the summary.
+        return {"choices": [{"message": message, "finish_reason": finish_reason}], "usage": usage,
+                "model": served}
 
 
 def _call_expired(limit: float, content: str, reasoning: str) -> TimeoutError:
@@ -888,6 +891,35 @@ class XAIProvider(OpenAIProvider):
         }
 
 
+class XAISubscriptionProvider(XAIProvider):
+    """Grok on the account's xAI plan (SuperGrok / X Premium+ / X Subscription), signed in with
+    xai_auth.py instead of XAI_API_KEY. Same endpoint and dialect as XAIProvider; the bearer is
+    re-read per call so a ~6h token refreshes mid-run. Probed 2026-10-13: an identical request
+    bills the same prompt tokens on both routes (xAI's API-side safety prefix rides on both), so a
+    run here compares like-for-like with the API-key Grok runs."""
+
+    api_key_env = ""
+    route = "xai-subscription"
+    billing_mode = "subscription"
+
+    def __init__(self, model: str, **opts):
+        super().__init__(model, **opts)
+        import xai_auth
+        self._auth = xai_auth
+        self.served_model = None
+        if not xai_auth.signed_in():
+            raise ValueError("xAI subscription route requires a sign-in: run xai_auth.py login")
+
+    def chat(self, system, user, image_b64, schema, think) -> ChatResult:
+        self.api_key = self._auth.access_token()
+        return super().chat(system, user, image_b64, schema, think)
+
+    def _post_stream(self, url, payload, headers):
+        body = super()._post_stream(url, payload, headers)
+        self.served_model = body.get("model")   # this call's model only; never carry one over
+        return body
+
+
 class DeepSeekProvider(OpenAIProvider):
     """DeepSeek's own endpoint (DEEPSEEK_API_KEY). `deepseek-flash` is V4.1 Flash, the first
     DeepSeek that takes an image natively; the Azure rows above it on the roster discard the
@@ -985,7 +1017,8 @@ def get_provider(provider_name: str, model: str, **opts) -> Provider:
         "openai": OpenAIProvider, "google": GoogleProvider,
         "openrouter": OpenRouterProvider, "jev": JevDecisionProvider,
         "bedrock": BedrockProvider, "vertex": VertexAnthropicProvider,
-        "xai": XAIProvider, "deepseek": DeepSeekProvider, "azure": AzureOpenAIProvider,
+        "xai": XAIProvider, "xai-subscription": XAISubscriptionProvider,
+        "deepseek": DeepSeekProvider, "azure": AzureOpenAIProvider,
         "azure-foundry": AzureFoundryProvider,
     }
     try:

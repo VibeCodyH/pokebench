@@ -149,8 +149,8 @@ def harness_fingerprint():
         blob = b""
         for name in ("milestones.py", "providers.py", "run_benchmark.py", "qwen_red.py", "serve_live.py", "categories.py"):
             blob += open(os.path.join(HERE, name), "rb").read()
-        # The ChatGPT adapter is optional on a server; a missing copy must not null every run's sha.
-        for name in ("chatgpt_provider.py", "chatgpt_auth.py"):
+        # The subscription adapters are optional on a server; a missing copy must not null every run's sha.
+        for name in ("chatgpt_provider.py", "chatgpt_auth.py", "xai_auth.py"):
             if os.path.exists(os.path.join(HERE, name)):
                 blob += open(os.path.join(HERE, name), "rb").read()
         files_sha = hashlib.sha256(blob).hexdigest()[:16]

@@ -102,7 +102,29 @@ The prompt hash is unchanged. The two new adapter/auth files enter the harness f
 To disconnect, remove PokéBench in ChatGPT Settings. A terminal refresh-token error
 clears unusable local tokens while retaining the account/client mapping for sign-in.
 
-## Preparing a full recorded run
+## xAI (Grok) setup
+
+`xai-sub-grok-4.7` runs Grok on an xAI plan that includes API sign-in (SuperGrok, X Premium+,
+or The X Subscription at Premium and above) instead of `XAI_API_KEY`. xAI offers no client
+registration (its discovery document lists no `registration_endpoint`), so `xai_auth.py` signs
+in through xAI's shared Grok CLI public client, the same one Hermes Agent and OpenClaw use. The
+consent screen names Grok Build. Device-code flow, no local callback:
+
+```bash
+python3 xai_auth.py login        # prints a URL and code to approve in the browser
+python3 xai_auth.py models
+python3 xai_auth.py probe --model grok-4.7 --display-name 'Grok 4.7' --image frame.png --think high
+```
+
+Tokens live in `~/.config/pokebench/xai` (override with `POKEBENCH_XAI_AUTH_DIR`), one sign-in
+per runtime; access tokens last about six hours and refresh under a file lock. Probed
+2026-10-13 on The X Subscription Premium: an identical request bills the same prompt tokens on
+the API key and on this route, because xAI adds its API-side safety prefix on both
+([xai-org/grok-prompts](https://github.com/xai-org/grok-prompts)). A run here is like-for-like
+with the API-key Grok runs. Responses carry `x-ratelimit-*` headers (53M tokens / 8,300
+requests on that plan); check them before a long run.
+
+## Preparing a full recorded run (ChatGPT)
 
 The smoke does not start an emulator or publish a score. Before the first full run:
 
@@ -145,7 +167,7 @@ alias rather than every historical model.
 | Google | Google AI Pro/Ultra applies to Gemini CLI sign-in. A supported direct subscription-inference integration for PokéBench was not established. Do not assume a normal Gemini API key uses the subscription. | [Gemini CLI](https://geminicli.com/docs/get-started/authentication/) |
 | Meta Muse Code | Subscription credential is explicitly for Muse Code CLI only. Additional Meta API keys are pay-as-you-go. | [Meta](https://dev.meta.ai/help/subscriptions/what-is-a-muse-code-subscription) |
 | Moonshot/Kimi | Has a subscription API and third-party integrations, but explicitly restricts subscriptions to personal interactive use and prohibits non-interactive automation. That conflicts with unattended benchmark runs. Also verify model identity: some docs use a rolling `kimi-for-coding` alias. | [Guidelines](https://www.kimi.com/code/docs/en/kimi-code/community-guidelines.html), [API](https://www.kimi.com/code/docs/en/) |
-| xAI/Grok | Hermes' own integration docs demonstrate subscription OAuth to xAI Responses. They also report active standard SuperGrok accounts receiving 403. This is implementation evidence, not xAI approval or proof PokéBench can register its own client. Do not buy a subscription on this evidence alone. | [Hermes implementation guide](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/guides/xai-grok-oauth.md) |
+| xAI/Grok | Supported since 2026-10-13: see [xAI (Grok) setup](#xai-grok-setup). xAI's own [Kilo Code post](https://x.ai/news/grok-kilocode) endorses SuperGrok / X Premium+ sign-in in third-party tools. Hermes reports some tiers receiving 403 after a successful login, so probe before a run. | [Hermes implementation guide](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/guides/xai-grok-oauth.md) |
 | Mistral | Current subscription docs explicitly share included monthly usage across Studio, API and Vibe Code. Ordinary API requests can preserve the harness. Disable pay-as-you-go overflow. Check plan credits and vision-model catalog before purchase. | [Mistral](https://docs.mistral.ai/admin/billing-usage/subscriptions), [pricing](https://mistral.ai/pricing/) |
 | Ollama Cloud | Direct API hosting with subscription credits; current Pro advertises $20/month with $60 in monthly usage credits. This is a credit discount, not unlimited models. Check each model's vision support and serving format. | [Pricing](https://ollama.com/pricing), [cloud API](https://docs.ollama.com/cloud) |
 | MiniMax | Subscription keys work with direct compatible APIs, including multimodal capabilities. However the FAQ calls the plan individual interactive developer use. Benchmark permission remains unclear; confirm that before buying for unattended runs. Five-hour and weekly windows apply. | [Integrations](https://platform.minimax.io/docs/token-plan/other-tools), [limits](https://platform.minimax.io/docs/token-plan/faq) |
@@ -155,4 +177,5 @@ alias rather than every historical model.
 Pricing and access can change. Do not extrapolate completed runs from advertised prompt
 counts: long context and reasoning can consume much more quota per request. Verify
 vision, structured output, the model actually served and token usage on a real PNG before
-adding any provider to the benchmark. Never spoof another tool's identity to gain access.
+adding any provider to the benchmark. Never spoof another tool's identity to gain access. The one exception is xAI's shared Grok CLI
+client: xAI has no client registration, and third-party tools sign in through that client (see xAI setup above).
