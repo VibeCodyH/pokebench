@@ -670,13 +670,18 @@ class GoogleProvider(Provider):
     Vertex Express is Gemini-only and, measured 2026-09-12, Flash-only: publishers/anthropic
     and every non-Google publisher 404, as do gemini-3.8-pro and gemini-3.8-ultra. Do not
     plan a Model Garden run against this key.
+
+    A row may set `region` (and `project`, else GOOGLE_CLOUD_PROJECT) to send the same key to a
+    project's regional or global endpoint instead of the Express default: gemini-4-argon 404s
+    on the default and answers on locations/global (2026-10-13).
     """
 
     api_key_env = ""  # resolved in __init__: either key is acceptable, so the base check is wrong
     AI_STUDIO = "https://generativelanguage.googleapis.com/v1beta/models"
     VERTEX_EXPRESS = "https://aiplatform.googleapis.com/v1/publishers/google/models"
 
-    def __init__(self, model: str, *, max_tokens: int | None = None, temperature: float = 0.6, **opts):
+    def __init__(self, model: str, *, max_tokens: int | None = None, temperature: float = 0.6,
+                 project: str | None = None, region: str | None = None, **opts):
         super().__init__(model, **opts)
         self.max_tokens = max_tokens
         self.temperature = temperature
@@ -686,6 +691,12 @@ class GoogleProvider(Provider):
             self.api_key, self.route, self.base_url = studio, "google-aistudio", self.AI_STUDIO
         elif express:
             self.api_key, self.route, self.base_url = express, "vertex-express", self.VERTEX_EXPRESS
+            if region:
+                project = project or os.environ.get("GOOGLE_CLOUD_PROJECT", "").strip()
+                if not project:
+                    raise ValueError("A Vertex region needs a project: set GOOGLE_CLOUD_PROJECT")
+                self.base_url = (f"https://aiplatform.googleapis.com/v1/projects/{project}"
+                                 f"/locations/{region}/publishers/google/models")
         else:
             raise ValueError("GoogleProvider requires GEMINI_API_KEY (AI Studio) or GOOGLE_API_KEY (Vertex Express)")
 

@@ -118,10 +118,11 @@ def make_provider(model):
     if model["provider"] in {"anthropic", "vertex"} and model.get("long_prompt_tokens") is not None:
         opts["long_prompt_tokens"] = model["long_prompt_tokens"]
         opts["long_prompt_rate_multiplier"] = model["long_prompt_rate_multiplier"]
-    if model["provider"] == "vertex":
+    if model["provider"] in {"vertex", "google"}:
         # project falls back to GOOGLE_CLOUD_PROJECT in the adapter, so a row may omit it and
-        # keep the project id out of a public repo. region defaults to the global endpoint,
-        # which is the one WITHOUT the 10% regional premium.
+        # keep the project id out of a public repo. On "vertex" region defaults to the global
+        # endpoint, which is the one WITHOUT the 10% regional premium; on "google" it is opt-in
+        # and only moves a Vertex Express key off the default endpoint.
         for name in ("project", "region"):
             if model.get(name) is not None:
                 opts[name] = model[name]

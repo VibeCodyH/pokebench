@@ -255,6 +255,24 @@ models:
     long_prompt_tokens: 100000
     long_prompt_rate_multiplier: 5
 
+  # Gemini 4 Argon, on the API 2026-10-13. Vertex answers it only on a project's global endpoint
+  # (the Express default 404s), hence region; the project id comes from GOOGLE_CLOUD_PROJECT on
+  # the server, not this public file. Rates from ai.google.dev/gemini-api/docs/pricing
+  # (2026-10-13): 2.00/10.00 through 2026-11-30, then 4.00/20.00; thinking bills as output.
+  - key: gemini-4-argon
+    provider: google
+    api_model_id: gemini-4-argon
+    display_name: "Gemini 4 Argon"
+    family: gemini
+    params: null
+    quant: null
+    context: 1000000
+    think: high
+    release_date: "2026-10-13"
+    region: global
+    input_cost_per_mtok: 2.00
+    output_cost_per_mtok: 10.00
+
   - key: gemini-3.8-flash
     provider: google
     api_model_id: gemini-3.8-flash # verified: the id run via the AI Studio route
