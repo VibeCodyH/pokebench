@@ -124,7 +124,7 @@ the API key and on this route, because xAI adds its API-side safety prefix on bo
 with the API-key Grok runs. Responses carry `x-ratelimit-*` headers (53M tokens / 8,300
 requests on that plan); check them before a long run.
 
-## Preparing a full recorded run
+## Preparing a full recorded run (ChatGPT)
 
 The smoke does not start an emulator or publish a score. Before the first full run:
 

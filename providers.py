@@ -916,7 +916,7 @@ class XAISubscriptionProvider(XAIProvider):
 
     def _post_stream(self, url, payload, headers):
         body = super()._post_stream(url, payload, headers)
-        self.served_model = body.get("model") or self.served_model
+        self.served_model = body.get("model")   # this call's model only; never carry one over
         return body
 
 

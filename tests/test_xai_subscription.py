@@ -72,6 +72,14 @@ class AuthTests(XAIAuthFixture):
             saved = json.load(saved_file)
         self.assertEqual(saved["refresh_token"], "r2")
 
+    def test_a_busy_token_endpoint_stays_retryable(self):
+        self.write(access_token="old", refresh_token="r1", expires_at=0)
+        with patch.object(xai_auth.requests, "post", return_value=Mock(ok=False, status_code=503)):
+            with self.assertRaises(requests.HTTPError) as caught:
+                xai_auth.access_token()
+        self.assertFalse(caught.exception.non_retryable)
+        self.assertEqual(caught.exception.response.status_code, 503)
+
     def test_refresh_failure_stops_the_run_instead_of_retrying(self):
         self.write(access_token="old", refresh_token="dead", expires_at=0)
         with patch.object(xai_auth.requests, "post", return_value=Mock(ok=False, status_code=400)):

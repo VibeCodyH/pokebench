@@ -81,10 +81,13 @@ def access_token():
         response = requests.post(TOKEN, data={"grant_type": "refresh_token", "client_id": CLIENT_ID,
                                               "refresh_token": record.get("refresh_token", "")},
                                  headers={"Accept": "application/json"}, timeout=30)
-        if not response.ok:
+        if response.status_code in {400, 401, 403}:
             raise auth_error("xAI session refresh failed; run xai_auth.py login again",
-                             response.status_code if response.status_code in {400, 401, 403} else 401,
-                             code="xai_auth_required")
+                             response.status_code, code="xai_auth_required")
+        if not response.ok:
+            # 429 / 5xx: keep the real status so auth_error leaves it retryable.
+            raise auth_error(f"xAI token endpoint unavailable (HTTP {response.status_code})",
+                             response.status_code, code="xai_refresh_unavailable")
         return _save(response.json(), record)["access_token"]
 
 
