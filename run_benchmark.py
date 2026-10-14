@@ -244,7 +244,9 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         summary["presses_exact"] = bool(presses_exact)  # False: an action call failed mid-run, so this is a floor
     if getattr(provider, "billing_mode", None) == "subscription":
         summary["billing_mode"] = "subscription"
-        summary["served_model"] = provider.served_model
+    served = getattr(provider, "served_model", None)
+    if isinstance(served, str) and served:  # adapters that read the model back off the reply
+        summary["served_model"] = served
     if calibration:
         # A pilot that exists to size the category (budget, press cap). Never a board result.
         summary["calibration"] = True

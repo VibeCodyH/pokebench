@@ -907,11 +907,14 @@ class XAISubscriptionProvider(XAIProvider):
     xai_auth.py instead of XAI_API_KEY. Same endpoint and dialect as XAIProvider; the bearer is
     re-read per call so a ~6h token refreshes mid-run. Probed 2026-10-13: an identical request
     bills the same prompt tokens on both routes (xAI's API-side safety prefix rides on both), so a
-    run here compares like-for-like with the API-key Grok runs."""
+    run here compares like-for-like with the API-key Grok runs.
+
+    Not free: xAI logs every call made with this bearer as paid "Additional usage" at API-style
+    prices, not as the plan's included usage (Cody's usage page, 2026-10-14). So the row carries
+    API rates and the run records a cost like any API seat."""
 
     api_key_env = ""
     route = "xai-subscription"
-    billing_mode = "subscription"
 
     def __init__(self, model: str, **opts):
         super().__init__(model, **opts)

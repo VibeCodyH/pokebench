@@ -89,11 +89,12 @@ class AuthTests(XAIAuthFixture):
 
 
 class ProviderTests(XAIAuthFixture):
-    def test_registry_builds_it_and_marks_the_run_as_subscription(self):
+    def test_registry_builds_it_as_a_priced_seat(self):
         self.write(access_token="live", refresh_token="r1", expires_at=time.time() + 6 * 3600)
         provider = providers.get_provider("xai-subscription", "grok-4.7")
         self.assertIsInstance(provider, providers.XAISubscriptionProvider)
-        self.assertEqual(provider.billing_mode, "subscription")
+        # xAI bills this route as paid additional usage, so it must not claim subscription billing
+        self.assertIsNone(getattr(provider, "billing_mode", None))
         self.assertEqual(provider.route, "xai-subscription")
 
     def test_construction_fails_before_turn_one_without_a_sign_in(self):
