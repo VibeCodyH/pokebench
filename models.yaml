@@ -870,10 +870,11 @@ models:
     input_cost_per_mtok: 2.00
     output_cost_per_mtok: 6.00
 
-  # grok-4.7 on Cody's xAI plan (The X Subscription, Premium tier; 2026-10-13), signed in with
-  # xai_auth.py, so no per-token USD price. Probe 2026-10-13: the same request bills the same prompt
-  # tokens here and on the API key (xAI's API-side safety prefix is on both routes), so this seat is
-  # like-for-like with grok-4.7 above. First use: the rvb4 RVB rerun (the Azure trial credits ran out).
+  # grok-4.7 through xai_auth.py's sign-in on Cody's xAI plan (The X Subscription, Premium tier).
+  # NOT free: xAI logs these calls as paid "Additional usage" at API-style prices, not as the plan's
+  # included usage (usage page, 2026-10-14), so the row carries the grok-4.7 API rates. Probe
+  # 2026-10-13: the same request bills the same prompt tokens here and on the API key (xAI's API-side
+  # safety prefix is on both routes), so this seat is like-for-like with grok-4.7 above.
   - key: xai-sub-grok-4.7
     provider: xai-subscription
     api_model_id: grok-4.7
@@ -884,8 +885,8 @@ models:
     context: 500000
     think: high
     release_date: "2026-09-21"
-    input_cost_per_mtok: null
-    output_cost_per_mtok: null
+    input_cost_per_mtok: 2.00
+    output_cost_per_mtok: 6.00
 
   # --- Azure OpenAI via the v1 API (AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT).
   # api_model_id is the DEPLOYMENT name, not the model name. Resource pokebench-aoai-179c0197

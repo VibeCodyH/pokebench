@@ -108,7 +108,14 @@ clears unusable local tokens while retaining the account/client mapping for sign
 or The X Subscription at Premium and above) instead of `XAI_API_KEY`. xAI offers no client
 registration (its discovery document lists no `registration_endpoint`), so `xai_auth.py` signs
 in through xAI's shared Grok CLI public client, the same one Hermes Agent and OpenClaw use. The
-consent screen names Grok Build. Device-code flow, no local callback:
+consent screen names Grok Build. Device-code flow, no local callback.
+
+**It does not save money.** xAI logs every API call made with this sign-in as paid "Additional
+usage" at API-style prices, not as the plan's weekly included usage (Cody's usage page,
+2026-10-14: the plan meter stayed at 1% while a Grok RVB run accrued credit usage). The row
+therefore carries the grok-4.7 API rates and records a cost like any API seat. Without purchased
+credits or auto top-up, check xAI billing before a long run.
+
 
 ```bash
 python3 xai_auth.py login        # prints a URL and code to approve in the browser
@@ -167,7 +174,7 @@ alias rather than every historical model.
 | Google | Google AI Pro/Ultra applies to Gemini CLI sign-in. A supported direct subscription-inference integration for PokéBench was not established. Do not assume a normal Gemini API key uses the subscription. | [Gemini CLI](https://geminicli.com/docs/get-started/authentication/) |
 | Meta Muse Code | Subscription credential is explicitly for Muse Code CLI only. Additional Meta API keys are pay-as-you-go. | [Meta](https://dev.meta.ai/help/subscriptions/what-is-a-muse-code-subscription) |
 | Moonshot/Kimi | Has a subscription API and third-party integrations, but explicitly restricts subscriptions to personal interactive use and prohibits non-interactive automation. That conflicts with unattended benchmark runs. Also verify model identity: some docs use a rolling `kimi-for-coding` alias. | [Guidelines](https://www.kimi.com/code/docs/en/kimi-code/community-guidelines.html), [API](https://www.kimi.com/code/docs/en/) |
-| xAI/Grok | Supported since 2026-10-13: see [xAI (Grok) setup](#xai-grok-setup). xAI's own [Kilo Code post](https://x.ai/news/grok-kilocode) endorses SuperGrok / X Premium+ sign-in in third-party tools. Hermes reports some tiers receiving 403 after a successful login, so probe before a run. | [Hermes implementation guide](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/guides/xai-grok-oauth.md) |
+| xAI/Grok | Sign-in works (see [xAI (Grok) setup](#xai-grok-setup)), but as of 2026-10-14 xAI bills those API calls as paid "Additional usage" at API-style prices, not the plan's included usage, so it saves nothing over an API key. | [Hermes implementation guide](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/guides/xai-grok-oauth.md) |
 | Mistral | Current subscription docs explicitly share included monthly usage across Studio, API and Vibe Code. Ordinary API requests can preserve the harness. Disable pay-as-you-go overflow. Check plan credits and vision-model catalog before purchase. | [Mistral](https://docs.mistral.ai/admin/billing-usage/subscriptions), [pricing](https://mistral.ai/pricing/) |
 | Ollama Cloud | Direct API hosting with subscription credits; current Pro advertises $20/month with $60 in monthly usage credits. This is a credit discount, not unlimited models. Check each model's vision support and serving format. | [Pricing](https://ollama.com/pricing), [cloud API](https://docs.ollama.com/cloud) |
 | MiniMax | Subscription keys work with direct compatible APIs, including multimodal capabilities. However the FAQ calls the plan individual interactive developer use. Benchmark permission remains unclear; confirm that before buying for unattended runs. Five-hour and weekly windows apply. | [Integrations](https://platform.minimax.io/docs/token-plan/other-tools), [limits](https://platform.minimax.io/docs/token-plan/faq) |
