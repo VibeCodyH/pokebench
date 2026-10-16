@@ -594,6 +594,25 @@ models:
     input_cost_per_mtok: 0.0 # OpenRouter :free tier: genuinely free (1,000 req/day/account cap)
     output_cost_per_mtok: 0.0
 
+  # NVIDIA Nemotron 3.5 Super VL (120B total / 12B active MoE) on OpenRouter's :free tier, listed
+  # 2026-10-15 (canonical slug nvidia/nemotron-3.5-super-vl-20261015). Cody's pick the same day.
+  # One provider (NVIDIA). Unlike the Nano Omni row, this listing supports response_format and
+  # structured_outputs, so it keeps the strict schema. The listing allows 1M context; the history
+  # budget matches the other :free rows instead. Sight-checked 2026-10-15: prompt_tokens 1223 -> 1497
+  # with the image, and smoke_frame passed on a real frame with the strict schema.
+  - key: or-nemotron-3.5-super-vl
+    provider: openrouter
+    api_model_id: nvidia/nemotron-3.5-super-vl:free
+    display_name: "Nemotron 3.5 Super VL"
+    family: nemotron
+    params: "120B" # 120B total / 12B active MoE per the OpenRouter listing
+    quant: null
+    context: 262144 # Harness history budget, same as the other :free rows (listing max 1,000,000).
+    think: high
+    release_date: "2026-10-15" # OpenRouter listing date
+    input_cost_per_mtok: 0.0 # OpenRouter :free tier: genuinely free (1,000 req/day/account cap)
+    output_cost_per_mtok: 0.0
+
   # Cohere Command A+ (OpenRouter listing 2026-09-22), the first Cohere on the board. Sight-checked
   # 2026-09-25 on a real frame: prompt_tokens 24 -> 283 with the image, and it described the title
   # screen correctly. The listing is `is_moderated: true` (Cohere-side filter), which no other row has.
