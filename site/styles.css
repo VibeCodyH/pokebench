@@ -230,6 +230,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--teal); outline-
 .tagrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .ptag { font-size: 11px; font-weight: 700; letter-spacing: .1em; padding: 2px 6px; border: 2px solid var(--ink); }
 .ptag.local { background: var(--green); } .ptag.api { background: var(--blue); }
+.ptag.rvb, .tag.rvb { background: var(--gold); justify-self: start; }
+.categories { margin-left: 0; }
 .bar { width: 96px; height: 10px; border: 2px solid var(--ink); background: var(--card); }
 .bar i { display: block; height: 100%; background: var(--progress); }
 .trainer .foot { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-top: 3px solid var(--ink); font-size: 12px; font-weight: 700; background: var(--stuck); }

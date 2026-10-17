@@ -28,6 +28,15 @@ Each `log.jsonl` line carries what the model saw, what it decided, and what actu
 - the rendered user message, the model's thinking and plan, the per-action before/after position and
   map, and the raw response body on a parse failure
 
+## What the model saw vs. what the harness recorded
+
+In an RVB run the model sees the system prompt, the screenshot, and `user_message`, the exact message
+assembled for that turn. The system prompt is fixed for the run and named by `prompt_version` and
+`prompt_sha` in `summary.json`; together those are the audit record of everything model-visible. The RAM fields
+in the same record (`map`, `steps[].before`/`after`, `collision`, `warps`, the dialog flags) are
+harness receipts for scoring and audit, and an RVB model never saw them. In TAB most of that state
+is part of the prompt, so the two overlap.
+
 ## Dialog traces
 
 The `a_until_dialog_end` helper presses A repeatedly to clear text the model would otherwise burn

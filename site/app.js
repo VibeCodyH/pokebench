@@ -6,6 +6,10 @@ const number = value => finite(value) ? value.toLocaleString('en-US') : '—';
 const textValue = value => value == null || value === '' ? '—' : typeof value === 'object' ? JSON.stringify(value) : String(value);
 const local = run => String(run.provider || '').toLowerCase().includes('ollama');
 const won = run => run.furthest_index === 9;
+// TAB (Tool Assisted) and RVB (Raw Vision + Buttons) are separate boards; a run ranks only in its own.
+const categoryOf = run => run.category === 'rvb' ? 'rvb' : 'tab';
+const categoryNames = {tab: 'TAB · Tool Assisted', rvb: 'RVB · Raw Vision + Buttons'};
+const rvbTag = (run, cls) => categoryOf(run) === 'rvb' ? `<span class="${cls} rvb">RVB</span>` : '';
 const price = run => local(run) ? 'FREE' : finite(run.cost_usd) ? '$' + run.cost_usd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: run.cost_usd > 0 && run.cost_usd < .01 ? 6 : 2}) : '—';
 const tokens = run => finite(run.tokens_in) && finite(run.tokens_out) ? run.tokens_in + run.tokens_out : null;
 // Play time: wall time minus what failed model calls burned. Older summaries have only wall_time_s.
@@ -59,7 +63,7 @@ const formatDay = day => day ? new Date(day + 'T12:00:00Z').toLocaleDateString('
 // Unknown arrival stays unknown: a receipt missing its furthest milestone's turn sorts last
 // rather than inheriting turns_used, which would invent a first-hit turn it never measured.
 const furthestTurn = run => { const m = (run.milestones || []).find(x => x && x.key === run.furthest_key); return m && finite(m.turn) ? m.turn : Infinity; };
-const displayRank = run => 1 + state.runs.filter(other => other.furthest_index > run.furthest_index || other.furthest_index === run.furthest_index && furthestTurn(other) < furthestTurn(run)).length;
+const displayRank = run => 1 + state.runs.filter(other => categoryOf(other) === categoryOf(run)).filter(other => other.furthest_index > run.furthest_index || other.furthest_index === run.furthest_index && furthestTurn(other) < furthestTurn(run)).length;
 function videoURL(run) {
   if (typeof run.youtube_url !== 'string' || !run.youtube_url.trim()) return null;
   try { const url = new URL(run.youtube_url); return ['https:', 'http:'].includes(url.protocol) ? url.href : null; } catch { return null; }
@@ -141,7 +145,7 @@ function runDetails(run, rungs) {
     <p class="receipt-note">? = unknown receipt or segment · — = unreached. Segment = turns since the previous rung. Missing or out-of-order route timing is estimated; receipts stay as recorded.</p>
     ${facts([['Run ID',run.run_id],['Run name',run.run_name],['Think',run.think_level],['Context',finite(run.num_ctx) ? number(run.num_ctx) : null],
       ['Parameters',run.model_params],['Quant',run.quant],['Token in',number(run.tokens_in)],['Token out',number(run.tokens_out)],['Timestamp',run.timestamp],
-      ['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]])}</div>`;
+      ['Category',categoryNames[categoryOf(run)]],['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]])}</div>`;
 }
 function runReplay(run, rungs) {
   const hits = rungs.filter(r => finite(r.turn) && r.turn <= run.turns_used).length;
@@ -159,7 +163,7 @@ function card(run, full = false) {
     ${run.uid === localHero ? '<div class="hero-ribbon">★ LOCAL HERO · FURTHEST LOCAL RUN</div>' : ''}
     <div class="card-body"><h3 class="model-name">${escape(modelName(run))}</h3><p class="provider">${escape(textValue(run.provider))}${run.run_name ? ' / '+escape(run.run_name) : ''}</p>
     ${run.in_game_name ? `<p class="ingame-name">plays as <b class="player-name">${escape(run.in_game_name)}</b>${run.rival_name ? ` &middot; rival <b class="rival-name">${escape(run.rival_name)}</b>` : ''}</p>` : ''}
-    <div class="card-tags"><span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="tag">${escape(textValue(run.family))}</span><span class="tag">GEN 1 · RED</span></div>
+    <div class="card-tags">${rvbTag(run, 'tag')}<span class="tag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="tag">${escape(textValue(run.family))}</span><span class="tag">GEN 1 · RED</span></div>
     <p class="furthest"><b>${run.furthest_index+1}/10</b> ${escape(milestoneLabel(run))}</p>${stats(run)}
     ${full ? facts([['Prompt',run.prompt_version],['Route',run.execution_route],['Run date',formatDay(runDay(run))]]) : ''}
     ${full && run.caveat ? `<p class="run-caveat"><b>CAVEAT</b> ${escape(run.caveat)}</p>` : ''}
@@ -456,9 +460,10 @@ function trainerFor(run, cx, footY) {
 const rankSort = (a, b) => b.furthest_index - a.furthest_index || furthestTurn(a) - furthestTurn(b) || String(a.model).localeCompare(String(b.model));
 const stopLabel = run => milestoneList[run.furthest_index]?.short || 'No milestone';
 
-const state = { runs: [], type: 'all', stop: null, live: false, selected: new Set() };
+const state = { runs: [], category: new URLSearchParams(location.search).get('category') === 'rvb' ? 'rvb' : 'tab', type: 'all', stop: null, live: false, selected: new Set() };
+const inCategory = () => state.runs.filter(run => categoryOf(run) === state.category);
 const typeMatch = run => state.type === 'all' || (state.type === 'local') === local(run);
-const visible = () => state.runs.filter(run => typeMatch(run) && (state.stop === null || run.furthest_index === state.stop));
+const visible = () => inCategory().filter(run => typeMatch(run) && (state.stop === null || run.furthest_index === state.stop));
 
 function podiumMarkup(run, place) {
   if (!run) return '';
@@ -468,7 +473,7 @@ function podiumMarkup(run, place) {
     <div class="body">
       <span class="place">${['1st','2nd','3rd'][place - 1]}</span>
       <span class="name">${escape(modelName(run))}</span>
-      <span class="meta">${number(run.turns_used)} turns · ${price(run)}</span>
+      <span class="meta">${number(run.turns_used)} turns · ${price(run)}</span>${rvbTag(run, 'ptag')}
       <span class="result">${escape(stopLabel(run))}</span>
     </div>
     <svg class="pod-sprite" viewBox="0 0 34 51" aria-hidden="true">${trainerFor(run, 17, 51)}</svg>
@@ -486,26 +491,29 @@ function cardMarkup(run, rank) {
         <div><div class="label">Turns</div><div class="value">${number(run.turns_used)}</div></div>
         <div><div class="label">Run cost</div><div class="value">${price(run)}</div></div>
       </div>
-      <div class="tagrow"><span class="ptag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="bar" title="${width}%"><i style="width:${width}%"></i></span></div>
+      <div class="tagrow">${rvbTag(run, 'ptag')}<span class="ptag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="bar" title="${width}%"><i style="width:${width}%"></i></span></div>
     </div>
     <div class="foot ${done ? 'won' : ''}"><span class="sq"></span>${escape(stopLabel(run))}</div>
   </button>`;
 }
 
 function render() {
-  const ranked = [...state.runs].sort(rankSort);
+  const board = inCategory();
+  $('categories').innerHTML = Object.entries(categoryNames).map(([id, name]) =>
+    `<button type="button" class="btn" data-category="${id}" aria-pressed="${state.category === id}">${escape(name)} (${state.runs.filter(run => categoryOf(run) === id).length})</button>`).join('');
+  const ranked = [...board].sort(rankSort);
   $('podium').innerHTML = [ranked[1], ranked[0], ranked[2]].map((run, i) => podiumMarkup(run, [2, 1, 3][i])).join('');
 
   const rankOf = new Map(ranked.map((run, i) => [run, i + 1]));
   const shown = visible().sort(rankSort);
   $('grid').innerHTML = shown.length ? shown.map(run => cardMarkup(run, rankOf.get(run))).join('')
     : '<div class="empty">No trainers match this filter.</div>';
-  $('count').textContent = `${shown.length} of ${state.runs.length} models`;
+  $('count').textContent = `${shown.length} of ${board.length} models`;
 
   $('stops').innerHTML = milestoneList.map((s, i) =>
     `<button type="button" class="stop ${state.stop === null ? 'filled' : ''}" aria-pressed="${state.stop === i}" data-stop="${i}" aria-label="${escape(s.label)}"><i></i><span>${escape(s.short)}</span></button>`).join('');
 
-  const counts = { all: state.runs.length, local: state.runs.filter(local).length, api: state.runs.filter(r => !local(r)).length };
+  const counts = { all: board.length, local: board.filter(local).length, api: board.filter(r => !local(r)).length };
   const chip = state.stop === null ? '' :
     `<span class="chip">Stop: ${escape(milestoneList[state.stop].short)}<button type="button" data-clear aria-label="Clear stop filter">×</button></span>`;
   $('filters').innerHTML = chip + ['all', 'local', 'api'].map(t =>
@@ -518,8 +526,15 @@ function render() {
 document.querySelector('.page').addEventListener('click', e => {
   const stop = e.target.closest('[data-stop]');
   const type = e.target.closest('[data-type]');
+  const category = e.target.closest('[data-category]');
   const open = e.target.closest('[data-uid]');
-  if (stop) { const i = +stop.dataset.stop; state.stop = state.stop === i ? null : i; }
+  if (category) {
+    state.category = category.dataset.category; state.stop = null;
+    const url = new URL(location.href);
+    if (state.category === 'rvb') url.searchParams.set('category', 'rvb'); else url.searchParams.delete('category');
+    history.replaceState(null, '', url);
+  }
+  else if (stop) { const i = +stop.dataset.stop; state.stop = state.stop === i ? null : i; }
   else if (type) state.type = type.dataset.type;
   else if (e.target.closest('[data-clear]')) state.stop = null;
   else if (open) { const run = state.runs.find(r => r.uid === open.dataset.uid); if (run) openModal(run, open); return; }

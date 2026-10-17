@@ -8,7 +8,7 @@ Inspiration: BuseyBench (leaderboard of model runs) — but our scoring is **obj
 ## 0. Rules (LOCKED 2026-09-07)
 
 - **Gate = TURNS.** Every model gets the **same 1,000-turn budget** (1 turn = up to 6 actions).
-  Most actions are one button press; `a_until_dialog_end` is the exception, pressing A until the
+  In TAB most actions are one button press; `a_until_dialog_end` is the exception, pressing A until the
   text box closes (up to 100 presses) so that reading a speech costs one action, not thirty.
   Turns measure *decision quality*, independent of GPU speed or verbosity.
 - **Score = furthest milestone reached** within budget. Ceiling = **beat Brock (Gym 1)**.
@@ -36,6 +36,29 @@ Inspiration: BuseyBench (leaderboard of model runs) — but our scoring is **obj
 - **Naming is the model's choice.** The prompt describes both the preset names and the letter grid
   and takes no side. What a model names itself and its rival is part of the run, not a harness rule.
 
+## 0. Categories
+
+Two boards, same ROM, same 1,000-turn budget, same milestone ladder (§1) and same ranking rule.
+A run ranks only against runs in its own category. `summary.json` records `category`; a summary
+without one is TAB.
+
+| | TAB (Tool Assisted Benchmark) | RVB (Raw Vision + Buttons) |
+|---|---|---|
+| Model sees | state text, screen text, ASCII map, screenshot | the screenshot only |
+| Memory | its notes (600 chars) + recent history entries that include harness feedback | its notes file, uncapped and unsteered, + its own prior plans (thought and buttons). No harness feedback |
+| Actions | 11, including macros like `a_until_dialog_end`, up to 6 per turn | `up down left right a b start select`, up to 6 per turn |
+| Empty plan | `wait_60` | a legal turn that presses nothing |
+| Invalid plan | an action outside the set retries the same turn without spending it | the same, and so does a plan longer than six or not a list |
+| Prompt versions | `vNN`, board floor v19 | `rvbN`, board floor rvb3 |
+
+rvb3 was locked as the scored RVB prompt after calibration (issue #102): the goal line names the
+Boulder Badge, every message opens with the turn clock, and it says the run ends by itself when
+the harness reads the badge. rvb1 and rvb2 only ran as calibration, which never reaches the board. In both categories a model
+that keeps sending plans the runner cannot execute ends the run as `provider_error`, which is not a
+result.
+The RAM-aware settle before a screenshot stays in both categories: it costs no presses and shows
+the model nothing.
+
 ## 0. Eligibility
 
 **Vision-capable models only.** The harness sends a screenshot every turn and the game's text and sprites are
@@ -45,6 +68,7 @@ go on the same board. Candidate list: `docs/model-corpus.md`.
 ## 1. Milestone ladder (auto-detected from RAM — no human judging)
 
 Ordered checkpoints; each detected from game state we already read. Furthest reached = score.
+Shared by both categories: RVB models never see this state, the scorer still reads it.
 
 | # | milestone | detection signal |
 |---|-----------|------------------|
@@ -79,13 +103,14 @@ what was built, kept here because the rules depend on it.
 - **Per-run summary JSON** (`runs/<run_id>/summary.json`): model, provider, family,
   harness_version, budget, milestones:[{name, turn}], furthest, turns_used, tokens_in/out,
   cost_usd, wall_time_s, youtube_url, notes.
-- **Factual-history fix (shipped):** history stores `pose → actions → pose → result`, NOT the
+- **Factual-history fix (shipped, TAB):** history stores `pose → actions → pose → result`, NOT the
   model's own narration. Stops the fixation loop where a model re-reads and re-commits to its
   own wrong theory. `run_benchmark.py` windows history back to the first-hit turn of the second
   most recent milestone, then keeps the newest whole entries that still fit the model's
   configured context, 64K by default, after reserving room for the image, the output and
   the rest of the prompt. `qwen_red.py` keeps a
-  flat last 12.
+  flat last 12. RVB has its own history builder: the model's notes plus its own prior plans,
+  nothing the harness observed.
 - **Determinism caveat (methodology):** in-game RNG (wild encounters, crits) is not fully
   controllable. Fix everything we can — same harness version, same prompt, same budget, same
   start state — and document RNG as a known variance source. Consider N runs/model later.
@@ -96,7 +121,8 @@ A score is worthless without the evidence behind it. Every run preserves, and th
 
 - **Prompt version + hash** — the exact system prompt (versioned; runs are only apples-to-apples
   at the same `prompt_version`). Bump the version when the prompt changes; old runs keep theirs.
-- **Tool policy** — the allowed action set (press/walk/etc.) + harness_version.
+- **Tool policy** — the category, the allowed action set (TAB's press/walk/macros or RVB's eight
+  buttons, recorded as `allowed_actions`) + harness_version.
 - **Settings** — think level, num_ctx, temperature, num_predict (per-turn output ceiling,
   -1/uncapped unless the model's row sets one), turn budget.
 - **Execution route** — how the model was called: `ollama-local`, `anthropic-api`, `openai-api`,
@@ -121,6 +147,8 @@ BuseyBench-style, teal/blue brand to match the channels.
 - **Data:** reads `runs.json` (aggregate of the per-run summaries). Static — no backend.
 - **Leaderboard (default):** card per run — model, provider/family badge, furthest-milestone
   progress bar, turns / tokens / $ / time, "inspect run" → YouTube VOD, final-screenshot thumb.
+- **Category:** a TAB / RVB toggle above the podium, TAB by default. `?category=rvb` links
+  straight to the RVB board. Podium, ranks, counts and filters all cover one category at a time.
 - **Filter:** local-vs-API, and by the milestone a run stopped at. Ranking follows the
   tiebreaker above. Sort-by-cost, the compare tray and a timeline page are not built.
 - **Host:** Cloudflare Workers, static assets plus one route for the Twitch live check.
