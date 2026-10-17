@@ -1578,6 +1578,29 @@ class OpenRouterPromptCacheTests(unittest.TestCase):
         self.assertEqual((p.input_cost_per_mtok, p.output_cost_per_mtok), (4.0, 20.0))
 
 
+class OpenRouterHostPinTests(unittest.TestCase):
+    """Oracle = OpenRouter's provider-routing request field: `order` plus `allow_fallbacks: false`
+    is the documented way to serve a call from one host only."""
+
+    def sent_payload(self, key):
+        import run_benchmark
+        with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test"}):
+            p = run_benchmark.make_provider(run_benchmark.load_model(key))
+        sent = {}
+        body = {"choices": [{"message": {"content": "{\"thought\": \"ok\", \"actions\": []}"},
+                             "finish_reason": "stop"}], "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
+        with patch.object(p, "_post_stream", side_effect=lambda url, payload, *a: sent.update(payload) or body):
+            p.chat("SYS", "u", "aGk=", {"type": "object"}, "high")
+        return sent
+
+    def test_pinned_row_sends_one_host_and_no_fallback(self):
+        self.assertEqual(self.sent_payload("or-deepseek-v4.1-flash-1017")["provider"],
+                         {"order": ["DeepSeek"], "allow_fallbacks": False})
+
+    def test_unpinned_row_leaves_routing_to_openrouter(self):
+        self.assertNotIn("provider", self.sent_payload("or-deepseek-v4.1-flash"))
+
+
 class RawButtonDispatchTests(unittest.TestCase):
     """RVB's eight raw names are one press each, on the upstream press_/walk_ timing; TAB names pass through."""
 

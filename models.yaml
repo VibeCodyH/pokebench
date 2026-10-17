@@ -778,6 +778,30 @@ models:
     input_cost_per_mtok: 0.15
     output_cost_per_mtok: 0.60
 
+  # DeepSeek V4.1 Flash 1017, the 2026-10-17 snapshot (OpenRouter canonical slug
+  # deepseek/deepseek-v4.1-flash-20261017). Same settings as the row above so the two compare like
+  # for like, with one difference: the host is PINNED to DeepSeek with no fallback. Default routing
+  # for this slug is price-weighted toward DeepInfra fp8/flex and other fp8 hosts, which would put a
+  # different quant behind the row. Rates are DeepSeek's off-peak price; weekday 01:00-04:00 and
+  # 06:00-10:00 UTC bill double, so cost_usd undercounts a run that spans those windows. Cache
+  # reads bill 0.003. DeepSeek's direct API also serves this snapshot as `deepseek-flash`, so the
+  # direct row above now resolves to 1017, not the September build its runs used.
+  - key: or-deepseek-v4.1-flash-1017
+    provider: openrouter
+    api_model_id: deepseek/deepseek-v4.1-flash-1017
+    openrouter_host: DeepSeek
+    display_name: "DeepSeek V4.1 Flash 1017"
+    family: deepseek
+    params: "552B-A16B"
+    structured_output: false
+    quant: null
+    context: 1000000
+    think: high
+    release_date: "2026-10-17"
+    input_cost_per_mtok: 0.15
+    output_cost_per_mtok: 0.60
+    cache_read_cost_per_mtok: 0.003
+
   # --- Amazon Bedrock (bedrock-mantle OpenAI-compatible endpoint, AWS_BEARER_TOKEN_BEDROCK).
   # NOT bedrock-runtime: separate quota allocation, which is why these work while
   # bedrock-runtime sits at zero on a new account. Funded by AWS Free Tier credit, so

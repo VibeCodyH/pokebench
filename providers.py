@@ -752,12 +752,22 @@ class OpenRouterProvider(OpenAIProvider):
     api_key_env = "OPENROUTER_API_KEY"
     base_url = "https://openrouter.ai/api/v1"
 
-    def __init__(self, model: str, *, cache_read_cost_per_mtok: float | None = None, **opts):
+    def __init__(self, model: str, *, cache_read_cost_per_mtok: float | None = None,
+                 host: str | None = None, **opts):
         super().__init__(model, **opts)
         # Opt-in per row. Some backends cache the prompt prefix on their own (Meta's Muse Wonder
         # served 6,516 of 6,582 prompt tokens from cache on a repeat call, 2026-10-12) and bill
         # those reads far below the input rate. Unset keeps the flat base estimate.
         self.cache_read_cost_per_mtok = cache_read_cost_per_mtok
+        # Opt-in per row: serve every call from this one OpenRouter host, never a fallback. Default
+        # routing is price-weighted, so a slug with cheap fp8 hosts (deepseek-v4.1-flash-1017 lists
+        # DeepInfra fp8/flex first, 2026-10-17) would put a different quant, or several, behind one
+        # row. With fallbacks off, a host outage fails the call instead of silently switching.
+        self.host = host
+
+    def _tune_payload(self, payload: dict, effort: str) -> None:
+        if self.host:
+            payload["provider"] = {"order": [self.host], "allow_fallbacks": False}
 
     def _tokens(self, usage: dict) -> dict[str, int]:
         # prompt_tokens is already the full count, cached or not, so `prompt` keeps meaning
