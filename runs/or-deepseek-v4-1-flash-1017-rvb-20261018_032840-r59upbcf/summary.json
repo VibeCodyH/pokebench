@@ -1,0 +1,99 @@
+{
+  "run_id": "or-deepseek-v4-1-flash-1017-rvb-20261018_032840-r59upbcf",
+  "category": "rvb",
+  "model": "deepseek/deepseek-v4.1-flash-1017",
+  "display_name": "DeepSeek V4.1 Flash 1017",
+  "provider": "openrouter",
+  "family": "deepseek",
+  "run_name": "rvb4-or-deepseek-v4.1-flash-1017-20261018_032840",
+  "prompt_version": "rvb4",
+  "prompt_sha": "7f9221e8e291028e",
+  "harness_version": 2,
+  "harness_git_sha": "645d1e9",
+  "harness_files_sha": "308aa9134d8577dc",
+  "max_output_tokens": null,
+  "execution_route": "openrouter-api",
+  "think_level": "high",
+  "num_ctx": 1000000,
+  "temperature": null,
+  "allowed_actions": [
+    "a",
+    "b",
+    "down",
+    "left",
+    "right",
+    "select",
+    "start",
+    "up"
+  ],
+  "run_date": "2026-10-18",
+  "model_release_date": "2026-10-17",
+  "model_params": "552B-A16B",
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "or-deepseek-v4-1-flash-1017-rvb-20261018_032840-r59upbcf-auto"
+  },
+  "notes": "Turn 999/1000. In Pallet Town between the houses, stepping toward Oak's lab door. Badge unreachable.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 21099.7,
+  "active_time_s": 20928.2,
+  "tokens_in": 38659505,
+  "tokens_out": 2787675,
+  "tokens_cache_write": 0,
+  "tokens_cache_read": 38075136,
+  "failed_attempts": {
+    "count": 5,
+    "prompt": 125027,
+    "completion": 23004,
+    "seconds": 171.5
+  },
+  "cost_usd": 1.8744857580000005,
+  "youtube_url": null,
+  "timestamp": "20261018_092020",
+  "blackouts": [
+    228
+  ],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 56
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 106
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 144
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 187
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 515
+    }
+  ],
+  "furthest_key": "got_parcel",
+  "furthest_label": "Got Oak's Parcel",
+  "furthest_index": 4,
+  "beat_brock": false,
+  "presses_used": 5865,
+  "milestone_presses": {
+    "left_house": 299,
+    "got_starter": 596,
+    "route_1": 821,
+    "viridian_city": 1079,
+    "got_parcel": 3019
+  },
+  "presses_exact": true
+}

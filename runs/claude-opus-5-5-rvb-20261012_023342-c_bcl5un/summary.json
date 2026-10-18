@@ -1,0 +1,130 @@
+{
+  "run_id": "claude-opus-5-5-rvb-20261012_023342-c_bcl5un",
+  "category": "rvb",
+  "model": "claude-opus-5-5",
+  "display_name": "Claude Opus 5.5",
+  "provider": "anthropic",
+  "family": "claude",
+  "run_name": "rvb4-claude-opus-5-5-20261012_023342",
+  "prompt_version": "rvb4",
+  "prompt_sha": "7f9221e8e291028e",
+  "harness_version": 2,
+  "harness_git_sha": "426e058",
+  "harness_files_sha": "bd25323f8843ae6f",
+  "max_output_tokens": 32000,
+  "execution_route": "anthropic-api",
+  "think_level": "high",
+  "num_ctx": 200000,
+  "temperature": null,
+  "allowed_actions": [
+    "a",
+    "b",
+    "down",
+    "left",
+    "right",
+    "select",
+    "start",
+    "up"
+  ],
+  "run_date": "2026-10-12",
+  "model_release_date": "2026-09-21",
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "claude-opus-5-5-rvb-20261012_023342-c_bcl5un-auto"
+  },
+  "notes": "Player AA, rival BLUE. Squirtle Lv14. Brock beaten turn 439, Boulder Badge received turn 440. Clearing Brock's TM dialogue while waiting for the harness to detect the badge.",
+  "budget_turns": 1000,
+  "turns_used": 444,
+  "termination_reason": "beat_brock",
+  "wall_time_s": 6168.1,
+  "active_time_s": 6168.1,
+  "tokens_in": 8874588,
+  "tokens_out": 224834,
+  "tokens_cache_write": 38836,
+  "tokens_cache_read": 8528920,
+  "failed_attempts": {
+    "count": 0,
+    "prompt": 0,
+    "completion": 0,
+    "seconds": 0.0
+  },
+  "cost_usd": 7.623972,
+  "youtube_url": null,
+  "timestamp": "20261012_041630",
+  "blackouts": [
+    101,
+    289
+  ],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 15
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 29
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 57
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 73
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 79
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pok\u00e9dex",
+      "turn": 115
+    },
+    {
+      "key": "viridian_forest",
+      "label": "Entered Viridian Forest",
+      "turn": 179
+    },
+    {
+      "key": "pewter_city",
+      "label": "Reached Pewter City",
+      "turn": 383
+    },
+    {
+      "key": "pewter_gym",
+      "label": "Entered Brock's Gym",
+      "turn": 409
+    },
+    {
+      "key": "beat_brock",
+      "label": "Beat Brock (Boulder Badge)",
+      "turn": 444
+    }
+  ],
+  "furthest_key": "beat_brock",
+  "furthest_label": "Beat Brock (Boulder Badge)",
+  "furthest_index": 9,
+  "beat_brock": true,
+  "presses_used": 2521,
+  "milestone_presses": {
+    "left_house": 79,
+    "got_starter": 144,
+    "route_1": 298,
+    "viridian_city": 391,
+    "got_parcel": 430,
+    "got_pokedex": 644,
+    "viridian_forest": 1022,
+    "pewter_city": 2175,
+    "pewter_gym": 2332,
+    "beat_brock": 2521
+  },
+  "presses_exact": true
+}
