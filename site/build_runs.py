@@ -10,9 +10,10 @@ import sys
 # feature that did spatial reasoning FOR the model; v17 had already removed prompt coaching.
 # Runs before v19 scored a different game and cannot sit on the same board.
 HARNESS_FLOOR = 19
-# RVB's floor. rvb3 was locked as the scored RVB prompt after calibration (#102, Phase 2);
-# rvb1 and rvb2 only ever ran as calibration.
-RVB_FLOOR = 3
+# RVB's floor. rvb3 was locked as the scored RVB prompt after calibration (#102, Phase 2); rvb4
+# (#125, #126) is rvb3 in a cache-friendly order plus two wording changes; every seat runs it and
+# rvb3 results no longer rank. rvb1 and rvb2 only ever ran as calibration.
+RVB_FLOOR = 4
 # Each category has its own prompt namespace and floor, and ranks only against itself.
 CATEGORIES = {"tab": (r"v(\d+)", HARNESS_FLOOR), "rvb": (r"rvb(\d+)", RVB_FLOOR)}
 # Only runs that reached the end of the game or the end of the budget are results. Smoke tests,

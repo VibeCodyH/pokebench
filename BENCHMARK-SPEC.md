@@ -49,11 +49,15 @@ without one is TAB.
 | Actions | 11, including macros like `a_until_dialog_end`, up to 6 per turn | `up down left right a b start select`, up to 6 per turn |
 | Empty plan | `wait_60` | a legal turn that presses nothing |
 | Invalid plan | an action outside the set retries the same turn without spending it | the same, and so does a plan longer than six or not a list |
-| Prompt versions | `vNN`, board floor v19 | `rvbN`, board floor rvb3 |
+| Prompt versions | `vNN`, board floor v19 | `rvbN`, board floor rvb4 |
 
 rvb3 was locked as the scored RVB prompt after calibration (issue #102): the goal line names the
 Boulder Badge, every message opens with the turn clock, and it says the run ends by itself when
-the harness reads the badge. rvb1 and rvb2 only ran as calibration, which never reaches the board. In both categories a model
+the harness reads the badge. rvb4 is the scored prompt today: the same words in a cache-friendly
+order (recent turns first, then the turn clock and notes, screenshot last), with the thought field bounded to 2-3
+sentences and one history label reworded, the two changes Anthropic's refusal filter needed. Every
+seat gets rvb4 and rvb3 results do not carry over, so the board floor is rvb4. rvb1 and rvb2
+only ran as calibration, which never reaches the board. In both categories a model
 that keeps sending plans the runner cannot execute ends the run as `provider_error`, which is not a
 result.
 The RAM-aware settle before a screenshot stays in both categories: it costs no presses and shows

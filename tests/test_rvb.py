@@ -436,15 +436,15 @@ class TabUnchangedTests(RunFixture):
                     ("tab-winner", {"prompt_version": "v22", "category": "tab", "furthest_index": 9,
                                     "furthest_key": "beat_brock", "milestones": [{"key": "beat_brock", "turn": 500}],
                                     "termination_reason": "beat_brock", "turns_used": 500}),
-                    ("rvb-scored", {"prompt_version": "rvb3", "category": "rvb"}),
-                    ("rvb-winner", {"prompt_version": "rvb3", "category": "rvb", "furthest_index": 9,
+                    ("rvb-scored", {"prompt_version": "rvb4", "category": "rvb"}),
+                    ("rvb-winner", {"prompt_version": "rvb4", "category": "rvb", "furthest_index": 9,
                                     "furthest_key": "beat_brock", "milestones": brock,
                                     "termination_reason": "beat_brock", "turns_used": 400}),
-                    ("rvb-below-floor", {"prompt_version": "rvb2", "category": "rvb"}),
+                    ("rvb-below-floor", {"prompt_version": "rvb3", "category": "rvb"}),
                     ("tab-prompt-on-rvb", {"prompt_version": "v21", "category": "rvb"}),
-                    ("rvb-prompt-no-category", {"prompt_version": "rvb3"}),
+                    ("rvb-prompt-no-category", {"prompt_version": "rvb4"}),
                     ("unknown-category", {"prompt_version": "v21", "category": "speedrun"}),
-                    ("malformed-category", {"prompt_version": "rvb3", "category": ["rvb"]})):
+                    ("malformed-category", {"prompt_version": "rvb4", "category": ["rvb"]})):
                 d = Path(root, "runs", name)
                 d.mkdir(parents=True)
                 (d / "summary.json").write_text(json.dumps({**base, **extra, "run_id": name}))
