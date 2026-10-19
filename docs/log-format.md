@@ -8,7 +8,7 @@ leaderboard and any audit read from; the PNGs are a convenience and are gitignor
 |---|---|
 | `summary.json` | The score. Milestones with the turn each first fired, turns used, tokens, wall time, cost, prompt SHA, harness SHA, execution route |
 | `log.jsonl` | One record per turn (below) |
-| `log.jsonl.gz` | RVB runs commit the same `log.jsonl` gzipped (`gunzip -k` restores it byte for byte). Each RVB record carries the full `user_message`, history included, so a 1,000-turn log runs 16-170 MB raw, past GitHub's 100 MB file limit |
+| `log.jsonl.gz` | RVB runs commit the same `log.jsonl` gzipped (`gunzip -k` restores it byte for byte). Each RVB record carries the full `user_message`, history included, so a 1,000-turn log runs 16-210 MB raw, past GitHub's 100 MB file limit |
 | `frames/turn-0001.png` | The exact PNG the model saw that turn, four-digit turn number. `--no-frames` skips these. `qwen_red.py` names these `turn_0001.png` and writes the full-size frame instead of the resized one it sent |
 | `frames/turn-0001-error-<timestamp>.png` | A failed attempt's own image, kept separately so a retry cannot overwrite the frame that caused it |
 | `notes.md` | The model's own running notes, cleared per game and labeled unverified in the prompt |
