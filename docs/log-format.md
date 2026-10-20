@@ -8,6 +8,7 @@ leaderboard and any audit read from; the PNGs are a convenience and are gitignor
 |---|---|
 | `summary.json` | The score. Milestones with the turn each first fired, turns used, tokens, wall time, cost, prompt SHA, harness SHA, execution route |
 | `log.jsonl` | One record per turn (below) |
+| `log.jsonl.gz` | RVB runs commit the same `log.jsonl` gzipped (`gunzip -k` restores it byte for byte). Each RVB record carries the full `user_message`, history included, so a 1,000-turn log runs 16-210 MB raw, past GitHub's 100 MB file limit |
 | `frames/turn-0001.png` | The exact PNG the model saw that turn, four-digit turn number. `--no-frames` skips these. `qwen_red.py` names these `turn_0001.png` and writes the full-size frame instead of the resized one it sent |
 | `frames/turn-0001-error-<timestamp>.png` | A failed attempt's own image, kept separately so a retry cannot overwrite the frame that caused it |
 | `notes.md` | The model's own running notes, cleared per game and labeled unverified in the prompt |
@@ -27,6 +28,15 @@ Each `log.jsonl` line carries what the model saw, what it decided, and what actu
   ran out of time. A `capped` turn means the model may have been looking at a half-drawn frame
 - the rendered user message, the model's thinking and plan, the per-action before/after position and
   map, and the raw response body on a parse failure
+
+## What the model saw vs. what the harness recorded
+
+In an RVB run the model sees the system prompt, the screenshot, and `user_message`, the exact message
+assembled for that turn. The system prompt is fixed for the run and named by `prompt_version` and
+`prompt_sha` in `summary.json`; together those are the audit record of everything model-visible. The RAM fields
+in the same record (`map`, `steps[].before`/`after`, `collision`, `warps`, the dialog flags) are
+harness receipts for scoring and audit, and an RVB model never saw them. In TAB most of that state
+is part of the prompt, so the two overlap.
 
 ## Dialog traces
 

@@ -1,0 +1,91 @@
+{
+  "run_id": "claude-haiku-5-5-rvb-20261013_140946-vrhmohea",
+  "category": "rvb",
+  "model": "claude-haiku-5-5",
+  "display_name": "Claude Haiku 5.5",
+  "provider": "anthropic",
+  "family": "claude",
+  "run_name": "rvb4-claude-haiku-5-5-20261013_140946",
+  "prompt_version": "rvb4",
+  "prompt_sha": "7f9221e8e291028e",
+  "harness_version": 2,
+  "harness_git_sha": "0862ef4",
+  "harness_files_sha": "b9a08e12ce180289",
+  "max_output_tokens": 32000,
+  "execution_route": "anthropic-api",
+  "think_level": "high",
+  "num_ctx": 200000,
+  "temperature": null,
+  "allowed_actions": [
+    "a",
+    "b",
+    "down",
+    "left",
+    "right",
+    "select",
+    "start",
+    "up"
+  ],
+  "run_date": "2026-10-13",
+  "model_release_date": "2026-10-07",
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "claude-haiku-5-5-rvb-20261013_140946-vrhmohea-auto"
+  },
+  "notes": "Turn 1000/1000 reached without the Boulder Badge. Pewter outskirts loop: 'You can't go through here!' boxes eat movement presses; clear with A then B. Straight-up beside the striped-roof house failed for hundreds of turns. Pewter Gym is behind a diamond hedge. Route 2 via Viridian was never tested. Lesson for future runs: never repeat the same blocked column; probe map edges early and check the overworld map.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 15280.8,
+  "active_time_s": 14721.1,
+  "tokens_in": 52885777,
+  "tokens_out": 1096238,
+  "tokens_cache_write": 101702,
+  "tokens_cache_read": 52324803,
+  "failed_attempts": {
+    "count": 33,
+    "prompt": 1253527,
+    "completion": 54171,
+    "seconds": 559.7
+  },
+  "cost_usd": 1.4170174599999998,
+  "youtube_url": null,
+  "timestamp": "20261013_182427",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 55
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 72
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 93
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 166
+    }
+  ],
+  "furthest_key": "viridian_city",
+  "furthest_label": "Reached Viridian City",
+  "furthest_index": 3,
+  "beat_brock": false,
+  "presses_used": 5953,
+  "milestone_presses": {
+    "left_house": 290,
+    "got_starter": 390,
+    "route_1": 511,
+    "viridian_city": 951
+  },
+  "presses_exact": true
+}

@@ -10,6 +10,12 @@ import sys
 # feature that did spatial reasoning FOR the model; v17 had already removed prompt coaching.
 # Runs before v19 scored a different game and cannot sit on the same board.
 HARNESS_FLOOR = 19
+# RVB's floor. rvb3 was locked as the scored RVB prompt after calibration (#102, Phase 2); rvb4
+# (#125, #126) is rvb3 in a cache-friendly order plus two wording changes; every seat runs it and
+# rvb3 results no longer rank. rvb1 and rvb2 only ever ran as calibration.
+RVB_FLOOR = 4
+# Each category has its own prompt namespace and floor, and ranks only against itself.
+CATEGORIES = {"tab": (r"v(\d+)", HARNESS_FLOOR), "rvb": (r"rvb(\d+)", RVB_FLOOR)}
 # Only runs that reached the end of the game or the end of the budget are results. Smoke tests,
 # Ctrl-C'd runs and provider outages write partial summaries and stay off the board.
 FINISHED = {"budget", "beat_brock"}
@@ -23,15 +29,23 @@ def finished(run):
     return bool(run.get("beat_brock")) or run["turns_used"] >= (run.get("budget_turns") or 0) > 0
 
 
+def category(run):
+    # Summaries written before RVB existed carry no category; they are all TAB. A category that
+    # is not a string matches no board.
+    value = run.get("category") or "tab"
+    return value if isinstance(value, str) else None
+
+
 def prompt_number(run):
-    match = re.fullmatch(r"v(\d+)", str(run.get("prompt_version") or ""))
+    pattern = CATEGORIES.get(category(run), (None,))[0]
+    match = pattern and re.fullmatch(pattern, str(run.get("prompt_version") or ""))
     return int(match.group(1)) if match else None
 
 
 def main(root=None):
     root = Path(root) if root else Path(__file__).resolve().parent.parent
     runs = []
-    legacy = unfinished = calibration = 0
+    legacy = unfinished = calibration = mismatched = 0
     for path in sorted(root.glob("runs/*/summary.json")):
         try:
             run = json.loads(path.read_text(encoding="utf-8"))
@@ -50,13 +64,25 @@ def main(root=None):
             # whatever its category or prompt version.
             calibration += 1
             continue
+        if category(run) not in CATEGORIES:
+            mismatched += 1
+            continue
         version = prompt_number(run)
-        if version is None or version < HARNESS_FLOOR:
+        if version is None:
+            # A prompt from the other category's namespace (a v21 run labelled rvb, or an
+            # rvb3 run with no category) would rank on the wrong board.
+            if re.fullmatch(r"v\d+|rvb\d+", str(run.get("prompt_version") or "")):
+                mismatched += 1
+            else:
+                legacy += 1
+            continue
+        if version < CATEGORIES[category(run)][1]:
             legacy += 1
             continue
         if not finished(run):
             unfinished += 1
             continue
+        run["category"] = category(run)
         runs.append(run)
 
     def furthest_turn(run):
@@ -69,12 +95,15 @@ def main(root=None):
                 return milestone["turn"]
         return run["turns_used"]
 
-    runs.sort(key=lambda run: (-run["furthest_index"], furthest_turn(run)))
+    order = list(CATEGORIES)
+    runs.sort(key=lambda run: (order.index(run["category"]), -run["furthest_index"], furthest_turn(run)))
     output = root / "site" / "runs.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(runs, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-    print(f"Aggregated {len(runs)} runs into site/runs.json "
-          f"({legacy} legacy runs below prompt v{HARNESS_FLOOR}, {unfinished} unfinished runs, "
+    per_category = ", ".join(f"{sum(run['category'] == c for run in runs)} {c.upper()}" for c in CATEGORIES)
+    print(f"Aggregated {len(runs)} runs into site/runs.json ({per_category}; "
+          f"{legacy} legacy runs below each category's prompt floor, {mismatched} with a category "
+          f"and prompt version that do not match, {unfinished} unfinished runs, "
           f"{calibration} calibration runs excluded)")
 
 

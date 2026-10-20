@@ -426,6 +426,37 @@ class TabUnchangedTests(RunFixture):
             self.assertEqual([r["run_id"] for r in board], ["scored"])
             self.assertIn("2 calibration runs excluded", out.getvalue())
 
+    def test_board_admits_and_ranks_each_category_on_its_own(self):
+        brock = [{"key": "beat_brock", "turn": 400}]
+        with tempfile.TemporaryDirectory() as root:
+            base = {"furthest_index": 3, "turns_used": 1000, "budget_turns": 1000, "termination_reason": "budget",
+                    "furthest_key": "viridian_city", "milestones": [{"key": "viridian_city", "turn": 90}]}
+            for name, extra in (
+                    ("tab-old", {"prompt_version": "v21"}),  # predates category: reads as TAB
+                    ("tab-winner", {"prompt_version": "v22", "category": "tab", "furthest_index": 9,
+                                    "furthest_key": "beat_brock", "milestones": [{"key": "beat_brock", "turn": 500}],
+                                    "termination_reason": "beat_brock", "turns_used": 500}),
+                    ("rvb-scored", {"prompt_version": "rvb4", "category": "rvb"}),
+                    ("rvb-winner", {"prompt_version": "rvb4", "category": "rvb", "furthest_index": 9,
+                                    "furthest_key": "beat_brock", "milestones": brock,
+                                    "termination_reason": "beat_brock", "turns_used": 400}),
+                    ("rvb-below-floor", {"prompt_version": "rvb3", "category": "rvb"}),
+                    ("tab-prompt-on-rvb", {"prompt_version": "v21", "category": "rvb"}),
+                    ("rvb-prompt-no-category", {"prompt_version": "rvb4"}),
+                    ("unknown-category", {"prompt_version": "v21", "category": "speedrun"}),
+                    ("malformed-category", {"prompt_version": "rvb4", "category": ["rvb"]})):
+                d = Path(root, "runs", name)
+                d.mkdir(parents=True)
+                (d / "summary.json").write_text(json.dumps({**base, **extra, "run_id": name}))
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                build_runs.main(root)
+            board = json.loads(Path(root, "site", "runs.json").read_text())
+            self.assertEqual([(r["run_id"], r["category"]) for r in board],
+                             [("tab-winner", "tab"), ("tab-old", "tab"), ("rvb-winner", "rvb"), ("rvb-scored", "rvb")])
+            self.assertIn("2 TAB, 2 RVB", out.getvalue())
+            self.assertIn("1 legacy runs", out.getvalue())
+            self.assertIn("4 with a category and prompt version that do not match", out.getvalue())
+
     def test_summary_provenance_per_category(self):
         tracker = Mock(summary=Mock(return_value={"furthest_label": "Left the house", "furthest_index": 0}))
         provider = Mock(cost=Mock(return_value=0.0), max_tokens=None, route=None)
