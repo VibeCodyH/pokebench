@@ -1577,6 +1577,19 @@ class OpenRouterPromptCacheTests(unittest.TestCase):
         self.assertEqual(p.cache_read_cost_per_mtok, 0.20)
         self.assertEqual((p.input_cost_per_mtok, p.output_cost_per_mtok), (4.0, 20.0))
 
+    def test_kimi_k31_row_matches_moonshots_bill_cold_and_warm(self):
+        """Oracle = two real or-kimi-k3.1-pro calls on one frame, 2026-10-23, and the
+        upstream_inference_cost OpenRouter billed for each. Reasoning is inside completion_tokens."""
+        import run_benchmark
+        with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test"}):
+            p = run_benchmark.make_provider(run_benchmark.load_model("or-kimi-k3.1-pro"))
+        cold = {"prompt_tokens": 1561, "completion_tokens": 215,
+                "prompt_tokens_details": {"cached_tokens": 0, "cache_write_tokens": 0}}
+        warm = {"prompt_tokens": 1561, "completion_tokens": 317,
+                "prompt_tokens_details": {"cached_tokens": 1536, "cache_write_tokens": 0}}
+        self.assertAlmostEqual(p.cost(self.capture(p, cold)), 0.005272)
+        self.assertAlmostEqual(p.cost(self.capture(p, warm)), 0.0035272)
+
 
 class OpenRouterHostPinTests(unittest.TestCase):
     """Oracle = OpenRouter's provider-routing request field: `order` plus `allow_fallbacks: false`
@@ -1596,6 +1609,11 @@ class OpenRouterHostPinTests(unittest.TestCase):
     def test_pinned_row_sends_one_host_and_no_fallback(self):
         self.assertEqual(self.sent_payload("or-deepseek-v4.1-flash-1017")["provider"],
                          {"order": ["DeepSeek"], "allow_fallbacks": False})
+
+    def test_kimi_row_pins_the_standard_endpoint_not_highspeed(self):
+        # The slug's other Moonshot endpoint, moonshotai/highspeed, bills $4 / $20.
+        self.assertEqual(self.sent_payload("or-kimi-k3.1-pro")["provider"],
+                         {"order": ["moonshotai/mxfp4"], "allow_fallbacks": False})
 
     def test_unpinned_row_leaves_routing_to_openrouter(self):
         self.assertNotIn("provider", self.sent_payload("or-deepseek-v4.1-flash"))
