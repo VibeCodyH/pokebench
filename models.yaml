@@ -696,6 +696,27 @@ models:
     input_cost_per_mtok: 0.6712
     output_cost_per_mtok: 3.35
 
+  # Kimi K3.1 Pro (canonical slug moonshotai/kimi-k3.1-pro-20261023). The slug has two endpoints,
+  # both Moonshot: `moonshotai/mxfp4` at $2 / $10 and `moonshotai/highspeed` (priority tier) at
+  # $4 / $20, so the row pins the standard one with no fallback, or a run could bill double.
+  # Rates match Moonshot's own card (platform.kimi.ai/docs/pricing/chat). Caching is automatic;
+  # a hit bills $0.20, and a 5-minute cache write bills $2.00, the same as base input.
+  # Always thinks; reasoning_effort takes low, high or max, so no think: off.
+  - key: or-kimi-k3.1-pro
+    provider: openrouter
+    api_model_id: moonshotai/kimi-k3.1-pro
+    openrouter_host: moonshotai/mxfp4
+    display_name: "Kimi K3.1 Pro"
+    family: kimi
+    params: null
+    quant: "mxfp4" # OpenRouter's endpoint listing for both Moonshot endpoints.
+    context: 131072 # Harness history budget, same as or-muse-wonder; the model's window is 1M.
+    think: high
+    release_date: "2026-10-23"
+    input_cost_per_mtok: 2.00
+    output_cost_per_mtok: 10.00
+    cache_read_cost_per_mtok: 0.20
+
   # Xiaomi MiMo V2.6 Pro, seated 2026-09-22. Paid SKU, not a :free tier, so no 1,000-req/day cap
   # to time a launch around. Gated before seating on a real turn-0400 frame through
   # providers.OpenRouterProvider: prompt_tokens +212 with the image and a plan that described the
