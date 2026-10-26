@@ -129,10 +129,12 @@ function receiveCDP(chunk) {
 // scale, each half padded to 720x640 in the page background. Null when the layout can't be read.
 function verticalFilter(layout, width, height) {
   const even = n => 2 * Math.round(n / 2);
+  const up = n => 2 * Math.ceil(n / 2), down = n => 2 * Math.floor(n / 2);
+  // Intersect each column with the frame; even edges that stay inside it keep yuv420p crops valid.
   const crops = [layout?.top, layout?.bottom].map(box => {
     if (!Array.isArray(box) || !box.every(Number.isFinite)) return null;
-    const x = Math.max(0, even(box[0])), y = Math.max(0, even(box[1]));
-    const w = Math.min(width - x, even(box[2])), h = Math.min(height - y, even(box[3]));
+    const x = up(Math.max(0, box[0])), y = up(Math.max(0, box[1]));
+    const w = down(Math.min(width, box[0] + box[2]) - x), h = down(Math.min(height, box[1] + box[3]) - y);
     return w >= 64 && h >= 64 ? { x, y, w, h } : null;
   });
   if (crops.includes(null)) return null;
@@ -172,6 +174,22 @@ async function main() {
   if (stopping) return;
   probe = null;
   if (probeCode !== 0) throw new Error('NVENC unavailable: check NVIDIA runtime, video/compute capabilities and host driver.');
+  // The vertical picture is a second NVENC session in the same FFmpeg. An encoder that fails to
+  // open takes the whole process down, archive included, so prove two open at once or skip it.
+  let verticalOK = Boolean(rtmpVertical);
+  if (verticalOK) {
+    const output = ['-frames:v', '1', '-c:v', 'h264_nvenc', '-preset', 'p4', '-pix_fmt', 'yuv420p', '-f', 'null', '-'];
+    probe = child('ffmpeg', [
+      '-hide_banner', '-loglevel', 'error', '-nostdin', '-f', 'lavfi',
+      '-i', `color=size=${width}x${height}:rate=${fps}`, ...output, '-s', '720x1280', ...output
+    ], ['ignore', 'ignore', 'pipe']);
+    const verticalTimeout = setTimeout(() => void shutdown(1, 'NVENC check timed out.'), 15000);
+    verticalOK = await probe.done === 0;
+    clearTimeout(verticalTimeout);
+    if (stopping) return;
+    probe = null;
+    if (!verticalOK) log('No vertical feed: NVENC could not open a second encoder session.');
+  }
 
   profile = fs.mkdtempSync(path.join(os.tmpdir(), 'pokebench-recorder-'));
   browser = child(chromiumBin, [
@@ -225,7 +243,7 @@ async function main() {
   })()` });
   // Measured from the live page, so a dashboard layout change moves the crops with it.
   let vertical = null;
-  if (rtmpVertical) {
+  if (verticalOK) {
     const { result: layout } = await cdp('Runtime.evaluate', { returnByValue: true, expression: `(() => {
       const box = s => { const r = document.querySelector(s)?.getBoundingClientRect(); return r && [r.left, r.top, r.width, r.height]; };
       return { top: box('.left-col'), bottom: box('.right-col'), bg: getComputedStyle(document.body).backgroundColor };

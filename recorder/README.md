@@ -81,6 +81,7 @@ services:
     environment:
       STREAM_URL: "http://localhost:8765/stream"
       RTMP_URL: "${RTMP_URL:-}"
+      RTMP_URL_VERTICAL: "${RTMP_URL_VERTICAL:-}"
       RES: "1080p"
       NVIDIA_VISIBLE_DEVICES: "GPU-REPLACE-WITH-3090-UUID"
       NVIDIA_DRIVER_CAPABILITIES: "compute,video,utility"
@@ -150,8 +151,9 @@ Live Control Room's **Stream** tab, switch **Auto** to **Encoder** (RTMP(S)), pi
 a second stream key, and set `RTMP_URL_VERTICAL` to that key's full URL. YouTube
 can't add the vertical format after the stream has started, so do this before the
 recorder starts. The crop regions are measured from the dashboard's `.left-col`
-and `.right-col` when the recorder starts; if they can't be measured it logs that
-and runs without the vertical feed.
+and `.right-col` when the recorder starts. The vertical picture is a second NVENC
+session; if the GPU can't open one, or the columns can't be measured, the recorder
+logs that and runs without the vertical feed.
 
 ## Start, stop, and resource budget
 
