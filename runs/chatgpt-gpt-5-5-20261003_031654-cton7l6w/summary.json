@@ -50,7 +50,8 @@
     "prompt": 0,
     "completion": 0
   },
-  "cost_usd": null,
+  "cost_usd": 46.8558,
+  "cost_source": "API-equivalent, not billed: this run went through the ChatGPT subscription, which has no per-token bill. Priced at OpenAI's standard API rates for gpt-5.5 ($5.00/M input, $30.00/M output; developers.openai.com/api/docs/pricing, 2026-10-25) on the recorded tokens. The subscription route reports no cached-token split, so no cache discount is applied: a ceiling.",
   "youtube_url": "https://www.youtube.com/watch?v=t0NrMSA3Dqs",
   "timestamp": "20261003_082208",
   "blackouts": [
