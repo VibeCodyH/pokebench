@@ -48,6 +48,7 @@ dialog#run-modal::backdrop { background: #101c20c9; }
 .stats dd { font: 850 15px/1.5 var(--mono); }
 .stats small { font-size: 9px; font-weight: 600; color: #506157; }
 .free { color: #096b52; }
+.est { text-decoration: none; cursor: help; }
 .card-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .compare-select { padding: 7px 9px; background: transparent; border: 1px solid #596d5d; border-radius: 4px; min-height: 36px; font: 800 10px/1.5 var(--mono); }
 .compare-select[aria-pressed=true] { background: var(--teal); border-color: var(--ink); }
