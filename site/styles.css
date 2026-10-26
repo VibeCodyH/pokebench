@@ -48,6 +48,7 @@ dialog#run-modal::backdrop { background: #101c20c9; }
 .stats dd { font: 850 15px/1.5 var(--mono); }
 .stats small { font-size: 9px; font-weight: 600; color: #506157; }
 .free { color: #096b52; }
+.est { text-decoration: none; cursor: help; }
 .card-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .compare-select { padding: 7px 9px; background: transparent; border: 1px solid #596d5d; border-radius: 4px; min-height: 36px; font: 800 10px/1.5 var(--mono); }
 .compare-select[aria-pressed=true] { background: var(--teal); border-color: var(--ink); }
@@ -217,9 +218,10 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--teal); outline-
 .chip button { all: unset; cursor: pointer; font-weight: 700; font-size: 14px; line-height: 1; padding: 0 2px; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 22px; margin-top: 16px; }
-.trainer { display: grid; grid-template-rows: 1fr auto; padding: 0; text-align: left; width: 100%; }
+/* minmax(0, 1fr), not auto: the RVB + LOCAL tags + bar outgrow a 230px card, and an auto column then pushes the foot past the border */
+.trainer { display: grid; grid-template-rows: 1fr auto; grid-template-columns: minmax(0, 1fr); padding: 0; text-align: left; width: 100%; }
 .trainer:hover, .pod:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
-.trainer .body { padding: 14px; display: grid; gap: 10px; }
+.trainer .body { padding: 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .trainer .top { display: flex; align-items: center; gap: 10px; }
 .rank { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border: 3px solid var(--ink); font-weight: 700; font-size: 13px; background: var(--card); }
 .rank.top3 { background: var(--gold); }

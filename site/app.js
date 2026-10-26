@@ -11,6 +11,8 @@ const categoryOf = run => run.category === 'rvb' ? 'rvb' : 'tab';
 const categoryNames = {tab: 'TAB · Tool Assisted', rvb: 'RVB · Raw Vision + Buttons'};
 const rvbTag = (run, cls) => categoryOf(run) === 'rvb' ? `<span class="${cls} rvb">RVB</span>` : '';
 const price = run => local(run) ? 'FREE' : finite(run.cost_usd) ? '$' + run.cost_usd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: run.cost_usd > 0 && run.cost_usd < .01 ? 6 : 2}) : '—';
+// A subscription run's cost is tokens x the API list rate, not a bill. Kept out of price(), which also writes the replay counter.
+const estimate = run => run.billing_mode === 'subscription' && finite(run.cost_usd) && !local(run) ? '<abbr class="est" title="API-equivalent: this run used a subscription and was not billed per token">≈</abbr>' : '';
 const tokens = run => finite(run.tokens_in) && finite(run.tokens_out) ? run.tokens_in + run.tokens_out : null;
 // Play time: wall time minus what failed model calls burned. Older summaries have only wall_time_s.
 const playTime = run => finite(run.active_time_s) ? run.active_time_s : run.wall_time_s;
@@ -74,7 +76,7 @@ function inspect(run, compact = false) {
   return compact ? '<span class="vod-unavailable tag">VOD unavailable</span>' : `<button class="inspect" disabled title="No VOD attached" aria-label="Inspect run: ${escape(modelName(run))}, no VOD attached">inspect run ↗</button>`;
 }
 function stats(run) {
-  return `<dl class="stats"><div><dt>TURNS</dt><dd>${number(run.turns_used)} <small>/ ${number(run.budget_turns)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd>${number(tokens(run))}</dd></div><div><dt>COST</dt><dd class="${local(run) ? 'free' : ''}">${price(run)}</dd></div><div><dt>TIME</dt><dd>${time(playTime(run))}</dd></div></dl>`;
+  return `<dl class="stats"><div><dt>TURNS</dt><dd>${number(run.turns_used)} <small>/ ${number(run.budget_turns)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd>${number(tokens(run))}</dd></div><div><dt>COST</dt><dd class="${local(run) ? 'free' : ''}">${estimate(run)}${price(run)}</dd></div><div><dt>TIME</dt><dd>${time(playTime(run))}</dd></div></dl>`;
 }
 function facts(entries) {
   return `<dl class="provenance">${entries.map(([label,value]) => `<dt>${escape(label)}</dt><dd>${escape(textValue(value))}</dd>`).join('')}</dl>`;
@@ -152,7 +154,7 @@ function runReplay(run, rungs) {
   return `<div class="replay-toolbar"><div class="replay-controls" role="group" aria-label="Journey replay controls"><button data-replay="play" aria-label="Play replay">Play</button><button data-replay="restart">Restart</button><button data-replay="end">Skip to end</button><span class="replay-status">Ready · ~${Math.round(6+hits*PULSE_MS/1000)}s</span></div>
     <progress class="replay-progress" max="${run.turns_used || 1}" value="0" aria-label="Replay progress in turns"></progress></div>
     ${runMap(run,rungs)}<div class="replay-body"><p class="running-label">RUNNING TOTALS <span>· tokens, cost &amp; time interpolated</span></p>
-    <dl class="stats replay-stats"><div><dt>TURNS</dt><dd><span class="counter-stage"><span data-counter="turns">0</span><span class="sparkles" aria-hidden="true"></span></span> <small>/ ${number(run.turns_used)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd data-counter="tokens">${finite(tokens(run)) ? '0' : '—'}</dd></div><div><dt>COST</dt><dd data-counter="cost">${price({...run,cost_usd:finite(run.cost_usd) ? 0 : null})}</dd></div><div><dt>TIME</dt><dd data-counter="time">${finite(playTime(run)) ? '0s' : '—'}</dd></div></dl>
+    <dl class="stats replay-stats"><div><dt>TURNS</dt><dd><span class="counter-stage"><span data-counter="turns">0</span><span class="sparkles" aria-hidden="true"></span></span> <small>/ ${number(run.turns_used)}</small></dd></div><div><dt>TOKENS · IN + OUT</dt><dd data-counter="tokens">${finite(tokens(run)) ? '0' : '—'}</dd></div><div><dt>COST</dt><dd>${estimate(run)}<span data-counter="cost">${price({...run,cost_usd:finite(run.cost_usd) ? 0 : null})}</span></dd></div><div><dt>TIME</dt><dd data-counter="time">${finite(playTime(run)) ? '0s' : '—'}</dd></div></dl>
     ${runDetails(run,rungs)}</div>`;
 }
 function card(run, full = false) {
@@ -473,7 +475,7 @@ function podiumMarkup(run, place) {
     <div class="body">
       <span class="place">${['1st','2nd','3rd'][place - 1]}</span>
       <span class="name">${escape(modelName(run))}</span>
-      <span class="meta">${number(run.turns_used)} turns · ${price(run)}</span>${rvbTag(run, 'ptag')}
+      <span class="meta">${number(run.turns_used)} turns · ${estimate(run)}${price(run)}</span>${rvbTag(run, 'ptag')}
       <span class="result">${escape(stopLabel(run))}</span>
     </div>
     <svg class="pod-sprite" viewBox="0 0 34 51" aria-hidden="true">${trainerFor(run, 17, 51)}</svg>
@@ -489,7 +491,7 @@ function cardMarkup(run, rank) {
       <div class="top"><span class="rank ${rank <= 3 ? 'top3' : ''}">${rank}</span><span class="name">${escape(modelName(run))}</span></div>
       <div class="kv">
         <div><div class="label">Turns</div><div class="value">${number(run.turns_used)}</div></div>
-        <div><div class="label">Run cost</div><div class="value">${price(run)}</div></div>
+        <div><div class="label">Run cost</div><div class="value">${estimate(run)}${price(run)}</div></div>
       </div>
       <div class="tagrow">${rvbTag(run, 'ptag')}<span class="ptag ${local(run) ? 'local' : 'api'}">${local(run) ? 'LOCAL' : 'API'}</span><span class="bar" title="${width}%"><i style="width:${width}%"></i></span></div>
     </div>
