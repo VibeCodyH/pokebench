@@ -527,6 +527,25 @@ models:
     output_cost_per_mtok: null
     max_call_s: 120  # same route and stall pattern as Sol 6.1 and Astra
 
+  # GPT-6.1 Terra on the ChatGPT subscription route (released and listed in the catalog 2026-10-26).
+  # Frame probe 2026-10-26 served gpt-6.1-terra at reasoning high with vision and strict JSON
+  # (read the player-naming screen correctly). Same 131,072 history budget as the other subscription
+  # rows. Subscription usage has no per-token USD price; for the API-equivalent receipt cost, OpenAI's
+  # standard API rate at launch is $1/M input, $0.05/M cached input, $5/M output. No scored run yet.
+  - key: chatgpt-gpt-6.1-terra
+    provider: chatgpt
+    api_model_id: gpt-6.1-terra
+    display_name: "GPT-6.1 Terra"
+    family: gpt
+    params: null
+    quant: null
+    context: 131072
+    think: high
+    release_date: "2026-10-26"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+    max_call_s: 120  # same route and stall pattern as Sol 6.1 and Astra
+
   # Nex AGI N2.5 — FREE on OpenRouter ($0/M, verified vision). Agentic/computer-use pedigree;
   # prime free-seeding candidates. Free models may be rate-limited/queued on OpenRouter.
   - key: or-nex-n2.5-mini
