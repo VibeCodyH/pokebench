@@ -15,6 +15,8 @@ const fps = 30;
 const streamURL = process.env.STREAM_URL || 'http://localhost:8765/stream';
 const rtmpURL = process.env.RTMP_URL || '';
 const rtmpURL2 = process.env.RTMP_URL2 || '';
+// YouTube's second (vertical) stream key: a 9:16 feed for the Shorts-feed player.
+const rtmpVertical = process.env.RTMP_URL_VERTICAL || '';
 const resolutions = { '1080p': [1920, 1080], '720p': [1280, 720] };
 const res = process.env.RES || '1080p';
 const archiveDir = path.resolve(process.env.ARCHIVE_DIR || '/recordings');
@@ -27,8 +29,9 @@ const log = message => console.error(`[recorder] ${message}`);
 
 // FFmpeg can include the destination in error messages. Never log the stream key.
 const rtmpTargets = [rtmpURL, rtmpURL2].filter(Boolean);
+const rtmpSecrets = [...rtmpTargets, rtmpVertical].filter(Boolean);
 function redact(line) {
-  for (const url of rtmpTargets) {
+  for (const url of rtmpSecrets) {
     line = line.split(url).join('[RTMP_URL]');
     const key = url.split('/').pop()?.split('?')[0];
     if (key) line = line.split(key).join('[STREAM_KEY]');
@@ -122,14 +125,34 @@ function receiveCDP(chunk) {
   }
 }
 
+// The 9:16 feed: the game column over the right column (thoughts, journey, log), one shared
+// scale, each half padded to 720x640 in the page background. Null when the layout can't be read.
+function verticalFilter(layout, width, height) {
+  const even = n => 2 * Math.round(n / 2);
+  const crops = [layout?.top, layout?.bottom].map(box => {
+    if (!Array.isArray(box) || !box.every(Number.isFinite)) return null;
+    const x = Math.max(0, even(box[0])), y = Math.max(0, even(box[1]));
+    const w = Math.min(width - x, even(box[2])), h = Math.min(height - y, even(box[3]));
+    return w >= 64 && h >= 64 ? { x, y, w, h } : null;
+  });
+  if (crops.includes(null)) return null;
+  const scale = Math.min(...crops.flatMap(c => [720 / c.w, 640 / c.h]));
+  const rgb = String(layout.bg).match(/\d+/g);
+  const color = rgb?.length >= 3 ? '0x' + rgb.slice(0, 3).map(n => Number(n).toString(16).padStart(2, '0')).join('') : 'black';
+  const half = (c, i) => `[v${i}]crop=${c.w}:${c.h}:${c.x}:${c.y},scale=${even(c.w * scale)}:${even(c.h * scale)}:flags=bicubic,` +
+    `pad=720:640:(ow-iw)/2:(oh-ih)/2:color=${color}[half${i}]`;
+  return `[0:v]scale=${width}:${height}:flags=fast_bilinear,split=3[wide][v0][v1];[wide]format=yuv420p[h];` +
+    `${half(crops[0], 0)};${half(crops[1], 1)};[half0][half1]vstack,format=yuv420p[vert]`;
+}
+
 async function main() {
   if (!resolutions[res]) throw new Error('RES must be 1080p or 720p.');
   if (!['http:', 'https:'].includes(new URL(streamURL).protocol)) {
     throw new Error('STREAM_URL must be an HTTP(S) URL.');
   }
-  for (const url of rtmpTargets) {
+  for (const url of rtmpSecrets) {
     if (!['rtmp:', 'rtmps:'].includes(new URL(url).protocol) || /[\s|\\'\[\]]/.test(url)) {
-      throw new Error('RTMP_URL / RTMP_URL2 must be RTMP(S) URLs without spaces or tee control characters.');
+      throw new Error('RTMP_URL / RTMP_URL2 / RTMP_URL_VERTICAL must be RTMP(S) URLs without spaces or tee control characters.');
     }
   }
   const [width, height] = resolutions[res];
@@ -200,6 +223,16 @@ async function main() {
       '#screen{height:100%;aspect-ratio:auto;object-fit:contain}';
     document.head.appendChild(style);
   })()` });
+  // Measured from the live page, so a dashboard layout change moves the crops with it.
+  let vertical = null;
+  if (rtmpVertical) {
+    const { result: layout } = await cdp('Runtime.evaluate', { returnByValue: true, expression: `(() => {
+      const box = s => { const r = document.querySelector(s)?.getBoundingClientRect(); return r && [r.left, r.top, r.width, r.height]; };
+      return { top: box('.left-col'), bottom: box('.right-col'), bg: getComputedStyle(document.body).backgroundColor };
+    })()` });
+    vertical = verticalFilter(layout.value, width, height);
+    if (!vertical) log('No vertical feed: could not measure .left-col / .right-col on the dashboard.');
+  }
   await cdp('Page.startScreencast', { format: 'jpeg', quality: 85, maxWidth: width, maxHeight: height, everyNthFrame: 1 });
   // Seed static pages; CDP only emits frames when the compositor has an update.
   const first = await cdp('Page.captureScreenshot', { format: 'jpeg', quality: 85, captureBeyondViewport: false });
@@ -209,11 +242,17 @@ async function main() {
   archive = path.join(archiveDir, filename);
   // Reserve an append-only name before FFmpeg opens it through the tee muxer.
   fs.closeSync(fs.openSync(filename, 'wx'));
-  let outputs = `[f=mp4:onfail=abort:movflags=+frag_keyframe+empty_moov+default_base_moof]${filename}`;
+  // With a vertical feed the encode carries two videos, and each output selects its own:
+  // v:0 is the 16:9 picture (archive, Twitch, YouTube), v:1 the 9:16 one (vertical key only).
+  // tee unquotes once when it splits outputs, so select's quotes are escaped (\') to survive it.
+  const wide = vertical ? "select=\\'v:0,a\\':" : '';
+  let outputs = `[${wide}f=mp4:onfail=abort:movflags=+frag_keyframe+empty_moov+default_base_moof]${filename}`;
   // Use the FIFO muxer directly (one per RTMP target) to avoid tee's second-level option escaping.
+  const fifo = 'f=fifo:onfail=ignore:fifo_format=flv:queue_size=120:drop_pkts_on_overflow=1:attempt_recovery=1:recover_any_error=1:recovery_wait_time=5:restart_with_keyframe=1:format_opts=rw_timeout=5000000';
   for (const url of rtmpTargets) {
-    outputs += `|[f=fifo:onfail=ignore:fifo_format=flv:queue_size=120:drop_pkts_on_overflow=1:attempt_recovery=1:recover_any_error=1:recovery_wait_time=5:restart_with_keyframe=1:format_opts=rw_timeout=5000000]${url}`;
+    outputs += `|[${wide}${fifo}]${url}`;
   }
+  if (vertical) outputs += `|[select=\\'v:1,a\\':${fifo}]${rtmpVertical}`;
   // Game audio: serve_live streams the emulator's PCM at /audio.pcm (parameters at /audio/info).
   // Older servers lack it; fall back to a silent track so the recording still runs.
   let audioInput = ['-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000'];
@@ -237,8 +276,9 @@ async function main() {
     '-thread_queue_size', '8', '-f', 'image2pipe', '-framerate', String(fps),
     '-probesize', '1000000', '-analyzeduration', '0', '-vcodec', 'mjpeg', '-i', 'pipe:0',
     ...audioInput,
-    '-map', '0:v:0', '-map', '1:a:0',
-    '-vf', `scale=${width}:${height}:flags=fast_bilinear,format=yuv420p`,
+    ...(vertical
+      ? ['-filter_complex', vertical, '-map', '[h]', '-map', '1:a:0', '-map', '[vert]']
+      : ['-map', '0:v:0', '-map', '1:a:0', '-vf', `scale=${width}:${height}:flags=fast_bilinear,format=yuv420p`]),
     '-c:v', 'h264_nvenc', '-preset', 'p4', '-tune', 'll', '-rc', 'cbr',
     '-b:v', bitrate, '-maxrate', bitrate, '-bufsize', res === '720p' ? '6000k' : '9000k',
     '-profile:v', 'high', '-g', '60', '-bf', '0', '-r', String(fps),
@@ -247,7 +287,8 @@ async function main() {
   ], ['pipe', 'ignore', 'pipe']);
   encoder.stdin.on('error', error => { if (!stopping) void shutdown(1, `Encoder input failed: ${error.code}`); });
   encoder.done.then(() => { if (!stopping) void shutdown(1, 'FFmpeg exited unexpectedly; check disk space and NVENC.'); });
-  log(`Recording ${width}x${height} at ${fps} fps -> ${archive}; RTMP targets: ${rtmpTargets.length}.`);
+  log(`Recording ${width}x${height} at ${fps} fps -> ${archive}; RTMP targets: ${rtmpTargets.length}` +
+    (vertical ? ' + vertical 720x1280.' : '.'));
 
   // Fixed wall-clock pacing duplicates unchanged frames and drops superseded CDP
   // frames. Waiting on drain bounds memory; fail if encoding cannot keep up.

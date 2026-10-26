@@ -120,6 +120,7 @@ dashboard; the image has no browser login/profile persisted between runs.
 | --- | --- | --- |
 | `STREAM_URL` | `http://localhost:8765/stream` | Dashboard HTTP(S) URL reachable from the container. |
 | `RTMP_URL` | empty | Empty means archive only; otherwise a complete Twitch ingest URL including stream key. |
+| `RTMP_URL_VERTICAL` | empty | Empty means no vertical feed. Otherwise YouTube's second (vertical) stream URL, which gets a 720×1280 picture: the game column stacked over the thoughts/journey/log column. The archive and the other RTMP targets keep the 16:9 picture. |
 | `RES` | `1080p` | `1080p` = 1920×1080 / 4.5 Mbps; `720p` = 1280×720 / 3 Mbps. Both are 30 fps. |
 | `ARCHIVE_DIR` | `/recordings` | Writable output directory; normally leave this and change the volume's host path. |
 | `CHROMIUM_BIN` | `chromium` | Browser executable override for a local installation. |
@@ -139,6 +140,18 @@ real key starts broadcasting as soon as the recorder starts. For a private
 connection test, append `?bandwidthtest=true` and check
 [Twitch Inspector](https://dev.twitch.tv/docs/video-broadcast/#broadcast-urls-and-stream-keys);
 remove that suffix when ready to go live.
+
+### YouTube vertical feed
+
+By default YouTube makes the vertical (Shorts feed) version of a live stream by
+cropping the 16:9 picture, so the game and the reasoning don't both fit. To send
+the recorder's own stacked 9:16 picture instead, open the vertical preview in the
+Live Control Room's **Stream** tab, switch **Auto** to **Encoder** (RTMP(S)), pick
+a second stream key, and set `RTMP_URL_VERTICAL` to that key's full URL. YouTube
+can't add the vertical format after the stream has started, so do this before the
+recorder starts. The crop regions are measured from the dashboard's `.left-col`
+and `.right-col` when the recorder starts; if they can't be measured it logs that
+and runs without the vertical feed.
 
 ## Start, stop, and resource budget
 
