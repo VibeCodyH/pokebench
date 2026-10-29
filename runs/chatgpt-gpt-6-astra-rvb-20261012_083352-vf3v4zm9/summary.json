@@ -52,7 +52,7 @@
   },
   "cost_usd": 57.58764,
   "cost_source": "API-equivalent, not billed: this run went through the ChatGPT subscription, which has no per-token bill. Priced at OpenAI's standard API rates for gpt-6-astra ($10.00/M input, $50.00/M output; developers.openai.com/api/docs/pricing, 2026-10-25) on the recorded tokens. The subscription route reports no cache reads or writes, so neither the cache-read discount nor the GPT-6 cache-write premium is applied.",
-  "youtube_url": null,
+  "youtube_url": "https://www.youtube.com/watch?v=NY_DhfjYNeg",
   "timestamp": "20261012_105425",
   "blackouts": [
     273
