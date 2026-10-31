@@ -192,17 +192,17 @@ models:
     params: null
     quant: null
     release_date: "2026-08-31"
-    # Matches azure-gpt-6-astra, NOT claude-opus-5's 200000. Opus averaged 9,378 input tokens a
-    # turn against Astra's 4,639, and input was $13.27 of its $16.94 bill.
-    context: 131072
+    # Same shape as claude-opus-5-5 (200000 history budget, uncapped output) so the rvb4 run
+    # compares straight against the Opus and Sonnet rvb4 runs. The 9/24 TAB run used 131072 and
+    # a 4000-token output cap to fit a $20 budget; its summary.json records that shape.
+    context: 200000
     think: high
     input_cost_per_mtok: 10.00
     output_cost_per_mtok: 50.00
-    # 4000, not AnthropicProvider's 32000 default. Opus ran uncapped at 798 output tokens a
-    # turn; Astra ran capped at 169. cost() prices input at the base rate and does not model
-    # the cache tier, so a run here should come in UNDER what the summary reports: Fable 5.1
-    # bills cache hits at $0.25/M, 2.5% of base input, and the adapter caches the system block.
-    max_output_tokens: 4000
+    # Cache hits are 0.025x base input on Fable 5.1 (pricing page, read 2026-10-30), NOT the
+    # 0.1x AnthropicProvider assumes. rvb4 caches nearly all of the history, so without this
+    # override the summary would price the bulk of a run's input 4x too high.
+    cache_read_cost_per_mtok: 0.25
     max_call_s: 300
 
   - key: claude-sonnet-5
