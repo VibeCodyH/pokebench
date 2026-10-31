@@ -192,9 +192,10 @@ models:
     params: null
     quant: null
     release_date: "2026-08-31"
-    # Same shape as claude-opus-5-5 (200000 history budget, uncapped output) so the rvb4 run
-    # compares straight against the Opus and Sonnet rvb4 runs. The 9/24 TAB run used 131072 and
-    # a 4000-token output cap to fit a $20 budget; its summary.json records that shape.
+    # Same shape as claude-opus-5-5 (200000 history budget, no max_output_tokens, so the
+    # AnthropicProvider 32000 default) so the rvb4 run compares straight against the Opus and
+    # Sonnet rvb4 runs. The 9/24 TAB run used 131072 and a 4000-token output cap to fit a $20
+    # budget; its summary.json records that shape.
     context: 200000
     think: high
     input_cost_per_mtok: 10.00
