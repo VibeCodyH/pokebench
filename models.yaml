@@ -692,9 +692,10 @@ models:
   # usage: image and reasoning tokens are not counted (prompt_tokens 26 with a frame), so this
   # run's token columns undercount (summary only; the turn loop doesn't read them). Vendor unknown.
   # Fingerprinting 2026-11-03: 3-digit number chunking rules out Google/Qwen/Mistral/GLM, and the
-  # tokenizer matches none of 12 known models, Muse and GPT-6 included (far denser on emoji and
-  # code). The effort list (same as Muse's) and finish_reason "completed" (Responses-style) fit
-  # Meta/OpenAI/xAI, but the stealth wrapper may set both, and no other stealth id exists to check.
+  # tokenizer matches none of ~35 models from 33 vendors, Muse and GPT-6 included (far denser on
+  # emoji and code). finish_reason "completed" also comes from Meta/OpenAI/xAI/Sakana; Sakana serves
+  # a Kimi-tokenizer model, so it marks the serving API, not the lab. The effort list matches Muse's,
+  # but the stealth wrapper may set it, and no other stealth id exists to check.
   - key: or-crouton-alpha
     provider: openrouter
     api_model_id: stealth/crouton-alpha
