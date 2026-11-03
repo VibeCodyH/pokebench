@@ -683,6 +683,31 @@ models:
     input_cost_per_mtok: 0.0
     output_cost_per_mtok: 0.0
 
+  # Crouton Alpha: OpenRouter STEALTH model (listed 2026-11-02), vendor undisclosed, free while in
+  # stealth. Listing: text+image+video+file+audio in, response_format + structured_outputs, 1M
+  # context, reasoning mandatory (default effort max; `think: high` sends "high"). Same caveats as
+  # Space Bunny: the id can vanish without notice and the free cap is 1,000 req/day (8 PM ET reset).
+  # Sight-checked 2026-11-03 on Oak's Lab: read the "A: Yo / RED: Gramps" dialog off the frame, and
+  # two make_provider calls returned valid strict plans at think high in 5-7s. Stealth masks the
+  # usage: image and reasoning tokens are not counted (prompt_tokens 26 with a frame), so this
+  # run's token columns undercount (summary only; the turn loop doesn't read them). Vendor unknown.
+  # Fingerprinting 2026-11-03: 3-digit number chunking rules out Google/Qwen/Mistral/GLM, and the
+  # tokenizer matches none of 12 known models, Muse and GPT-6 included (far denser on emoji and
+  # code). The effort list (same as Muse's) and finish_reason "completed" (Responses-style) fit
+  # Meta/OpenAI/xAI, but the stealth wrapper may set both, and no other stealth id exists to check.
+  - key: or-crouton-alpha
+    provider: openrouter
+    api_model_id: stealth/crouton-alpha
+    display_name: "Crouton Alpha"
+    family: stealth
+    params: null
+    quant: null
+    context: 1000000
+    think: high
+    release_date: "2026-11-02" # OpenRouter listing date
+    input_cost_per_mtok: 0.0
+    output_cost_per_mtok: 0.0
+
   # Both Kimis on OpenRouter. The azure-kimi-* rows see the frame fine but sit on Azure's
   # partner-tier quota (20 units, re-checked 2026-10-01), which 429s once history pushes a request
   # past ~20k tokens around turn 450, so a full run goes through OpenRouter instead. Sight-checked
