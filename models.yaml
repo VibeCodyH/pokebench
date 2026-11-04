@@ -709,6 +709,32 @@ models:
     input_cost_per_mtok: 0.0
     output_cost_per_mtok: 0.0
 
+  # Tencent Hy4, listed on OpenRouter 2026-11-04 (04:20 UTC). One endpoint, Tencent's own, fp4. Text+image
+  # in, 1M context. Rates are what OpenRouter billed on 2026-11-04 and match the listing, which carries a
+  # 50% launch discount: Hy4 preview lists $0.834 / $2.501, exactly double. Re-check before each run,
+  # since cost_usd is computed from this row at run start. Caching is automatic: a repeat 2,425-token
+  # prompt read 2,304 tokens from cache at $0.021/Mtok.
+  # Sight-checked 2026-11-04 on server 2 (Viridian Pokémon Center, Crouton's end state): read Squirtle's
+  # PSN and HP and planned a heal at the counter. A text-only control described a Tetris screen, so the
+  # frame is really seen. The image costs only ~26 prompt tokens (65 vs 39).
+  # It thinks long at every effort. One-frame smokes: high 224s / 19.5k out; medium 169s and 88s;
+  # low 179s and 87s (8-17k out). Effort buys no speed, so the row stays at the board's high. Expect
+  # roughly 1.5-2.5 days and ~$15-25 at these rates for 1000 turns (double that at list price).
+  # reasoning effort "none" is accepted and returns zero reasoning tokens.
+  - key: or-hy4
+    provider: openrouter
+    api_model_id: tencent/hy4
+    display_name: "Hy4"
+    family: tencent
+    params: null
+    quant: fp4
+    context: 1048576
+    think: high
+    release_date: "2026-11-04" # OpenRouter listing date
+    input_cost_per_mtok: 0.417
+    output_cost_per_mtok: 1.2505
+    cache_read_cost_per_mtok: 0.021
+
   # Both Kimis on OpenRouter. The azure-kimi-* rows see the frame fine but sit on Azure's
   # partner-tier quota (20 units, re-checked 2026-10-01), which 429s once history pushes a request
   # past ~20k tokens around turn 450, so a full run goes through OpenRouter instead. Sight-checked
