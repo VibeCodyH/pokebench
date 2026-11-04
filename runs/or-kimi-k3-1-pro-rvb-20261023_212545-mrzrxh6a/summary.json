@@ -1,0 +1,109 @@
+{
+  "run_id": "or-kimi-k3-1-pro-rvb-20261023_212545-mrzrxh6a",
+  "category": "rvb",
+  "model": "moonshotai/kimi-k3.1-pro",
+  "display_name": "Kimi K3.1 Pro",
+  "provider": "openrouter",
+  "family": "kimi",
+  "run_name": "rvb4-or-kimi-k3.1-pro-20261023_212545",
+  "prompt_version": "rvb4",
+  "prompt_sha": "7f9221e8e291028e",
+  "harness_version": 2,
+  "harness_git_sha": "abf99ee",
+  "harness_files_sha": "308aa9134d8577dc",
+  "max_output_tokens": null,
+  "execution_route": "openrouter-api",
+  "think_level": "high",
+  "num_ctx": 131072,
+  "temperature": null,
+  "allowed_actions": [
+    "a",
+    "b",
+    "down",
+    "left",
+    "right",
+    "select",
+    "start",
+    "up"
+  ],
+  "run_date": "2026-10-24",
+  "model_release_date": "2026-10-23",
+  "model_params": null,
+  "quant": "mxfp4",
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "or-kimi-k3-1-pro-rvb-20261023_212545-mrzrxh6a-auto"
+  },
+  "notes": "Goal: Boulder Badge. Parcel delivered; Bulbasaur level 10, Tackle 0 PP until healed. Two Bug Catchers defeated; run from wild battles. In Viridian Forest above the double stump wall, crossing to the far-right open strip and heading north toward the exit.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 24350.7,
+  "active_time_s": 23760.5,
+  "tokens_in": 28647411,
+  "tokens_out": 800087,
+  "tokens_cache_write": 0,
+  "tokens_cache_read": 27924564,
+  "failed_attempts": {
+    "count": 19,
+    "prompt": 606061,
+    "completion": 11952,
+    "seconds": 590.3
+  },
+  "cost_usd": 15.0314768,
+  "youtube_url": null,
+  "timestamp": "20261024_041136",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 25
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 43
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 122
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 164
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 408
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pok\u00e9dex",
+      "turn": 688
+    },
+    {
+      "key": "viridian_forest",
+      "label": "Entered Viridian Forest",
+      "turn": 769
+    }
+  ],
+  "furthest_key": "viridian_forest",
+  "furthest_label": "Entered Viridian Forest",
+  "furthest_index": 6,
+  "beat_brock": false,
+  "presses_used": 5018,
+  "milestone_presses": {
+    "left_house": 101,
+    "got_starter": 206,
+    "route_1": 604,
+    "viridian_city": 856,
+    "got_parcel": 2106,
+    "got_pokedex": 3237,
+    "viridian_forest": 3703
+  },
+  "presses_exact": true
+}
