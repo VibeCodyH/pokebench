@@ -1,0 +1,130 @@
+{
+  "run_id": "or-hy4-20261104_231422-bmw6qpl8",
+  "category": "tab",
+  "model": "tencent/hy4",
+  "display_name": "Hy4",
+  "provider": "openrouter",
+  "family": "tencent",
+  "run_name": "or-hy4-20261104_231421",
+  "prompt_version": "v22",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "8b5d37c",
+  "harness_files_sha": "308aa9134d8577dc",
+  "max_output_tokens": null,
+  "execution_route": "openrouter-api",
+  "think_level": "high",
+  "num_ctx": 1048576,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-11-05",
+  "model_release_date": "2026-11-04",
+  "model_params": null,
+  "quant": "fp4",
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "or-hy4-20261104_231422-bmw6qpl8-auto"
+  },
+  "notes": "Pewter Gym, BROCK battle. Bulba L13 24/38, moves Tackle/Growl/Leech Seed/Vine Whip (4x vs Rock/Ground; Geodude 1HKO'd). Fight move menu: cursor persists on last used move AND WRAPS (turn 393: from Vine Whip down x3 wrapped to Leech Seed). From Leech Seed down x1 = Vine Whip. Main menu: down=ITEM (down,A,down,A,A = POTION); Potionx2, Ballx10, \u00a5415, 0 badges. Onix L14 36HP used BIDE turn 393, is seeded; Vine Whip should KO before Bide fires. If HP<20 heal first. After win: Boulder Badge/TM34, heal at Pokecenter, then east Route 3 -> Mt.Moon. Main menu cursor stays on FIGHT.",
+  "budget_turns": 1000,
+  "turns_used": 394,
+  "termination_reason": "beat_brock",
+  "wall_time_s": 84965.2,
+  "active_time_s": 84216.1,
+  "tokens_in": 3185422,
+  "tokens_out": 8512355,
+  "tokens_cache_write": 0,
+  "tokens_cache_read": 342080,
+  "failed_attempts": {
+    "count": 4,
+    "prompt": 9584,
+    "completion": 30185,
+    "seconds": 749.1
+  },
+  "cost_usd": 11.8375572215,
+  "youtube_url": null,
+  "timestamp": "20261105_225027",
+  "blackouts": [],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 9
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 20
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 40
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 59
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 71
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pok\u00e9dex",
+      "turn": 93
+    },
+    {
+      "key": "viridian_forest",
+      "label": "Entered Viridian Forest",
+      "turn": 174
+    },
+    {
+      "key": "pewter_city",
+      "label": "Reached Pewter City",
+      "turn": 324
+    },
+    {
+      "key": "pewter_gym",
+      "label": "Entered Brock's Gym",
+      "turn": 353
+    },
+    {
+      "key": "beat_brock",
+      "label": "Beat Brock (Boulder Badge)",
+      "turn": 394
+    }
+  ],
+  "furthest_key": "beat_brock",
+  "furthest_label": "Beat Brock (Boulder Badge)",
+  "furthest_index": 9,
+  "beat_brock": true,
+  "presses_used": 3804,
+  "milestone_presses": {
+    "left_house": 76,
+    "got_starter": 174,
+    "route_1": 424,
+    "viridian_city": 587,
+    "got_parcel": 670,
+    "got_pokedex": 884,
+    "viridian_forest": 1510,
+    "pewter_city": 2945,
+    "pewter_gym": 3113,
+    "beat_brock": 3804
+  },
+  "presses_exact": true
+}
