@@ -4,7 +4,7 @@ FROM debian:bookworm-slim
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        bash ca-certificates chromium ffmpeg fonts-dejavu-core fonts-noto-color-emoji nodejs tini \
+        bash ca-certificates chromium ffmpeg fonts-dejavu-core fonts-noto-cjk fonts-noto-color-emoji nodejs tini \
     && ffmpeg -hide_banner -encoders 2>/dev/null | grep -q h264_nvenc \
     && rm -rf /var/lib/apt/lists/*
 
