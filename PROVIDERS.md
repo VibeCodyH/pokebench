@@ -32,7 +32,9 @@ All constructors accept `timeout=600`, `input_cost_per_mtok`, and
 `output_cost_per_mtok`. Cloud credentials are checked on construction. `cost()`
 computes `(prompt * input_rate + completion * output_rate) / 1_000_000` in USD.
 Both cloud rates must be supplied to calculate cost; Ollama always returns `0.0`.
-This is a standard-rate estimate, without cache discounts or other billing tiers.
+This is a standard-rate estimate, without cache discounts or other billing tiers,
+except where a row sets `cache_read_cost_per_mtok` (anthropic, vertex, openrouter, meta):
+there, cache reads are billed at that rate and the rest of the prompt at the input rate.
 
 Ollama forwards `think` unchanged. Hosted adapters interpret `""` or `"default"`
 as API defaults. Anthropic maps the effort onto extended thinking

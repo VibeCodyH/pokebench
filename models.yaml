@@ -371,7 +371,7 @@ models:
     quant: null
     context: 131072 # Keeps every request under Ember's 200K long-context tier; see above.
     think: high
-    release_date: "2026-11-09" # First seen in Meta's model docs; no dated announcement yet.
+    release_date: "2026-11-09" # Meta Model API listing date, same convention as the OpenRouter listing-date rows
     input_cost_per_mtok: 0.10
     output_cost_per_mtok: 0.50
     cache_read_cost_per_mtok: 0.004

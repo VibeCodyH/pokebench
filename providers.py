@@ -758,6 +758,9 @@ class OpenRouterProvider(OpenAIProvider):
         # Opt-in per row. Some backends cache the prompt prefix on their own (Meta's Muse Wonder
         # served 6,516 of 6,582 prompt tokens from cache on a repeat call, 2026-10-12) and bill
         # those reads far below the input rate. Unset keeps the flat base estimate.
+        if cache_read_cost_per_mtok is not None and (
+                not math.isfinite(cache_read_cost_per_mtok) or cache_read_cost_per_mtok < 0):
+            raise ValueError("Model token rates must be finite, nonnegative USD per million")
         self.cache_read_cost_per_mtok = cache_read_cost_per_mtok
         # Opt-in per row: serve every call from this one OpenRouter host, never a fallback. Default
         # routing is price-weighted, so a slug with cheap fp8 hosts (deepseek-v4.1-flash-1017 lists

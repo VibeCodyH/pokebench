@@ -1649,6 +1649,14 @@ class MetaProviderTests(unittest.TestCase):
         # 55 uncached at $0.10 + 1792 cached at $0.004 + 98 out at $0.50
         self.assertAlmostEqual(p.cost(tokens), (55 * 0.10 + 1792 * 0.004 + 98 * 0.50) / 1e6)
 
+    def test_an_invalid_cache_rate_is_rejected_before_a_run(self):
+        import providers
+        with patch.dict("os.environ", {"META_API_KEY": "test"}):
+            for bad in (-0.004, float("nan"), float("inf")):
+                with self.assertRaises(ValueError):
+                    providers.MetaProvider("muse-ember-1.0", input_cost_per_mtok=0.10,
+                                           output_cost_per_mtok=0.50, cache_read_cost_per_mtok=bad)
+
 
 class RawButtonDispatchTests(unittest.TestCase):
     """RVB's eight raw names are one press each, on the upstream press_/walk_ timing; TAB names pass through."""
