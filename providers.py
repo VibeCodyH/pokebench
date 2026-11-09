@@ -784,6 +784,19 @@ class OpenRouterProvider(OpenAIProvider):
         return flat - read * (self.input_cost_per_mtok - self.cache_read_cost_per_mtok) / 1_000_000
 
 
+class MetaProvider(OpenRouterProvider):
+    """Meta Model API's own OpenAI-compatible endpoint (META_API_KEY; Meta's docs call the same
+    key MODEL_API_KEY). Subclasses OpenRouterProvider only for its prefix-cache accounting: Meta
+    caches the stable prefix automatically and reports reads at
+    usage.prompt_tokens_details.cached_tokens, the same field OpenRouter forwards. Per Meta's
+    docs, Chat Completions takes an image_url part and a strict json_schema response_format,
+    and reasoning_tokens are a subset of completion_tokens, so the base token count is the
+    billed output. Reasoning streams as reasoning_content, which _post_stream already folds in."""
+
+    api_key_env = "META_API_KEY"
+    base_url = "https://api.meta.ai/v1"
+
+
 class JevDecisionProvider(Provider):
     """TypeSafe's Jev on OpenRouter's /api/alpha/decisions endpoint.
 
@@ -1039,7 +1052,7 @@ def get_provider(provider_name: str, model: str, **opts) -> Provider:
     providers = {
         "ollama": OllamaProvider, "anthropic": AnthropicProvider,
         "openai": OpenAIProvider, "google": GoogleProvider,
-        "openrouter": OpenRouterProvider, "jev": JevDecisionProvider,
+        "openrouter": OpenRouterProvider, "meta": MetaProvider, "jev": JevDecisionProvider,
         "bedrock": BedrockProvider, "vertex": VertexAnthropicProvider,
         "xai": XAIProvider, "xai-subscription": XAISubscriptionProvider,
         "deepseek": DeepSeekProvider, "azure": AzureOpenAIProvider,

@@ -25,6 +25,7 @@ invalid JSON, refusals, and incomplete hosted responses raise clear errors.
 | `anthropic` | `ANTHROPIC_API_KEY`, required | Messages API; `max_tokens=32000` by default, because this API requires the field |
 | `openai` | `OPENAI_API_KEY`, required | Chat Completions; no output cap unless the row sets one; temperature omitted |
 | `google` | `GEMINI_API_KEY`, required | generateContent; no output cap unless the row sets one, `temperature=0.6` |
+| `meta` | `META_API_KEY`, required (Meta's docs name it `MODEL_API_KEY`) | Chat Completions at api.meta.ai; strict `json_schema`; auto prefix cache priced by `cache_read_cost_per_mtok` |
 | `deepseek` | `DEEPSEEK_API_KEY`, required | Chat Completions at api.deepseek.com; `thinking` switch + `reasoning_effort`; `response_format: json_object` (no strict schema), so rows set `structured_output: false` |
 
 All constructors accept `timeout=600`, `input_cost_per_mtok`, and

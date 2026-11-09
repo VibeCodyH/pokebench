@@ -1619,6 +1619,37 @@ class OpenRouterHostPinTests(unittest.TestCase):
         self.assertNotIn("provider", self.sent_payload("or-deepseek-v4.1-flash"))
 
 
+class MetaProviderTests(unittest.TestCase):
+    """Oracle = the Chat Completions usage example on Meta's prompt-caching docs page
+    (prompt 1847, cached 1792, completion 98), priced at Ember's published $0.10 / $0.50 /
+    cached $0.004. A real-call oracle replaces this once a Meta key is on the box."""
+
+    DOC_USAGE = {"prompt_tokens": 1847, "completion_tokens": 98, "total_tokens": 1945,
+                 "prompt_tokens_details": {"cached_tokens": 1792}}
+
+    def make(self):
+        import run_benchmark
+        with patch.dict("os.environ", {"META_API_KEY": "test"}):
+            return run_benchmark.make_provider(run_benchmark.load_model("meta-muse-ember"))
+
+    def test_row_wires_to_metas_endpoint_with_the_cache_rate(self):
+        p = self.make()
+        self.assertEqual((p.base_url, p.model), ("https://api.meta.ai/v1", "muse-ember-1.0"))
+        self.assertEqual((p.input_cost_per_mtok, p.output_cost_per_mtok, p.cache_read_cost_per_mtok),
+                         (0.10, 0.50, 0.004))
+
+    def test_docs_usage_records_cache_reads_and_prices_them(self):
+        p = self.make()
+        body = {"choices": [{"message": {"content": "{\"thought\": \"ok\", \"actions\": []}"},
+                             "finish_reason": "stop"}], "usage": self.DOC_USAGE}
+        with patch.object(p, "_post_stream", return_value=body) as post:
+            _, _, tokens = p.chat("SYS", "u", "aGk=", {"type": "object"}, "high")
+        self.assertEqual(post.call_args.args[0], "https://api.meta.ai/v1/chat/completions")
+        self.assertEqual((tokens["prompt"], tokens["cache_read"], tokens["completion"]), (1847, 1792, 98))
+        # 55 uncached at $0.10 + 1792 cached at $0.004 + 98 out at $0.50
+        self.assertAlmostEqual(p.cost(tokens), (55 * 0.10 + 1792 * 0.004 + 98 * 0.50) / 1e6)
+
+
 class RawButtonDispatchTests(unittest.TestCase):
     """RVB's eight raw names are one press each, on the upstream press_/walk_ timing; TAB names pass through."""
 
