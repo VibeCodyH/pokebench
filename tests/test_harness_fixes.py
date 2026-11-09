@@ -1719,3 +1719,85 @@ class StallClockTests(unittest.TestCase):
                 patch.object(live, "_game_epoch", 1):
             self.assertFalse(asyncio.run(live.post_stall({"total": 5, "epoch": 1}))["success"])
 
+
+
+class ResumeTests(unittest.TestCase):
+    """Oracle = published runs' own receipts. summary.json was written by the live runner, so the
+    rebuilt totals must equal it, and the rvb4 window must reproduce the last request byte for byte
+    (load_resume refuses otherwise). Each fixture is copied with ONLY termination_reason changed,
+    because a finished run is not resumable."""
+
+    RVB4 = Path("runs/claude-fable-5-1-rvb-20261031_033546-r8m9ev2d")
+    TAB_RUN = Path("runs/or-hy4-20261104_231422-bmw6qpl8")
+
+    def stopped_copy(self, run, **changes):
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(tmp))
+        dst = tmp / run.name
+        dst.mkdir()
+        (dst / "log.jsonl").symlink_to((Path(runner.HERE) / run / "log.jsonl").resolve())
+        notes = Path(runner.HERE) / run / "notes.md"
+        if notes.exists():
+            (dst / "notes.md").write_text(notes.read_text())
+        summary = json.loads((Path(runner.HERE) / run / "summary.json").read_text())
+        summary.update({"termination_reason": "crashed", **changes})
+        (dst / "summary.json").write_text(json.dumps(summary))
+        return dst, summary
+
+    def load(self, run, cat, **changes):
+        dst, summary = self.stopped_copy(run, **changes)
+        return runner.load_resume(str(dst), {"api_model_id": summary["model"]}, cat, summary["budget_turns"]), summary
+
+    def test_rvb4_rebuild_matches_the_live_receipts(self):
+        r, s = self.load(self.RVB4, runner.rvb_category("brock-finish-cached"))
+        self.assertEqual(r["turn"], s["turns_used"])
+        self.assertEqual(r["presses_used"], s["presses_used"])
+        self.assertEqual((r["total_tokens"]["prompt"], r["total_tokens"]["completion"]), (s["tokens_in"], s["tokens_out"]))
+        self.assertEqual(r["total_tokens"].get("cache_read", 0), s["tokens_cache_read"])
+        self.assertEqual(r["total_tokens"].get("cache_write", 0), s["tokens_cache_write"])
+        self.assertEqual(r["first_turn"], {m["key"]: m["turn"] for m in s["milestones"]})
+        self.assertEqual(len(r["history"]), s["turns_used"])
+        # The rebuilt window is exactly the history block the live run sent on its last turn.
+        last = json.loads((Path(runner.HERE) / self.RVB4 / "log.jsonl").read_text().splitlines()[-1])
+        block = runner.RVB4_HISTORY_HEADER + "\n".join(r["history"][:-1][r["cache_floor"]:]) + "\n\n"
+        self.assertTrue(str(last["user_message"]).startswith(block))
+
+    def test_tab_rebuild_uses_the_logged_feedback_and_matches_tokens(self):
+        r, s = self.load(self.TAB_RUN, runner.CATEGORIES[runner.TAB])
+        self.assertEqual((r["total_tokens"]["prompt"], r["total_tokens"]["completion"]), (s["tokens_in"], s["tokens_out"]))
+        self.assertEqual(r["presses_used"], s["presses_used"])
+        self.assertEqual(r["cache_floor"], 0)
+        self.assertTrue(r["history"][-1].startswith(f"turn {s['turns_used']}:"))
+
+    def test_refuses_a_different_prompt_budget_or_model(self):
+        cat = runner.rvb_category("brock-finish-cached")
+        dst, s = self.stopped_copy(self.RVB4)
+        for model, budget in (({"api_model_id": "someone-else"}, 1000), ({"api_model_id": s["model"]}, 500)):
+            with self.assertRaises(SystemExit):
+                runner.load_resume(str(dst), model, cat, budget)
+        with self.assertRaises(SystemExit):
+            runner.load_resume(str(dst), {"api_model_id": s["model"]}, runner.CATEGORIES[runner.TAB], 1000)
+
+    def test_refuses_a_finished_run_and_a_log_summary_disagreement(self):
+        cat = runner.rvb_category("brock-finish-cached")
+        for changes in ({"termination_reason": "beat_brock"}, {"turns_used": 500}, {"tokens_in": 1}):
+            dst, s = self.stopped_copy(self.RVB4, **changes)
+            with self.assertRaises(SystemExit):
+                runner.load_resume(str(dst), {"api_model_id": s["model"]}, cat, s["budget_turns"])
+
+    def test_load_saved_game_picks_the_session_by_save_name_and_checks_the_pose(self):
+        games = {"games": [{"id": "g1", "latest_save": "other-auto"}, {"id": "g2", "latest_save": "run-x-auto"}]}
+        state = {"map": {"map_id": 51, "map_name": "Viridian Forest"}, "player": {"position": {"x": 9, "y": 1}}}
+        calls = []
+
+        def fake(method):
+            def call(url, *a, **kw):
+                calls.append((method, url))
+                body = games if url.endswith("/games") else state
+                return Mock(json=Mock(return_value=body), raise_for_status=Mock())
+            return call
+        with patch.object(runner.requests, "get", fake("GET")), patch.object(runner.requests, "post", fake("POST")):
+            self.assertEqual(runner.load_saved_game("http://s", "run-x", {"map_id": 51, "pos": [9, 1]}), "g2")
+            self.assertIn(("POST", "http://s/games/g2/load"), calls)
+            with self.assertRaises(SystemExit):
+                runner.load_saved_game("http://s", "run-x", {"map_id": 51, "pos": [9, 2]})

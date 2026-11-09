@@ -4,7 +4,8 @@
     .venv/bin/python run_benchmark.py --model-key 'qwen3.8:27b'
 
 Imports make no requests. The game must already exist and /control must be running
-(run.sh handles that). Notes and artifacts start fresh for each invocation.
+(run.sh handles that). Notes and artifacts start fresh for each invocation, unless
+--resume RUN_DIR continues a stopped run in its own directory from its -auto save.
 """
 
 import argparse
@@ -23,8 +24,8 @@ import yaml
 
 from milestones import MILESTONES, MilestoneTracker
 from providers import get_provider
-from categories import (CATEGORIES, RVB, RVB_MAX_PRESSES, TAB, rvb_category, rvb_history_entry,
-                        rvb_user_message, rvb_user_parts)
+from categories import (CATEGORIES, RVB, RVB4_HISTORY_HEADER, RVB_MAX_PRESSES, TAB, rvb_category,
+                        rvb_history_entry, rvb_user_message, rvb_user_parts)
 from qwen_red import (
     ALLOWED,
     HARNESS_VERSION,
@@ -172,7 +173,7 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
                   turns_used, budget, tokens, wall_s, notes, save_name,
                   harness_git_sha=None, harness_files_sha=None, blackouts=(),
                   termination="budget", failed_attempts=None, category=None, calibration=False,
-                  presses_used=None, milestone_presses=None, presses_exact=True):
+                  presses_used=None, milestone_presses=None, presses_exact=True, resumes=()):
     """The qwen_red.write_summary JSON keys, with registry/adapter provenance."""
     provider_name = model["provider"]
     cat = category or CATEGORIES[TAB]
@@ -215,7 +216,7 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
         "notes": notes,
         "budget_turns": budget,
         "turns_used": turns_used,  # completed turns only: an attempt cut short by SIGINT is not a turn
-        # budget | beat_brock | interrupted | stopped | provider_error — a partial run is never a scored result
+        # budget | beat_brock | interrupted | stopped | provider_error | crashed — a partial run is never a scored result
         "termination_reason": termination,
         "wall_time_s": round(wall_s, 1),
         # wall time minus what failed calls and their backoff burned (failed_attempts.seconds): the
@@ -252,6 +253,10 @@ def write_summary(artifact_dir, run_id, model, provider, run_name, tracker,
     if calibration:
         # A pilot that exists to size the category (budget, press cap). Never a board result.
         summary["calibration"] = True
+    if resumes:
+        # The run stopped and was continued from its own save and receipts (--resume): where, when,
+        # why it had stopped, and the code that continued it. Whether that still counts is the board's call.
+        summary["resumes"] = list(resumes)
     path = os.path.join(artifact_dir, "summary.json")
     with open(path, "x") as output:
         json.dump(summary, output, indent=2)
@@ -449,27 +454,145 @@ def verify_fresh_game(server):
             "then launch again.")
 
 
+def load_resume(run_dir, model, cat, budget):
+    """Everything run() keeps in memory, rebuilt from a stopped run's receipts so the run can
+    continue in the same directory. log.jsonl is the source for what the model saw (history,
+    the rvb4 cache window) and what it cost (tokens, presses); summary.json, which the runner's
+    `finally` writes even on a crash, holds the rest (milestones, stall time, blackouts, wall
+    time). A run killed so hard that its summary never landed cannot be resumed exactly, so
+    this refuses rather than guess. Raises SystemExit with the reason on any mismatch."""
+    run_dir = os.path.abspath(run_dir.rstrip("/"))
+    summary_path = os.path.join(run_dir, "summary.json")
+    log_path = os.path.join(run_dir, "log.jsonl")
+    if not (os.path.isfile(summary_path) and os.path.isfile(log_path)):
+        raise SystemExit(f"refusing to resume {run_dir}: it needs both log.jsonl and summary.json")
+    with open(summary_path) as f:
+        prior = json.load(f)
+    # A resume under a different prompt, model, category or turn clock is a different run.
+    for field, want in (("category", cat.id), ("prompt_sha", cat.prompt_sha),
+                        ("model", model["api_model_id"]), ("budget_turns", budget)):
+        have = prior.get(field, TAB if field == "category" else None)
+        if have != want:
+            raise SystemExit(f"refusing to resume: {field} is {have!r} in {summary_path} but {want!r} here")
+    if prior.get("termination_reason") == "beat_brock" or prior.get("turns_used", 0) >= budget:
+        raise SystemExit(f"refusing to resume: {run_dir} already finished ({prior.get('termination_reason')}, "
+                         f"{prior.get('turns_used')}/{budget} turns)")
+
+    rows, ctx_scale = [], 1.0
+    with open(log_path) as f:
+        for line in f:
+            row = json.loads(line)
+            if row.get("turn_not_counted"):
+                # The view only ever shrinks on a context rejection, so the smallest scale is current.
+                ctx_scale = min(ctx_scale, row.get("notes_view_scale", ctx_scale))
+            elif "plan" in row:
+                rows.append(row)
+    if not rows:
+        raise SystemExit(f"refusing to resume {run_dir}: no completed turns in log.jsonl")
+    if rows[-1]["turn"] != prior.get("turns_used"):
+        raise SystemExit(f"refusing to resume: log.jsonl ends at turn {rows[-1]['turn']} but summary.json "
+                         f"says {prior.get('turns_used')} turns were used")
+
+    history, history_turns, total_tokens = [], [], {"prompt": 0, "completion": 0}
+    for row in rows:
+        if cat.id == RVB:
+            plan = row["plan"]
+            proposed = plan.get("actions")
+            actions = ([a for a in proposed if isinstance(a, str) and a in cat.allowed]
+                       if isinstance(proposed, list) else [])
+            history.append(rvb_history_entry(row["turn"], str(plan.get("thought") or "").strip(), actions))
+        else:
+            history.append(row["feedback"])
+        history_turns.append(row["turn"])
+        for key, value in (row.get("tokens") or {}).items():
+            total_tokens[key] = total_tokens.get(key, 0) + value
+    if total_tokens["prompt"] != prior.get("tokens_in") or total_tokens["completion"] != prior.get("tokens_out"):
+        raise SystemExit(f"refusing to resume: log.jsonl sums to {total_tokens['prompt']}/{total_tokens['completion']} "
+                         f"tokens but summary.json says {prior.get('tokens_in')}/{prior.get('tokens_out')}")
+
+    cache_floor = 0
+    if cat.cached_layout:
+        # The last request shows HEADER + history[floor:] joined by newlines, built before that
+        # turn's own entry was appended. Recover the floor by matching that block exactly.
+        shown = str(rows[-1].get("user_message") or "")
+        before = history[:-1]
+        body = shown[len(RVB4_HISTORY_HEADER):] if shown.startswith(RVB4_HISTORY_HEADER) else None
+        floor = next((i for i in range(len(before))
+                      if body is not None and body.startswith("\n".join(before[i:]) + "\n\n")), None)
+        if floor is None:
+            raise SystemExit("refusing to resume: could not find the rvb4 history window in the last turn's request")
+        cache_floor = floor
+
+    pose = next((st["after"] for row in reversed(rows) for st in reversed(row.get("steps") or [])
+                 if isinstance(st, dict) and isinstance(st.get("after"), dict)), None)
+    notes_path = os.path.join(run_dir, "notes.md")
+    notes = open(notes_path).read() if os.path.isfile(notes_path) else ""
+    return {
+        "dir": run_dir, "prior": prior, "history": history, "history_turns": history_turns,
+        "total_tokens": total_tokens, "turn": rows[-1]["turn"], "presses_used": rows[-1].get("presses_total") or 0,
+        "presses_exact": prior.get("presses_exact", True) and all(r.get("presses") is not None for r in rows),
+        "ctx_scale": ctx_scale, "cache_floor": cache_floor, "notes": notes, "pose": pose,
+        "first_turn": {m["key"]: m["turn"] for m in prior.get("milestones") or []},
+        "milestone_presses": dict(prior.get("milestone_presses") or {}),
+        "failed_attempts": {"count": 0, "prompt": 0, "completion": 0, "seconds": 0.0,
+                            **(prior.get("failed_attempts") or {})},
+        "blackouts": list(prior.get("blackouts") or []),
+        "wall_time_s": float(prior.get("wall_time_s") or 0.0),
+    }
+
+
+def load_saved_game(server, run_id, pose):
+    """Put the emulator back where the stopped run left it: the game session whose latest save is
+    this run's `-auto` state, loaded through the server's own session load. Then check the player
+    stands where the log says the last completed turn ended, so a stale save cannot resume silently."""
+    games = requests.get(f"{server}/games", timeout=10).json().get("games") or []
+    match = [g for g in games if g.get("latest_save") == f"{run_id}-auto"]
+    if len(match) != 1:
+        raise SystemExit(f"refusing to resume: {server} has {len(match)} game sessions whose latest save is "
+                         f"{run_id}-auto (need exactly one)")
+    requests.post(f"{server}/games/{match[0]['id']}/load", timeout=60).raise_for_status()
+    now = pose_of(requests.get(f"{server}/state", timeout=10).json())
+    if pose is not None and (now["map_id"], list(now["pos"])) != (pose.get("map_id"), list(pose.get("pos") or [])):
+        raise SystemExit(f"refusing to resume: the save puts the player at {fmt_pose(now)}, "
+                         f"but the last logged turn ended at {fmt_pose(pose)}")
+    return match[0]["id"]
+
+
 def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
-        pause_on_billing=0, category=TAB, calibration=False, rvb_goal=RVB_DEFAULT_GOAL):
+        pause_on_billing=0, category=TAB, calibration=False, rvb_goal=RVB_DEFAULT_GOAL, resume_dir=None):
     cat = rvb_category(rvb_goal) if category == RVB else CATEGORIES[category]
     if cat.id == RVB and model["provider"] == "jev":
         # Jev discards the screenshot and reads the text state; RVB has no text state to read.
         raise ValueError("jev cannot play RVB: it has no vision, and RVB gives the model nothing else")
     server = server.rstrip("/")
-    verify_fresh_game(server)
-    os.makedirs(RUNS_DIR, exist_ok=True)
-    slug = re.sub(r"[^A-Za-z0-9_-]+", "-", model["key"]).strip("-")[:80] or "model"
-    if cat.id != TAB:
-        slug = f"{slug}-{cat.id}"
-    prefix = f"{slug}-{time.strftime('%Y%m%d_%H%M%S')}-"
-    artifact_dir = tempfile.mkdtemp(prefix=prefix, dir=RUNS_DIR)
-    if not no_frames:
-        os.makedirs(os.path.join(artifact_dir, "frames"))
-    run_id = os.path.basename(artifact_dir)
+    resume = load_resume(resume_dir, model, cat, budget) if resume_dir else None
+    if resume and bool(resume["prior"].get("calibration")) != bool(calibration):
+        raise SystemExit("refusing to resume: --calibration must match how the run started")
+    if resume:
+        artifact_dir = resume["dir"]
+        run_id = os.path.basename(artifact_dir)
+        load_saved_game(server, run_id, resume["pose"])
+        # write_summary opens with "x": keep the stopped run's summary beside the new one.
+        os.rename(os.path.join(artifact_dir, "summary.json"),
+                  os.path.join(artifact_dir, f"summary.pre-resume-{time.strftime('%Y%m%d_%H%M%S')}.json"))
+        if not no_frames:
+            os.makedirs(os.path.join(artifact_dir, "frames"), exist_ok=True)
+    else:
+        verify_fresh_game(server)
+        os.makedirs(RUNS_DIR, exist_ok=True)
+        slug = re.sub(r"[^A-Za-z0-9_-]+", "-", model["key"]).strip("-")[:80] or "model"
+        if cat.id != TAB:
+            slug = f"{slug}-{cat.id}"
+        prefix = f"{slug}-{time.strftime('%Y%m%d_%H%M%S')}-"
+        artifact_dir = tempfile.mkdtemp(prefix=prefix, dir=RUNS_DIR)
+        if not no_frames:
+            os.makedirs(os.path.join(artifact_dir, "frames"))
+        run_id = os.path.basename(artifact_dir)
     log_path = os.path.join(artifact_dir, "log.jsonl")
     notes_path = os.path.join(artifact_dir, "notes.md")
-    with open(log_path, "x"):
-        pass
+    if not resume:
+        with open(log_path, "x"):
+            pass
     print(f"run artifacts -> {artifact_dir}  (category {cat.id}, prompt {cat.prompt_version}/{cat.prompt_sha}, "
           f"ctx {model['num_ctx']}{', CALIBRATION: not a board result' if calibration else ''})", flush=True)
 
@@ -550,6 +673,36 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
     errors_in_a_row = 0
     first_error_at = None
     billing_waited = 0
+    resumes = []
+    if resume:
+        prior = resume["prior"]
+        # The receipt keeps the original start's code fingerprint; each resume records its own.
+        resumes = list(prior.get("resumes") or []) + [{
+            "turn": resume["turn"] + 1, "timestamp": time.strftime("%Y%m%d_%H%M%S"),
+            "prior_termination": prior.get("termination_reason"),
+            "harness_git_sha": harness_git_sha, "harness_files_sha": harness_files_sha}]
+        harness_git_sha, harness_files_sha = prior.get("harness_git_sha"), prior.get("harness_files_sha")
+        run_name = prior.get("run_name") or run_name
+        tracker.first_turn.update(resume["first_turn"])
+        tracker._started = bool(tracker.first_turn)
+        run_start = time.time() - resume["wall_time_s"]   # downtime between the two runners is not play time
+        total_tokens, notes = resume["total_tokens"], resume["notes"]
+        history, history_turns = resume["history"], resume["history_turns"]
+        presses_used, presses_exact = resume["presses_used"], resume["presses_exact"]
+        ctx_scale, cache_floor = resume["ctx_scale"], resume["cache_floor"]
+        milestone_presses.update(resume["milestone_presses"])
+        turn = turns_done = resume["turn"]
+        failed_attempts, blackouts = resume["failed_attempts"], resume["blackouts"]
+        acted, save_name = True, f"{run_id}-auto"
+        for key, label, _ in MILESTONES:   # the restarted server's journey tracker starts empty
+            if key in tracker.first_turn:
+                try:
+                    requests.post(f"{server}/milestones", json={"key": key, "label": label,
+                                  "turn": tracker.first_turn[key], "epoch": epoch}, timeout=10)
+                except Exception:
+                    pass
+        print(f"resuming {run_id} at turn {turn + 1}/{budget} ({len(history)} history entries, "
+              f"cache floor {cache_floor}, {presses_used} presses)", flush=True)
     try:
         # A turn is one model plan that reached the emulator. Pauses, server hiccups and
         # provider errors retry the same turn number so outages never eat the model's budget.
@@ -880,10 +1033,14 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
                 print(f"🏆 Brock defeated at turn {turn} — ceiling reached, ending run.", flush=True)
                 termination = "beat_brock"
                 break
-            if turn % 25 == 0:
-                save_name = save_game(server, f"{run_id}-auto") or save_name
+            # Every turn, not every 25th: a runner killed without its `finally` (a container
+            # restart) leaves this save as the resume point, and it must match the log's last turn.
+            save_name = save_game(server, f"{run_id}-auto") or save_name
     except KeyboardInterrupt:
         termination = "interrupted"
+        raise
+    except Exception:
+        termination = "crashed"   # was reported as "budget", which read like a finished run
         raise
     finally:
         if action_outstanding:
@@ -896,6 +1053,7 @@ def run(model, provider, server, budget=1000, run_name="run", no_frames=False,
             harness_git_sha, harness_files_sha, blackouts, termination, failed_attempts,
             category=cat, calibration=calibration,
             presses_used=presses_used, milestone_presses=milestone_presses, presses_exact=presses_exact,
+            resumes=resumes,
         )
     return summary_path
 
@@ -921,6 +1079,9 @@ def main(argv=None):
                              "keep pressing' (rvb3); brock-finish-cached = rvb3's instructions with the recent "
                              "turns first and the screenshot last, so the history is prompt-cached, plus the two "
                              "wording changes Anthropic's refusal filter needed (rvb4, the default).")
+    parser.add_argument("--resume", metavar="RUN_DIR", default=None,
+                        help="continue a stopped run in its own directory from its -auto save; pass the "
+                             "same --model-key/--category/--rvb-goal/--turns it started with")
     args = parser.parse_args(argv)
     if args.turns <= 0:
         parser.error("--turns must be positive")
@@ -939,7 +1100,8 @@ def main(argv=None):
     try:
         run(model, provider, args.server, args.turns, run_name,
             no_frames=args.no_frames, pause_on_billing=args.pause_on_billing,
-            category=args.category, calibration=args.calibration, rvb_goal=args.rvb_goal or RVB_DEFAULT_GOAL)
+            category=args.category, calibration=args.calibration, rvb_goal=args.rvb_goal or RVB_DEFAULT_GOAL,
+            resume_dir=args.resume)
     except KeyboardInterrupt:
         print("Run interrupted; partial summary written.", flush=True)
         return 130
