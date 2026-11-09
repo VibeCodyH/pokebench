@@ -352,6 +352,30 @@ models:
     output_cost_per_mtok: 20.00
     cache_read_cost_per_mtok: 0.20
 
+  # Meta's small execution model, on Meta Model API directly (not on OpenRouter as of 2026-11-09,
+  # when it appeared in Meta's docs and console). Docs list image input, strict json_schema, and
+  # reasoning_effort minimal..max (default max); run at high like every seat. Meta bills a WHOLE
+  # request at the long-context rates ($0.30 / $1.50 / cached $0.012) once its input, cached
+  # tokens included, passes 200K. The 131072 history budget plus system prompt and one frame
+  # stays under that line, so these are the only rates a run should see.
+  # Sight-checked 2026-11-09: a real frame adds 287 prompt tokens over an 8x8 blank and the reply
+  # reads the GAME FREAK screen. Usage streams, reasoning_tokens sit inside completion_tokens,
+  # and cached_tokens comes back on repeats. Meta keeps reasoning text private, so the thinking
+  # column stays empty for this seat.
+  - key: meta-muse-ember
+    provider: meta
+    api_model_id: muse-ember-1.0
+    display_name: "Muse Ember"
+    family: meta
+    params: null
+    quant: null
+    context: 131072 # Keeps every request under Ember's 200K long-context tier; see above.
+    think: high
+    release_date: "2026-11-09" # Meta Model API listing date, same convention as the OpenRouter listing-date rows
+    input_cost_per_mtok: 0.10
+    output_cost_per_mtok: 0.50
+    cache_read_cost_per_mtok: 0.004
+
   # Vision verified on the pinned id 2026-09-20: input_modalities is text+image+video, which is
   # the gate for this seat because the harness sends a PNG every turn. OpenRouter routes this
   # model across several providers whose rates differ ($0.075-0.09 in, $0.25-0.30 out), so the

@@ -113,7 +113,7 @@ def make_provider(model):
     # "vertex" is in the set because it IS AnthropicProvider, just pointed at Google Cloud.
     if model["provider"] in {"anthropic", "vertex"} and model.get("thinking_style") is not None:
         opts["thinking_style"] = model["thinking_style"]
-    if model["provider"] in {"anthropic", "vertex", "openrouter"} and model.get("cache_read_cost_per_mtok") is not None:
+    if model["provider"] in {"anthropic", "vertex", "openrouter", "meta"} and model.get("cache_read_cost_per_mtok") is not None:
         opts["cache_read_cost_per_mtok"] = model["cache_read_cost_per_mtok"]
     if model["provider"] == "openrouter" and model.get("openrouter_host") is not None:
         opts["host"] = model["openrouter_host"]

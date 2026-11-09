@@ -758,6 +758,9 @@ class OpenRouterProvider(OpenAIProvider):
         # Opt-in per row. Some backends cache the prompt prefix on their own (Meta's Muse Wonder
         # served 6,516 of 6,582 prompt tokens from cache on a repeat call, 2026-10-12) and bill
         # those reads far below the input rate. Unset keeps the flat base estimate.
+        if cache_read_cost_per_mtok is not None and (
+                not math.isfinite(cache_read_cost_per_mtok) or cache_read_cost_per_mtok < 0):
+            raise ValueError("Model token rates must be finite, nonnegative USD per million")
         self.cache_read_cost_per_mtok = cache_read_cost_per_mtok
         # Opt-in per row: serve every call from this one OpenRouter host, never a fallback. Default
         # routing is price-weighted, so a slug with cheap fp8 hosts (deepseek-v4.1-flash-1017 lists
@@ -782,6 +785,19 @@ class OpenRouterProvider(OpenAIProvider):
             return flat
         read = min(tokens.get("cache_read", 0), tokens["prompt"])
         return flat - read * (self.input_cost_per_mtok - self.cache_read_cost_per_mtok) / 1_000_000
+
+
+class MetaProvider(OpenRouterProvider):
+    """Meta Model API's own OpenAI-compatible endpoint (META_API_KEY; Meta's docs call the same
+    key MODEL_API_KEY). Subclasses OpenRouterProvider only for its prefix-cache accounting: Meta
+    caches the stable prefix automatically and reports reads at
+    usage.prompt_tokens_details.cached_tokens, the same field OpenRouter forwards. Per Meta's
+    docs, Chat Completions takes an image_url part and a strict json_schema response_format,
+    and reasoning_tokens are a subset of completion_tokens, so the base token count is the
+    billed output. Reasoning streams as reasoning_content, which _post_stream already folds in."""
+
+    api_key_env = "META_API_KEY"
+    base_url = "https://api.meta.ai/v1"
 
 
 class JevDecisionProvider(Provider):
@@ -1039,7 +1055,7 @@ def get_provider(provider_name: str, model: str, **opts) -> Provider:
     providers = {
         "ollama": OllamaProvider, "anthropic": AnthropicProvider,
         "openai": OpenAIProvider, "google": GoogleProvider,
-        "openrouter": OpenRouterProvider, "jev": JevDecisionProvider,
+        "openrouter": OpenRouterProvider, "meta": MetaProvider, "jev": JevDecisionProvider,
         "bedrock": BedrockProvider, "vertex": VertexAnthropicProvider,
         "xai": XAIProvider, "xai-subscription": XAISubscriptionProvider,
         "deepseek": DeepSeekProvider, "azure": AzureOpenAIProvider,

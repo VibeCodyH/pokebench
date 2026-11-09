@@ -25,13 +25,16 @@ invalid JSON, refusals, and incomplete hosted responses raise clear errors.
 | `anthropic` | `ANTHROPIC_API_KEY`, required | Messages API; `max_tokens=32000` by default, because this API requires the field |
 | `openai` | `OPENAI_API_KEY`, required | Chat Completions; no output cap unless the row sets one; temperature omitted |
 | `google` | `GEMINI_API_KEY`, required | generateContent; no output cap unless the row sets one, `temperature=0.6` |
+| `meta` | `META_API_KEY`, required (Meta's docs name it `MODEL_API_KEY`) | Chat Completions at api.meta.ai; strict `json_schema`; auto prefix cache priced by `cache_read_cost_per_mtok` |
 | `deepseek` | `DEEPSEEK_API_KEY`, required | Chat Completions at api.deepseek.com; `thinking` switch + `reasoning_effort`; `response_format: json_object` (no strict schema), so rows set `structured_output: false` |
 
 All constructors accept `timeout=600`, `input_cost_per_mtok`, and
 `output_cost_per_mtok`. Cloud credentials are checked on construction. `cost()`
 computes `(prompt * input_rate + completion * output_rate) / 1_000_000` in USD.
 Both cloud rates must be supplied to calculate cost; Ollama always returns `0.0`.
-This is a standard-rate estimate, without cache discounts or other billing tiers.
+This is a standard-rate estimate, without cache discounts or other billing tiers,
+except where a row sets `cache_read_cost_per_mtok` (anthropic, vertex, openrouter, meta):
+there, cache reads are billed at that rate and the rest of the prompt at the input rate.
 
 Ollama forwards `think` unchanged. Hosted adapters interpret `""` or `"default"`
 as API defaults. Anthropic maps the effort onto extended thinking
@@ -69,6 +72,8 @@ entry = next(model for model in models if model["key"] == "qwen3.8:27b")
 opts = {name: entry[name] for name in ("input_cost_per_mtok", "output_cost_per_mtok")}
 if entry["provider"] == "ollama":
     opts["num_ctx"] = entry["context"]
+if entry["provider"] in {"anthropic", "vertex", "openrouter", "meta"} and entry.get("cache_read_cost_per_mtok") is not None:
+    opts["cache_read_cost_per_mtok"] = entry["cache_read_cost_per_mtok"]  # else cache reads bill at the input rate
 provider = get_provider(entry["provider"], entry["api_model_id"], **opts)
 # When running: provider.chat(system, user, image_b64, schema, entry["think"])
 ```
