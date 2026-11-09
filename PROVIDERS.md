@@ -72,6 +72,8 @@ entry = next(model for model in models if model["key"] == "qwen3.8:27b")
 opts = {name: entry[name] for name in ("input_cost_per_mtok", "output_cost_per_mtok")}
 if entry["provider"] == "ollama":
     opts["num_ctx"] = entry["context"]
+if entry["provider"] in {"anthropic", "vertex", "openrouter", "meta"} and entry.get("cache_read_cost_per_mtok") is not None:
+    opts["cache_read_cost_per_mtok"] = entry["cache_read_cost_per_mtok"]  # else cache reads bill at the input rate
 provider = get_provider(entry["provider"], entry["api_model_id"], **opts)
 # When running: provider.chat(system, user, image_b64, schema, entry["think"])
 ```
