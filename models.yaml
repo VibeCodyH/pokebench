@@ -295,6 +295,25 @@ models:
     output_cost_per_mtok: 10.00
     rates_valid_until: "2026-11-30"  # runs refuse to start after this until the row is re-priced
 
+  # Gemini 4 Carbon, announced 2026-10-28 for cyber defenders first. Answered on a project's Vertex
+  # global endpoint on 2026-11-10 (modelVersion gemini-4-carbon) while still absent from the AI
+  # Studio model list, so it takes Argon's route. Announced at Argon's 2.00/10.00 intro price; Google
+  # had not published a Carbon pricing page yet, so the row expires with Argon's intro window.
+  - key: gemini-4-carbon
+    provider: google
+    api_model_id: gemini-4-carbon
+    display_name: "Gemini 4 Carbon"
+    family: gemini
+    params: null
+    quant: null
+    context: 1000000
+    think: high
+    release_date: "2026-11-10"
+    region: global
+    input_cost_per_mtok: 2.00
+    output_cost_per_mtok: 10.00
+    rates_valid_until: "2026-11-30"  # runs refuse to start after this until the row is re-priced
+
   - key: gemini-3.8-flash
     provider: google
     api_model_id: gemini-3.8-flash # verified: the id run via the AI Studio route
