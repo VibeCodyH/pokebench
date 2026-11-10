@@ -31,11 +31,15 @@ class GoogleRegionTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 providers.GoogleProvider("gemini-4-argon", region="global")
 
-    def test_the_argon_row_reaches_the_adapter_with_its_region(self):
-        row = run_benchmark.load_model("gemini-4-argon")
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "k", "GOOGLE_CLOUD_PROJECT": "123"}, clear=True):
-            p = run_benchmark.make_provider(row)
-        self.assertIn("/projects/123/locations/global/", p.base_url)
+    def test_the_gemini_4_rows_reach_the_adapter_with_their_region(self):
+        # gemini-4-carbon: same oracle, re-measured 2026-11-10 (200 on global, modelVersion gemini-4-carbon).
+        for key in ("gemini-4-argon", "gemini-4-carbon"):
+            with self.subTest(key=key):
+                row = run_benchmark.load_model(key)
+                with patch.dict(os.environ, {"GOOGLE_API_KEY": "k", "GOOGLE_CLOUD_PROJECT": "123"}, clear=True):
+                    p = run_benchmark.make_provider(row)
+                self.assertIn("/projects/123/locations/global/", p.base_url)
+                self.assertTrue(p.base_url.endswith("/publishers/google/models"))
 
     def test_expired_rates_refuse_to_start(self):
         row = dict(run_benchmark.load_model("gemini-4-argon"), rates_valid_until="2026-01-01")
