@@ -291,6 +291,10 @@ models:
     think: high
     release_date: "2026-10-13"
     region: global
+    # Silence window on the stream. Five streamed calls on 2026-11-11 (thinking high, one frame):
+    # first frame at 5.8-7.7 s, largest gap 7.7 s. A sixth sat 270 s before answering, which is
+    # the stall this is here to cut short.
+    timeout: 120
     input_cost_per_mtok: 2.00
     output_cost_per_mtok: 10.00
     rates_valid_until: "2026-11-30"  # runs refuse to start after this until the row is re-priced
@@ -310,9 +314,8 @@ models:
     think: high
     release_date: "2026-11-10"
     region: global
-    # Silence window on the stream, not a limit on the whole call. Argon's thought frames arrive
-    # 5-7 s apart at this thinking level; Carbon had no healthy stream to measure on 2026-11-11
-    # (Google was not serving it), so this is loose until one is captured.
+    # Silence window on the stream, same as Argon's above. Carbon had no healthy stream to measure
+    # on 2026-11-11 (three probes, zero bytes in 180 s each), so re-check this once one is captured.
     timeout: 120
     input_cost_per_mtok: 2.00
     output_cost_per_mtok: 10.00
