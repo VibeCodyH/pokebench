@@ -1325,6 +1325,25 @@ class GoogleStreamTests(StreamParsingTests):
             self.chat('{"error": {"code": 404, "message": "Publisher model was not found"}}', status=404)
         self.assertIn("was not found", caught.exception.response.text)
 
+    def test_a_line_that_never_ends_is_cut_by_size(self):
+        # No newline anywhere: iter_lines would have buffered this forever without checking a bound.
+        self.google.max_call_chars = 2000
+        with self.assertRaises(TimeoutError) as caught:      # retryable, like every other runaway
+            self.chat("data: " + "x" * 10_000)
+        self.assertIn("max_call_chars", str(caught.exception))
+
+    def test_a_line_that_never_ends_is_cut_by_the_clock(self):
+        ticks = itertools.count(0.0, 400.0)                  # every reading is 400 s later; max_call_s is 900
+        with patch.object(self.providers.time, "monotonic", side_effect=lambda: next(ticks)):
+            with self.assertRaises(TimeoutError) as caught:
+                self.chat("data: " + "x" * 5_000)
+        self.assertIn("max_call_s", str(caught.exception))
+
+    def test_a_last_frame_without_a_trailing_newline_still_counts(self):
+        (plan, _, tokens), _ = self.chat(self.capture.rstrip("\n"))
+        self.assertEqual(plan["actions"], ["walk_down", "walk_right", "walk_right", "walk_up", "press_a"])
+        self.assertEqual(tokens, {"prompt": 1394, "completion": 1662})
+
 
 class AnthropicThinkingStyleTests(unittest.TestCase):
     """Anthropic has TWO mutually exclusive thinking request shapes and the API hard-400s on

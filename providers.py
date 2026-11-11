@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
+import itertools
 import json
 import math
 import os
@@ -733,26 +734,40 @@ class GoogleProvider(Provider):
                 response.content          # fetch the error body: the turn loop reads exc.response.text
                 response.raise_for_status()
             response.encoding = "utf-8"   # SSE is UTF-8; requests would guess Latin-1 for text/*
-            for line in response.iter_lines(decode_unicode=True, delimiter="\n"):
+            # Chunks, not iter_lines: iter_lines holds an unfinished line until its newline
+            # arrives, so a stream that never sends one could neither be timed out nor
+            # size-checked, and its buffer would grow without limit. Reading chunks lets both
+            # bounds run on every read, and `pending` (the unfinished line) is capped too.
+            # 512 is the chunk size iter_lines itself reads with, so frames surface just as fast.
+            pending = ""
+            for chunk in itertools.chain(response.iter_content(chunk_size=512, decode_unicode=True), [None]):
                 if time.monotonic() > deadline:
                     raise _call_expired(self.max_call_s, "".join(text), "".join(thoughts))
-                line = line.rstrip("\r")
-                if not line.startswith("data:"):
-                    continue
-                frame = json.loads(line[5:].strip())
-                if frame.get("error"):
-                    raise _stream_error(frame["error"])
-                feedback = frame.get("promptFeedback") or feedback
-                usage.update(frame.get("usageMetadata") or {})
-                for candidate in (frame.get("candidates") or [])[:1]:
-                    seen = True
-                    finish = candidate.get("finishReason") or finish
-                    for part in (candidate.get("content") or {}).get("parts") or []:
-                        piece = part.get("text") or ""
-                        (thoughts if part.get("thought") else text).append(piece)
-                        delivered += len(piece)
-                if delivered > self.max_call_chars:
-                    raise _stream_overrun(self.max_call_chars, delivered, "".join(text), "".join(thoughts))
+                if chunk is None:
+                    lines, pending = [pending], ""     # end of stream: a last line with no newline
+                else:
+                    *lines, pending = (pending + chunk).split("\n")
+                    if len(pending) > self.max_call_chars:
+                        raise _stream_overrun(self.max_call_chars, delivered + len(pending),
+                                              "".join(text), "".join(thoughts))
+                for line in lines:
+                    line = line.rstrip("\r")
+                    if not line.startswith("data:"):
+                        continue
+                    frame = json.loads(line[5:].strip())
+                    if frame.get("error"):
+                        raise _stream_error(frame["error"])
+                    feedback = frame.get("promptFeedback") or feedback
+                    usage.update(frame.get("usageMetadata") or {})
+                    for candidate in (frame.get("candidates") or [])[:1]:
+                        seen = True
+                        finish = candidate.get("finishReason") or finish
+                        for part in (candidate.get("content") or {}).get("parts") or []:
+                            piece = part.get("text") or ""
+                            (thoughts if part.get("thought") else text).append(piece)
+                            delivered += len(piece)
+                    if delivered > self.max_call_chars:
+                        raise _stream_overrun(self.max_call_chars, delivered, "".join(text), "".join(thoughts))
         finally:
             response.close()
         body = {"usageMetadata": usage}
