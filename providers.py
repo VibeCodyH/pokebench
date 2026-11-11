@@ -986,6 +986,33 @@ class DeepSeekProvider(OpenAIProvider):
             payload.pop("reasoning_effort", None)
 
 
+class QwenCloudProvider(OpenAIProvider):
+    """Alibaba's QwenCloud through its OpenAI-compatible endpoint. Probed 2026-11-10 with a real
+    frame on qwen4-max-preview: streaming, an image, strict json_schema and reasoning_effort
+    "high" all work together unchanged, so nothing is tuned here.
+
+    Two facts from that probe. Reasoning arrives as `reasoning_content` deltas (first byte at
+    3.8 s), not `reasoning`, hence the _thinking override. And it is billed INSIDE
+    completion_tokens: prompt 375 + completion 1605 == total 1980 with 1551 reasoning, so the
+    base _tokens is already right.
+
+    The endpoint is per-plan and per-region and each has its own keys, so it comes from the
+    environment instead of a class constant."""
+
+    api_key_env = "QWENCLOUD_API_KEY"
+    endpoint_env = "QWENCLOUD_BASE_URL"
+
+    def __init__(self, model: str, **opts):
+        super().__init__(model, **opts)
+        endpoint = os.environ.get(self.endpoint_env, "").strip().rstrip("/")
+        if not endpoint:
+            raise ValueError(f"{type(self).__name__} requires {self.endpoint_env}")
+        self.base_url = endpoint
+
+    def _thinking(self, message: dict) -> str:
+        return message.get("reasoning_content") or ""
+
+
 class AzureOpenAIProvider(OpenAIProvider):
     """Azure OpenAI through the v1 API, which is what makes this a plain subclass: the v1 path
     drops the dated api-version query param and accepts `Authorization: Bearer <key>`, so the
@@ -1059,6 +1086,7 @@ def get_provider(provider_name: str, model: str, **opts) -> Provider:
         "bedrock": BedrockProvider, "vertex": VertexAnthropicProvider,
         "xai": XAIProvider, "xai-subscription": XAISubscriptionProvider,
         "deepseek": DeepSeekProvider, "azure": AzureOpenAIProvider,
+        "qwencloud": QwenCloudProvider,
         "azure-foundry": AzureFoundryProvider,
     }
     try:

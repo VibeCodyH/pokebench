@@ -1271,6 +1271,41 @@ class DeepSeekProviderTests(unittest.TestCase):
         self.assertEqual(p.cost({"prompt": 1_000_000, "completion": 1_000_000}), 1.5)
 
 
+class QwenCloudProviderTests(unittest.TestCase):
+    """QwenCloud takes OpenAI's request untouched (probed 2026-11-10 on qwen4-max-preview), so
+    the adapter must NOT loosen it the way DeepSeek's does. The two things it owns are where
+    the endpoint comes from and where the reasoning text lands. The response body below is the
+    shape that probe returned."""
+
+    ENV = {"QWENCLOUD_API_KEY": "test", "QWENCLOUD_BASE_URL": "https://example.test/compatible-mode/v1/"}
+
+    def test_registry_row_sends_the_strict_request_to_the_configured_endpoint(self):
+        import providers
+        body = {"choices": [{"message": {"content": "{\"thought\": \"ok\"}", "reasoning_content": "hmm"},
+                             "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 375, "completion_tokens": 1605, "total_tokens": 1980,
+                          "completion_tokens_details": {"reasoning_tokens": 1551}}}
+        with patch.dict("os.environ", self.ENV):
+            p = runner.make_provider(runner.load_model("qwencloud-qwen4-max-preview"))
+        self.assertIsInstance(p, providers.QwenCloudProvider)
+        with patch.object(p, "_post_stream", return_value=body) as post:
+            plan, thinking, tokens = p.chat("s", "u", "", {"type": "object"}, "high")
+        url, payload = post.call_args.args[0], post.call_args.args[1]
+        self.assertEqual(url, "https://example.test/compatible-mode/v1/chat/completions")
+        self.assertEqual(payload["model"], "qwen4-max-preview")
+        self.assertEqual(payload["reasoning_effort"], "high")
+        self.assertEqual(payload["response_format"]["type"], "json_schema")
+        self.assertEqual((plan, thinking), ({"thought": "ok"}, "hmm"))
+        self.assertEqual(tokens, {"prompt": 375, "completion": 1605})   # reasoning is inside completion
+        self.assertEqual(p.timeout, 120)
+
+    def test_missing_endpoint_is_named(self):
+        import providers
+        with patch.dict("os.environ", {"QWENCLOUD_API_KEY": "test", "QWENCLOUD_BASE_URL": ""}):
+            with self.assertRaisesRegex(ValueError, "QWENCLOUD_BASE_URL"):
+                providers.QwenCloudProvider("qwen4-max-preview")
+
+
 class AnthropicThinkingStyleTests(unittest.TestCase):
     """Anthropic has TWO mutually exclusive thinking request shapes and the API hard-400s on
     the wrong one, so getting this wrong costs a run at turn 1 rather than degrading it.
