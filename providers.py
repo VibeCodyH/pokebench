@@ -661,7 +661,7 @@ class OpenAIProvider(Provider):
 
 
 class GoogleProvider(Provider):
-    """Gemini generateContent with inline PNG data and responseSchema.
+    """Gemini streamGenerateContent with inline PNG data and responseSchema.
 
     Two routes, same request body. GEMINI_API_KEY is AI Studio; GOOGLE_API_KEY is a Vertex
     Express key, which bills a Cloud project's credit instead. AI Studio wins when both are
@@ -700,6 +700,72 @@ class GoogleProvider(Provider):
         else:
             raise ValueError("GoogleProvider requires GEMINI_API_KEY (AI Studio) or GOOGLE_API_KEY (Vertex Express)")
 
+    def _post_sse(self, url: str, payload: dict, headers: dict | None = None) -> dict:
+        """streamGenerateContent, rebuilt into the generateContent response shape.
+
+        Same reason as _post_stream: with a buffered call `timeout` covers the whole response,
+        so a request Google has stopped serving looks exactly like a model that is still
+        thinking. Gemini 4 Carbon's first run (2026-11-10) lost 43 calls that way, each one
+        waiting out the full 600 s (later 360 s), and three stretches of them tripped the
+        30-minute error window and ended the run. Calls that did come back after 300-400 s
+        carried 2-9 output tokens a second against a normal 41-46: the wait was Google's, not
+        the model's.
+
+        Streamed, the thought summaries arrive while the model thinks. Measured on
+        gemini-4-argon at thinking HIGH with a real frame (2026-11-11): first frame at 6.3 s,
+        six thought frames 5.0-7.0 s apart, then the answer in 0.9 s; the largest gap anywhere
+        was 6.9 s. So `timeout` becomes a silence window and a row can set it to a minute or two.
+        With thinking off there are no thought frames, and the window has to clear the time to
+        the first answer frame instead.
+
+        Each frame is a whole GenerateContentResponse holding the next piece of candidate 0.
+        usageMetadata rides on every frame but only the last one has the counts, and
+        finishReason arrives on the last frame too. The same max_call_s and max_call_chars
+        bounds apply as on the OpenAI stream, for the same runaway cases."""
+        deadline = time.monotonic() + self.max_call_s   # started before the post: TTFT counts
+        response = requests.post(url, json=payload, headers=headers,
+                                 timeout=self.timeout, stream=True)
+        text, thoughts = [], []
+        delivered = 0
+        finish, usage, feedback, seen = None, {}, None, False
+        try:
+            if not response.ok:
+                response.content          # fetch the error body: the turn loop reads exc.response.text
+                response.raise_for_status()
+            response.encoding = "utf-8"   # SSE is UTF-8; requests would guess Latin-1 for text/*
+            for line in response.iter_lines(decode_unicode=True, delimiter="\n"):
+                if time.monotonic() > deadline:
+                    raise _call_expired(self.max_call_s, "".join(text), "".join(thoughts))
+                line = line.rstrip("\r")
+                if not line.startswith("data:"):
+                    continue
+                frame = json.loads(line[5:].strip())
+                if frame.get("error"):
+                    raise _stream_error(frame["error"])
+                feedback = frame.get("promptFeedback") or feedback
+                usage.update(frame.get("usageMetadata") or {})
+                for candidate in (frame.get("candidates") or [])[:1]:
+                    seen = True
+                    finish = candidate.get("finishReason") or finish
+                    for part in (candidate.get("content") or {}).get("parts") or []:
+                        piece = part.get("text") or ""
+                        (thoughts if part.get("thought") else text).append(piece)
+                        delivered += len(piece)
+                if delivered > self.max_call_chars:
+                    raise _stream_overrun(self.max_call_chars, delivered, "".join(text), "".join(thoughts))
+        finally:
+            response.close()
+        body = {"usageMetadata": usage}
+        if feedback:
+            body["promptFeedback"] = feedback
+        if seen:
+            parts = [{"text": "".join(thoughts), "thought": True}] if thoughts else []
+            parts.append({"text": "".join(text)})
+            # No finishReason means the stream was cut before the last frame. Reported as its own
+            # value so chat() refuses the partial text instead of parsing it as a plan.
+            body["candidates"] = [{"content": {"parts": parts}, "finishReason": finish or "STREAM_CUT"}]
+        return body
+
     def chat(
         self, system: str, user: str, image_b64: str, schema: dict, think: str
     ) -> ChatResult:
@@ -715,8 +781,8 @@ class GoogleProvider(Provider):
         elif effort not in {"", "default"}:
             config["thinkingConfig"] = {"thinkingLevel": effort.upper(), "includeThoughts": True}
         model_id = quote(self.model.removeprefix("models/"), safe="")
-        body = self._post(
-            f"{self.base_url}/{model_id}:generateContent",
+        body = self._post_sse(
+            f"{self.base_url}/{model_id}:streamGenerateContent?alt=sse",
             {
                 "systemInstruction": {"parts": [{"text": system}]},
                 "contents": [{"role": "user", "parts": [
@@ -737,6 +803,11 @@ class GoogleProvider(Provider):
         content = "".join(part.get("text", "") for part in parts if not part.get("thought"))
         thinking = "\n".join(part["text"] for part in parts if part.get("thought") and "text" in part)
         usage = body.get("usageMetadata", {})
+        if "promptTokenCount" not in usage:
+            # Zeros here would be recorded and priced as if they were real, the same failure the
+            # OpenAI stream refuses. The counts arrive on the last frame; a stream cut before it
+            # has to fail the turn.
+            raise ValueError("Google stream ended without token counts")
         return _plan(content), thinking, {
             "prompt": int(usage.get("promptTokenCount", 0)),
             "completion": int(usage.get("candidatesTokenCount", 0)) + int(usage.get("thoughtsTokenCount", 0)),
