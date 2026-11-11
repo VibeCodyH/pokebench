@@ -26,6 +26,7 @@ invalid JSON, refusals, and incomplete hosted responses raise clear errors.
 | `openai` | `OPENAI_API_KEY`, required | Chat Completions; no output cap unless the row sets one; temperature omitted |
 | `google` | `GEMINI_API_KEY`, required | generateContent; no output cap unless the row sets one, `temperature=0.6` |
 | `meta` | `META_API_KEY`, required (Meta's docs name it `MODEL_API_KEY`) | Chat Completions at api.meta.ai; strict `json_schema`; auto prefix cache priced by `cache_read_cost_per_mtok` |
+| `qwencloud` | `QWENCLOUD_API_KEY` + `QWENCLOUD_BASE_URL`, both required | Chat Completions on QwenCloud's OpenAI-compatible endpoint; strict `json_schema`; reasoning in `reasoning_content` |
 | `deepseek` | `DEEPSEEK_API_KEY`, required | Chat Completions at api.deepseek.com; `thinking` switch + `reasoning_effort`; `response_format: json_object` (no strict schema), so rows set `structured_output: false` |
 
 All constructors accept `timeout=600`, `input_cost_per_mtok`, and

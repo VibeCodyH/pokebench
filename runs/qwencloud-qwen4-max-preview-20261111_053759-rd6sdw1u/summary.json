@@ -1,0 +1,134 @@
+{
+  "run_id": "qwencloud-qwen4-max-preview-20261111_053759-rd6sdw1u",
+  "category": "tab",
+  "model": "qwen4-max-preview",
+  "display_name": "Qwen4-Max Preview",
+  "provider": "qwencloud",
+  "family": "qwen",
+  "run_name": "qwencloud-qwen4-max-preview-20261111_053759",
+  "prompt_version": "v22",
+  "prompt_sha": "075673bd4fa5a025",
+  "harness_version": 2,
+  "harness_git_sha": "052f540",
+  "harness_files_sha": "42631d406a80ec57",
+  "max_output_tokens": null,
+  "execution_route": "qwencloud-api",
+  "think_level": "high",
+  "num_ctx": 131072,
+  "temperature": null,
+  "allowed_actions": [
+    "a_until_dialog_end",
+    "hold_a_30",
+    "press_a",
+    "press_b",
+    "press_select",
+    "press_start",
+    "wait_60",
+    "walk_down",
+    "walk_left",
+    "walk_right",
+    "walk_up"
+  ],
+  "run_date": "2026-11-11",
+  "model_release_date": "2026-11-10",
+  "model_params": null,
+  "quant": null,
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "qwencloud-qwen4-max-preview-20261111_053759-rd6sdw1u-auto"
+  },
+  "notes": "Brock: Onix 2HP, Squirtle 33/38. Move cursor=BUBBLE; at FIGHT menu press_a,press_a. Change POKeMON? NO=walk_down,press_a. If Water Gun learn prompt: replace Tackle. After badge: heal Center door city(13,26), nurse(3,3) A,A; then east to Route 3/Mt Moon. No stray walks in battle.",
+  "budget_turns": 1000,
+  "turns_used": 592,
+  "termination_reason": "beat_brock",
+  "wall_time_s": 36810.7,
+  "active_time_s": 36730.0,
+  "tokens_in": 5700482,
+  "tokens_out": 1697270,
+  "tokens_cache_write": 0,
+  "tokens_cache_read": 0,
+  "failed_attempts": {
+    "count": 4,
+    "prompt": 0,
+    "completion": 0,
+    "seconds": 80.6
+  },
+  "cost_usd": null,
+  "youtube_url": null,
+  "timestamp": "20261111_155130",
+  "blackouts": [
+    309,
+    396,
+    554
+  ],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 8
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 17
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 37
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 51
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 62
+    },
+    {
+      "key": "got_pokedex",
+      "label": "Got the Pok\u00e9dex",
+      "turn": 87
+    },
+    {
+      "key": "viridian_forest",
+      "label": "Entered Viridian Forest",
+      "turn": 188
+    },
+    {
+      "key": "pewter_city",
+      "label": "Reached Pewter City",
+      "turn": 275
+    },
+    {
+      "key": "pewter_gym",
+      "label": "Entered Brock's Gym",
+      "turn": 298
+    },
+    {
+      "key": "beat_brock",
+      "label": "Beat Brock (Boulder Badge)",
+      "turn": 592
+    }
+  ],
+  "furthest_key": "beat_brock",
+  "furthest_label": "Beat Brock (Boulder Badge)",
+  "furthest_index": 9,
+  "beat_brock": true,
+  "presses_used": 5064,
+  "milestone_presses": {
+    "left_house": 75,
+    "got_starter": 154,
+    "route_1": 324,
+    "viridian_city": 426,
+    "got_parcel": 507,
+    "got_pokedex": 762,
+    "viridian_forest": 1504,
+    "pewter_city": 2157,
+    "pewter_gym": 2312,
+    "beat_brock": 5064
+  },
+  "presses_exact": true
+}

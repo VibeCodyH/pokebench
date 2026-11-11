@@ -351,6 +351,24 @@ models:
     input_cost_per_mtok: null
     output_cost_per_mtok: null
 
+  # Qwen4-Max Preview on QwenCloud (released in preview 2026-11-10). Frame probe 2026-11-10 served
+  # qwen4.0-max-preview at reasoning high with vision and strict JSON, 30 s and 1,605 output tokens.
+  # The preview is not on pay-as-you-go, so there is no per-token USD price yet: rates stay null.
+  # Reasoning streams from the first few seconds, so a silent stream is a dead one: timeout 120.
+  - key: qwencloud-qwen4-max-preview
+    provider: qwencloud
+    api_model_id: qwen4-max-preview
+    display_name: "Qwen4-Max Preview"
+    family: qwen
+    params: null
+    quant: null
+    context: 131072
+    think: high
+    release_date: "2026-11-10"
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+    timeout: 120
+
   # --- OpenRouter (BYOK): one key routes to many providers. Vision-capable only. Costs null
   # until verified (OpenRouter reports real per-request cost we can capture later). ---
   - key: or-qwen3.8-27b
