@@ -1,0 +1,112 @@
+{
+  "run_id": "or-hy4-rvb-20261107_204249-e1g6hvgo",
+  "category": "rvb",
+  "model": "tencent/hy4",
+  "display_name": "Hy4",
+  "provider": "openrouter",
+  "family": "tencent",
+  "run_name": "rvb4-or-hy4-20261107_204248",
+  "prompt_version": "rvb4",
+  "prompt_sha": "7f9221e8e291028e",
+  "harness_version": 2,
+  "harness_git_sha": "8b5d37c",
+  "harness_files_sha": "308aa9134d8577dc",
+  "max_output_tokens": null,
+  "execution_route": "openrouter-api",
+  "think_level": "high",
+  "num_ctx": 1048576,
+  "temperature": null,
+  "allowed_actions": [
+    "a",
+    "b",
+    "down",
+    "left",
+    "right",
+    "select",
+    "start",
+    "up"
+  ],
+  "run_date": "2026-11-11",
+  "model_release_date": "2026-11-04",
+  "model_params": null,
+  "quant": "fp4",
+  "artifacts": {
+    "log": "log.jsonl",
+    "save_state": "or-hy4-rvb-20261107_204249-e1g6hvgo-auto"
+  },
+  "notes": "T1000 complete: Viridian north plaza, GYM sign, player facing north at the unclimbable one-way oval ledge, no textbox/battle. Held the locked pure [up x6]; the ledge safely bonks. Final state: Bulbasaur Lv7 (LEECH SEED), OAK'S PARCEL in bag, no POKeDEX, no badges. The run's root failures were (1) losing the first rival battle at T59, which likely gated Oak's parcel\u2192Pok\u00e9dex script, and (2) ~700 turns of direction flip-flopping in Pallet/Viridian ledge mazes and blind A-probing of bookshelves/posters/aides in wrong buildings. Route to the badge would have been: win rival battle \u2192 OAK'S PARCEL (Viridian Mart) \u2192 deliver to Oak for Pok\u00e9dex \u2192 old man tutorial \u2192 Route 2 / Viridian Forest \u2192 Pewter \u2192 Brock with LEECH SEED + Potions.",
+  "budget_turns": 1000,
+  "turns_used": 1000,
+  "termination_reason": "budget",
+  "wall_time_s": 236856.1,
+  "active_time_s": 231174.7,
+  "tokens_in": 64700391,
+  "tokens_out": 22199749,
+  "tokens_cache_write": 0,
+  "tokens_cache_read": 55138432,
+  "failed_attempts": {
+    "count": 41,
+    "prompt": 2824793,
+    "completion": 488538,
+    "seconds": 5681.3
+  },
+  "cost_usd": 32.9060300995,
+  "youtube_url": null,
+  "timestamp": "20261111_042305",
+  "blackouts": [
+    127,
+    667,
+    723,
+    812,
+    934
+  ],
+  "milestones": [
+    {
+      "key": "left_house",
+      "label": "Left the house",
+      "turn": 19
+    },
+    {
+      "key": "got_starter",
+      "label": "Got a starter",
+      "turn": 42
+    },
+    {
+      "key": "route_1",
+      "label": "Reached Route 1",
+      "turn": 104
+    },
+    {
+      "key": "viridian_city",
+      "label": "Reached Viridian City",
+      "turn": 217
+    },
+    {
+      "key": "got_parcel",
+      "label": "Got Oak's Parcel",
+      "turn": 346
+    }
+  ],
+  "furthest_key": "got_parcel",
+  "furthest_label": "Got Oak's Parcel",
+  "furthest_index": 4,
+  "beat_brock": false,
+  "presses_used": 5980,
+  "milestone_presses": {
+    "left_house": 108,
+    "got_starter": 246,
+    "route_1": 614,
+    "viridian_city": 1290,
+    "got_parcel": 2064
+  },
+  "presses_exact": true,
+  "resumes": [
+    {
+      "turn": 482,
+      "timestamp": "20261109_191115",
+      "prior_termination": "budget",
+      "harness_git_sha": "aefe3fa",
+      "harness_files_sha": "8378926fd31e400c"
+    }
+  ]
+}
