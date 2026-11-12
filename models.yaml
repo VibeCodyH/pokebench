@@ -321,6 +321,26 @@ models:
     output_cost_per_mtok: 10.00
     rates_valid_until: "2026-11-30"  # runs refuse to start after this until the row is re-priced
 
+  # Gemini 4 Hydrogen, reported as the Gemini 4 Flash codename. Answered on a project's Vertex
+  # global endpoint on 2026-11-12 (modelVersion gemini-4-hydrogen) before any announcement, so it
+  # takes Argon's route. One streamed frame probe that day (thinking high): first frame at 4.5 s,
+  # largest gap 4.5 s, 26 s in all. Google has published no Hydrogen price, so rates stay null
+  # until it does; the run's token counts are kept, so cost can be worked out later.
+  - key: gemini-4-hydrogen
+    provider: google
+    api_model_id: gemini-4-hydrogen
+    display_name: "Gemini 4 Hydrogen"
+    family: gemini
+    params: null
+    quant: null
+    context: 1000000   # unpublished for Hydrogen; Argon's and Carbon's figure (only Ollama rows use it)
+    think: high
+    release_date: "2026-11-12"
+    region: global
+    timeout: 120   # silence window on the stream, same as Argon's and Carbon's
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
   - key: gemini-3.8-flash
     provider: google
     api_model_id: gemini-3.8-flash # verified: the id run via the AI Studio route
