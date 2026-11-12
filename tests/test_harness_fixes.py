@@ -6,6 +6,7 @@ import importlib.util
 import io
 import itertools
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -1211,7 +1212,7 @@ class MaxOutputTokensTests(unittest.TestCase):
                 "usageMetadata": {"promptTokenCount": 1, "candidatesTokenCount": 1}}
         for provider, expected in ((bounded, 16384), (unbounded, None)):
             sent = {}
-            with patch.object(provider, "_post",
+            with patch.object(provider, "_post_sse",
                               side_effect=lambda url, payload, *a: sent.update(payload) or body):
                 provider.chat("s", "u", "", {}, "high")
             self.assertEqual(sent["generationConfig"].get("maxOutputTokens"), expected)
@@ -1271,6 +1272,77 @@ class DeepSeekProviderTests(unittest.TestCase):
         self.assertEqual(p.cost({"prompt": 1_000_000, "completion": 1_000_000}), 1.5)
 
 
+class GoogleStreamTests(StreamParsingTests):
+    """GoogleProvider reads streamGenerateContent. The fixture is a real gemini-4-argon stream
+    (thinking HIGH, one game frame, captured 2026-11-11): six thought frames, four answer
+    frames, then a last frame carrying finishReason and the token counts. Only its
+    thoughtSignature blob is trimmed."""
+
+    FIXTURE = os.path.join(os.path.dirname(__file__), "fixtures", "gemini-4-argon-stream.sse")
+
+    def setUp(self):
+        super().setUp()
+        with patch.dict("os.environ", {"GOOGLE_API_KEY": "k", "GOOGLE_CLOUD_PROJECT": "p"}, clear=False):
+            os.environ.pop("GEMINI_API_KEY", None)
+            self.google = runner.make_provider(runner.load_model("gemini-4-carbon"))
+        with open(self.FIXTURE, encoding="utf-8") as handle:
+            self.capture = handle.read()
+
+    def chat(self, body, status=200):
+        with self.post(body, status) as post:
+            result = self.google.chat("sys", "user", "aGk=", {"type": "object"}, "high")
+        return result, post
+
+    def test_a_real_stream_becomes_the_plan_the_thoughts_and_the_counts(self):
+        (plan, thinking, tokens), post = self.chat(self.capture)
+        self.assertEqual(plan["actions"], ["walk_down", "walk_right", "walk_right", "walk_up", "press_a"])
+        self.assertTrue(plan["thought"].startswith("I need to choose a starter Pokemon"))
+        self.assertTrue(thinking.startswith("**Navigating Oak's Lab**"))
+        self.assertIn("**Planning Squirtle's Selection**", thinking)      # the sixth and last thought frame
+        # promptTokenCount 1394; candidatesTokenCount 89 + thoughtsTokenCount 1573
+        self.assertEqual(tokens, {"prompt": 1394, "completion": 1662})
+        url = post.call_args.args[0]
+        self.assertTrue(url.endswith("/locations/global/publishers/google/models/gemini-4-carbon:streamGenerateContent?alt=sse"), url)
+        # the row's timeout is the silence window handed to requests, and the call is streamed
+        self.assertEqual(post.call_args.kwargs["timeout"], 120)
+        self.assertIs(post.call_args.kwargs["stream"], True)
+
+    def test_a_stream_cut_before_its_last_frame_is_not_a_plan(self):
+        frames = [line for line in self.capture.split("\n") if line.startswith("data:")]
+        cut = "\n\n".join(frames[:-1]) + "\n\n"      # everything but finishReason and the counts
+        with self.assertRaises(ValueError) as caught:
+            self.chat(cut)
+        self.assertIn("STREAM_CUT", str(caught.exception))
+
+    def test_an_error_frame_reaches_the_turn_loop_as_an_http_failure(self):
+        body = self.frames({"error": {"code": 429, "message": "Resource exhausted", "status": "RESOURCE_EXHAUSTED"}})
+        with self.assertRaises(ValueError) as caught:
+            self.chat(body)
+        self.assertEqual(caught.exception.response.status_code, 429)
+
+    def test_an_http_error_keeps_its_body_for_the_turn_loop(self):
+        with self.assertRaises(requests.HTTPError) as caught:
+            self.chat('{"error": {"code": 404, "message": "Publisher model was not found"}}', status=404)
+        self.assertIn("was not found", caught.exception.response.text)
+
+    def test_a_line_that_never_ends_is_cut_by_size(self):
+        # No newline anywhere: iter_lines would have buffered this forever without checking a bound.
+        self.google.max_call_chars = 2000
+        with self.assertRaises(TimeoutError) as caught:      # retryable, like every other runaway
+            self.chat("data: " + "x" * 10_000)
+        self.assertIn("max_call_chars", str(caught.exception))
+
+    def test_a_line_that_never_ends_is_cut_by_the_clock(self):
+        ticks = itertools.count(0.0, 400.0)                  # every reading is 400 s later; max_call_s is 900
+        with patch.object(self.providers.time, "monotonic", side_effect=lambda: next(ticks)):
+            with self.assertRaises(TimeoutError) as caught:
+                self.chat("data: " + "x" * 5_000)
+        self.assertIn("max_call_s", str(caught.exception))
+
+    def test_a_last_frame_without_a_trailing_newline_still_counts(self):
+        (plan, _, tokens), _ = self.chat(self.capture.rstrip("\n"))
+        self.assertEqual(plan["actions"], ["walk_down", "walk_right", "walk_right", "walk_up", "press_a"])
+        self.assertEqual(tokens, {"prompt": 1394, "completion": 1662})
 class QwenCloudProviderTests(unittest.TestCase):
     """QwenCloud takes OpenAI's request untouched (probed 2026-11-10 on qwen4-max-preview), so
     the adapter must NOT loosen it the way DeepSeek's does. The two things it owns are where

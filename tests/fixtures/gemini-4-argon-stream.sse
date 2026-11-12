@@ -1,0 +1,32 @@
+data: {"candidates": [{"content": {"role": "model", "parts": [{"text": "**Navigating Oak's Lab**\n\nI'm currently positioned in Professor Oak's lab, a spot placing me directly beneath him and to the right of my rival. The crucial table, holding the three Poké Balls, is situated to my right and slightly downwards. I'm now considering my next move in this iconic starting point.\n\n", "thought": true}]}}], "usageMetadata": {"trafficType": "ON_DEMAND"}, "modelVersion": "gemini-4-argon", "createTime": "2026-11-11T15:25:00.643198Z", "responseId": "zIj0av6gJ4Oel7oPvazHoQY"}
+
+
+data: {"candidates": [{"content": {"role": "model", "parts": [{"text": "**Evaluating Starter Choices**\n\nI'm currently evaluating the precise positioning relative to the Poké Balls. Initial assumptions about proximity to Charmander may be inaccurate; I need to confirm interaction mechanics from different angles before committing to a movement strategy.\n\n", "thought": true}]}}], "usageMetadata": {"trafficType": "ON_DEMAND"}, "modelVersion": "gemini-4-argon", "createTime": "2026-11-11T15:25:00.643198Z", "responseId": "zIj0av6gJ4Oel7oPvazHoQY"}
+
+
+data: {"candidates": [{"content": {"role": "model", "parts": [{"text": "**Investigating Table Collision**\n\nI'm focusing on the table's collision properties. Initial guesses about its height seem off; I'm examining floor tile patterns and sprite dimensions to accurately determine interaction points for the Poké Balls. My goal is to confirm if I can reach the leftmost ball from its side.\n\n", "thought": true}]}}], "usageMetadata": {"trafficType": "ON_DEMAND"}, "modelVersion": "gemini-4-argon", "createTime": "2026-11-11T15:25:00.643198Z", "responseId": "zIj0av6gJ4Oel7oPvazHoQY"}
+
+
+data: {"candidates": [{"content": {"role": "model", "parts": [{"text": "**Confirming Poké Ball Accessibility**\n\nI've confirmed that adjacent tiles facing the Poké Balls are interactive. I'm now re-evaluating the best path to secure Squirtle or Bulbasaur, considering their optimal early-game utility. My focus is on the tile directly below the balls to confirm accessibility.\n\n", "thought": true}]}}], "usageMetadata": {"trafficType": "ON_DEMAND"}, "modelVersion": "gemini-4-argon", "createTime": "2026-11-11T15:25:00.643198Z", "responseId": "zIj0av6gJ4Oel7oPvazHoQY"}
+
+
+data: {"candidates": [{"content": {"role": "model", "parts": [{"text": "**Determining Table Dimensions**\n\nI've meticulously analyzed the grid, confirming the table's dimensions and its relation to my position. The bookshelves and floor lines provided crucial calibration points. I'm now certain about how the table's collision box interacts with my sprite.\n\n", "thought": true}]}}], "usageMetadata": {"trafficType": "ON_DEMAND"}, "modelVersion": "gemini-4-argon", "createTime": "2026-11-11T15:25:00.643198Z", "responseId": "zIj0av6gJ4Oel7oPvazHoQY"}
+
+
+data: {"candidates": [{"content": {"role": "model", "parts": [{"text": "**Planning Squirtle's Selection**\n\nI've successfully mapped a precise sequence of movements: down, right twice, then up, followed by pressing 'A'. This plan ensures I can access the middle Poké Ball, Squirtle, with optimal clarity of the subsequent prompt.\n\n", "thought": true}]}}], "usageMetadata": {"trafficType": "ON_DEMAND"}, "modelVersion": "gemini-4-argon", "createTime": "2026-11-11T15:25:00.643198Z", "responseId": "zIj0av6gJ4Oel7oPvazHoQY"}
+
+
+data: {"candidates": [{"content": {"role": "model", "parts": [{"text": "{\"thought\": \"I need to choose a starter Pokemon from the table. I will walk down and"}]}}], "usageMetadata": {"trafficType": "ON_DEMAND"}, "modelVersion": "gemini-4-argon", "createTime": "2026-11-11T15:25:00.643198Z", "responseId": "zIj0av6gJ4Oel7oPvazHoQY"}
+
+
+data: {"candidates": [{"content": {"role": "model", "parts": [{"text": " right to stand in front of the middle Poke Ball (Squirtle), face up, and press A to inspect it.\", \"actions\":"}]}}], "usageMetadata": {"trafficType": "ON_DEMAND"}, "modelVersion": "gemini-4-argon", "createTime": "2026-11-11T15:25:00.643198Z", "responseId": "zIj0av6gJ4Oel7oPvazHoQY"}
+
+
+data: {"candidates": [{"content": {"role": "model", "parts": [{"text": " [\"walk_down\", \"walk_right\", \"walk_right\", \"walk_up\", \"press_a"}]}}], "usageMetadata": {"trafficType": "ON_DEMAND"}, "modelVersion": "gemini-4-argon", "createTime": "2026-11-11T15:25:00.643198Z", "responseId": "zIj0av6gJ4Oel7oPvazHoQY"}
+
+
+data: {"candidates": [{"content": {"role": "model", "parts": [{"text": "\"]}"}]}}], "usageMetadata": {"trafficType": "ON_DEMAND"}, "modelVersion": "gemini-4-argon", "createTime": "2026-11-11T15:25:00.643198Z", "responseId": "zIj0av6gJ4Oel7oPvazHoQY"}
+
+
+data: {"candidates": [{"content": {"role": "model", "parts": [{"text": "", "thoughtSignature": "TRIMMED"}]}, "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 1394, "candidatesTokenCount": 89, "totalTokenCount": 3056, "trafficType": "ON_DEMAND", "promptTokensDetails": [{"modality": "TEXT", "tokenCount": 309}, {"modality": "IMAGE", "tokenCount": 1085}], "candidatesTokensDetails": [{"modality": "TEXT", "tokenCount": 89}], "thoughtsTokenCount": 1573}, "modelVersion": "gemini-4-argon", "createTime": "2026-11-11T15:25:00.643198Z", "responseId": "zIj0av6gJ4Oel7oPvazHoQY"}
+

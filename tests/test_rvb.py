@@ -640,7 +640,7 @@ class Rvb4CacheLayoutTests(unittest.TestCase):
         self.assertEqual(content[0]["text"], str(user))
         greply = {"candidates": [{"content": {"parts": [{"text": "{\"thought\": \"ok\", \"actions\": []}"}]}}],
                   "usageMetadata": {"promptTokenCount": 1, "candidatesTokenCount": 1}}
-        with patch.object(google, "_post", return_value=greply) as gpost:
+        with patch.object(google, "_post_sse", return_value=greply) as gpost:
             google.chat("sys", user, "aGk=", categories.RVB_SCHEMA, "high")
         parts = gpost.call_args.args[1]["contents"][0]["parts"]
         self.assertEqual(parts[0], {"text": str(user)})
