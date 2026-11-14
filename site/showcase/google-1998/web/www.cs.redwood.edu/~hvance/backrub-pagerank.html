@@ -1,0 +1,28 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>The Anatomy of a Hyperlink Citation Ranking Engine (Vance &amp; Chen, 1998)</title><meta name="author" content="Prof. Harold Vance &amp; David Chen"><meta name="date" content="04-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#0000cc" vlink="#551a8b">
+<center>
+<font face="Times New Roman, Times, serif" size="5"><b>The Anatomy of a Hyperlink Citation Ranking Engine</b></font><br>
+<font face="Times New Roman, Times, serif" size="3"><b>Prof. Harold Vance and David Chen</b><br>
+Department of Computer Science, Redwood State University<br>
+<i>Technical Report RSU-CS-98-09 -- September 4, 1998</i></font>
+</center>
+<hr noshade size="2">
+<blockquote><font face="Times New Roman, Times, serif" size="2"><b>Abstract.</b> Existing commercial search engines rely primarily on term frequency, keyword proximity, and author-supplied META tags, leaving them vulnerable to keyword spamming across the rapidly growing 1998 World Wide Web. We present the Redwood BackRub/PageRank prototype, which computes an objective global authority vector over the hyperlink graph via a damped random surfer model (damping factor d = 0.85) combined with an inverted full-text and anchor-text index.</font></blockquote>
+<h3><font face="Arial, Helvetica, sans-serif" size="3">1. Introduction &amp; The Keyword Spam Problem</font></h3>
+<p><font face="Times New Roman, Times, serif" size="3">As the Web expands past 150 million HTML documents, naive lexical matching returns hundreds of low-value results on broad queries such as "linux" or "recipes." Academic citation analysis suggests an alternative: treat each outbound hyperlink from page B to page A as an endorsement vote, weighted by the standing of page B itself.</font></p>
+<h3><font face="Arial, Helvetica, sans-serif" size="3">2. Random Surfer Model &amp; Eigenvector Centrality</font></h3>
+<p><font face="Times New Roman, Times, serif" size="3">Consider an idealized random surfer browsing the Web. At each step, with probability <b>d = 0.85</b> the surfer clicks a uniformly chosen outbound link on the current page; with probability <b>1 - d = 0.15</b>, the surfer gets bored and teleports to a random URL in the corpus of N pages. Let L(B) denote the number of outbound links from B:</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">PR(A) = (1 - d) / N  +  d * SUM_{B -&gt; A} ( PR(B) / L(B) )
+where d = 0.85, SUM_{i=1..N} PR(i) = 1.0, tolerance |PR_{k+1} - PR_k|_1 &lt; 1e-9</font></pre></td></tr>
+</table>
+<p><font face="Times New Roman, Times, serif" size="3">Dangling pages with L(B) = 0 redistribute their mass uniformly across all N nodes. Because teleportation ensures the Markov stochastic matrix is irreducible and aperiodic, the Perron-Frobenius theorem guarantees a unique principal eigenvector corresponding to eigenvalue 1. Power iteration converges in roughly 50 passes over sparse adjacency lists.</font></p>
+<h3><font face="Arial, Helvetica, sans-serif" size="3">3. Why Anchor Text Beats Target Page Text</font></h3>
+<p><font face="Times New Roman, Times, serif" size="3">Crucially, our crawler indexes the clickable anchor text surrounding every link onto the <i>target</i> document. Anchor text often describes a target page far more concisely and honestly than the target page describes itself: corporate home pages rarely print candid criticisms or plain-English acronyms, whereas independent webmasters summarize them directly inside &lt;A HREF&gt; tags. Conversely, sites built with &lt;FRAMESET&gt; wrappers hide navigational links from crawlers and forfeit citation flow.</font></p>
+<h3><font face="Arial, Helvetica, sans-serif" size="3">4. Inverted Indexes &amp; Prototype Corpus</font></h3>
+<p><font face="Times New Roman, Times, serif" size="3">Our C++ indexer tokenizes titles, body prose, and incoming anchor strings into compressed inverted barrels on Solaris 2.6 RAID disks. Final ranking multiplies normalized IR term relevance across title, anchor, and body hit lists with a logarithmic PageRank authority boost. Benchmark crawl targets in our 500-page evaluation snapshot include technical guides such as <a href="http://www.penguinos.org/soundblaster16-howto.html">SoundBlaster 16 IRQ/DMA &amp; OSS Driver Configuration HOWTO</a>, webmaster pattern references like <a href="http://www.html32-wizard.net/webring-html-snippet.html">How to Embed a WebRing Navigation Table cleanly on Your Page</a>, and commercial consulting pages such as <a href="http://www.cobol-rescue-99.com/index.html">COBOL Rescue '99</a>.</font></p>
+<hr noshade size="1">
+<font face="Arial, Helvetica, sans-serif" size="2"><b>Navigation:</b> <a href="http://www.cs.redwood.edu/index.html">Back to Redwood State University</a></font>
+
+</body></html>

@@ -1,0 +1,26 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Y2K vs Year 2038: struct tm Pitfalls in Legacy C Code</title><meta name="author" content="Prof. Elena Rostova"><meta name="date" content="12-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#0000ee" vlink="#551a8b">
+<font face="Arial, Helvetica, sans-serif" size="4" color="#800000"><b>Y2K vs Year 2038: struct tm Pitfalls in Legacy C Code</b></font><br>
+<font size="2">Prof. Elena Rostova | Redwood Y2K Engineering Note</font><hr noshade size="2">
+<p><font face="Times New Roman, Times, serif" size="3">While POSIX 32-bit <tt>time_t</tt> stores seconds since January 1, 1970 and does not wrap to negative values until <b>January 19, 2038</b> (03:14:07 UTC), thousands of C programs still break on January 1, 2000 because developers formatted <tt>tm-&gt;tm_year</tt> with <tt>"19%02d"</tt> instead of <tt>"%04d", tm-&gt;tm_year + 1900</tt>.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">/* WRONG: prints '19100' on Jan 1, 2000! */
+printf("Year: 19%02d\n", tm_now-&gt;tm_year);
+
+/* RIGHT: tm_year is years since 1900 (100 in 2000) */
+printf("Year: %04d\n", tm_now-&gt;tm_year + 1900);</font></pre></td></tr>
+</table>
+<br><table width="100%" cellpadding="5" cellspacing="0" border="1" bgcolor="#f4f4ee">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2"><b>Soda Hall Support &amp; Quick Checklist:</b> Before emailing <tt>helpdesk@cs.redwood.edu</tt>, verify disk blocks with <tt>quota -v</tt>, confirm your NFS automount path under <tt>/home/grad</tt> or <tt>/usr/local/bin</tt>, and record the SPARCstation hostname printed on the bezel. Paper jams in Room 310 belong in the log binder beside the HP LaserJet 4M rather than restarting the <tt>lpd</tt> spooler.</font></td></tr></table>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f4f4ee" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Related Campus &amp; Web Links</b> -- Additional resources cited on this page:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.y2k-watchtower.org/bios-rtc-test.html">How to Test Your PC BIOS &amp; Real-Time Clock for the 1999-&gt;2000 Rollover</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.html32-wizard.net/index.html">HTML 3.2 Wizard</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://webring.98ring.org/index.html">The '98 WebRing Directory</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><font size="2"><a href="http://www.cs.redwood.edu/index.html">Back to Redwood State University</a></font>
+
+</body></html>

@@ -1,0 +1,31 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Client-Side Image Maps (&lt;MAP&gt; &amp; &lt;AREA&gt;) vs Server-Side Maps</title><meta name="author" content="Brenda Sterling-Hayes"><meta name="date" content="10-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#003399" vlink="#660099">
+<table width="100%" cellpadding="6" cellspacing="0" border="0" bgcolor="#333366">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="4" color="#ffcc00"><b>Client-Side Image Maps (&lt;MAP&gt; &amp; &lt;AREA&gt;) vs Server-Side Maps</b></font><br>
+<font face="Arial, Helvetica, sans-serif" size="2" color="#ffffff">HTML 3.2 Wizard | Brenda Sterling-Hayes | 10-Sep-1998</font></td></tr></table>
+<p><font face="Times New Roman, Times, serif" size="3">Client-side image maps (<tt>&lt;MAP&gt;</tt> + <tt>&lt;AREA&gt;</tt>) avoid a CGI server round-trip on every click, show real target URLs in Netscape's bottom status bar, and work when pages are saved locally to disk.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eef0f6">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">&lt;img src="campus_map.gif" usemap="#campus" border="0" width="320" height="180"&gt;
+&lt;map name="campus"&gt;
+  &lt;area shape="rect" coords="10,10,140,80" href="lab.html" alt="Soda Hall"&gt;
+&lt;/map&gt;</font></pre></td></tr>
+</table>
+<br><table width="100%" cellpadding="4" cellspacing="0" border="1" bgcolor="#f7f7fb">
+<tr bgcolor="#333366"><td colspan="3"><font face="Arial, Helvetica, sans-serif" size="2" color="#ffffff"><b>1998 Browser Compatibility Matrix</b></font></td></tr>
+<tr bgcolor="#e6e6f2"><td><font face="Arial, Helvetica, sans-serif" size="1"><b>Client</b></font></td><td><font face="Arial, Helvetica, sans-serif" size="1"><b>Table / Font Quirks</b></font></td><td><font face="Arial, Helvetica, sans-serif" size="1"><b>Recommended Mode</b></font></td></tr>
+<tr><td><font size="1">Netscape Communicator 4.06</font></td><td><font size="1">Strict on unclosed <tt>&lt;/td&gt;</tt>; honors 800x600 fixed tables</font></td><td><font size="1">HTML 3.2 Standard</font></td></tr>
+<tr><td><font size="1">Internet Explorer 4.01</font></td><td><font size="1">Supports cell <tt>bgcolor</tt> &amp; 216-color safe palette cleanly</font></td><td><font size="1">HTML 3.2 / 4.0 Draft</font></td></tr>
+<tr><td><font size="1">NCSA Mosaic / Lynx 2.8</font></td><td><font size="1">Requires <tt>ALT</tt> attributes &amp; clean linear reading order</font></td><td><font size="1">Clean text fallback</font></td></tr>
+</table>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eef0f6" bordercolor="#333366">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Related Webmaster Guides</b> -- Other HTML 3.2 tutorials and recommended references:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.html32-wizard.net/table-layout-mastery.html">Pixel-Perfect 800x600 Layouts Using Nested Tables</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.html32-wizard.net/webring-html-snippet.html">How to Embed a WebRing Navigation Table cleanly on Your Page</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/~cmorris/index.html">Christine Morris's Grad Page</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><font size="2"><a href="http://www.html32-wizard.net/index.html">Back to HTML 3.2 Wizard</a></font>
+
+</body></html>

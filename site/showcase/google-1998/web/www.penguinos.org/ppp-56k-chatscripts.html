@@ -1,0 +1,26 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>USRobotics 56k V.90 Modem Init Strings &amp; pppd Chatscripts</title><meta name="author" content="Borealis Documentation Project"><meta name="date" content="11-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#003399" vlink="#551a8b">
+<table width="100%" cellpadding="6" cellspacing="0" border="0" bgcolor="#003366">
+<tr><td width="56"><img src="../../assets/linux_penguin.gif" alt="Borealis Penguin" width="48" height="48"></td>
+<td><font face="Arial, Helvetica, sans-serif" size="4" color="#ffffff"><b>USRobotics 56k V.90 Modem Init Strings &amp; pppd Chatscripts</b></font><br>
+<font face="Arial, Helvetica, sans-serif" size="2" color="#ccddff">Borealis Linux 5.2 Documentation Project | Updated 11-Sep-1998</font></td></tr></table>
+<p><font size="3">Connecting USRobotics Sportster 56k V.90 modems to campus Ascend racks occasionally triggers 20-minute carrier drops when V.90 line quality degrades. Locking hardware RTS/CTS flow control with <tt>AT&amp;F1</tt> and disabling flaky V.90 negotiation via <tt>AT&amp;F1S32=34</tt> stabilizes K56flex/33.6k sessions.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000"># /etc/ppp/chat-redwood
+ABORT BUSY ABORT 'NO CARRIER' ABORT ERROR
+'' AT&amp;F1S32=34
+OK ATDT5550192800
+CONNECT ''</font></pre></td></tr>
+</table>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f4f4ee" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Related Linux Guides &amp; Links</b> -- Cross-referenced Borealis documentation and discussions:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.penguinos.org/xfree86-modeline-guide.html">XFree86 3.3.2 XF86Config &amp; CRT Modeline Safety Guide</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://lists.penguinos.org/archive/1998-09/msg00042.html">[borealis-dev] Re: ipfwadm masquerading rules for QuakeWorld over 56k</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://lists.penguinos.org/archive/1998-09/msg00038.html">[borealis-dev] Re: egcs 1.1b</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><font size="2"><a href="http://www.penguinos.org/index.html">Back to Borealis Linux 5.2</a></font>
+
+</body></html>

@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Maximizing 3dfx Voodoo2 SLI Frame Rates in Quake II &amp; Unreal</title><meta name="author" content="Derek Takahashi"><meta name="date" content="13-Sep-1998"></head>
+<body bgcolor="#0a0814" text="#e8e4d8" link="#ffd700" vlink="#c084fc">
+<center>
+<table border="2" cellpadding="6" cellspacing="0" width="96%" bgcolor="#2b1d52">
+<tr>
+<td align="left" valign="middle">
+<font face="Arial, Helvetica, sans-serif" size="4" color="#ffd700"><b>Maximizing 3dfx Voodoo2 SLI Frame Rates in Quake II & Unreal</b></font><br>
+<font face="Arial, Helvetica, sans-serif" size="2" color="#ffd700"><i>ChronoBlade 64 Sanctuary</i></font>
+</td>
+
+</tr>
+<tr><td colspan="2" bgcolor="#141c44"><font face="Arial, Helvetica, sans-serif" size="2"><b>Nav:</b> [ <a href="http://www.chronoblade64.net/index.html">Back to ChronoBlade 64 Sanctuary</a> ]</font></td></tr>
+<tr><td colspan="2" bgcolor="#16112c">
+<font face="Arial, Helvetica, sans-serif" size="1">Maintained by <b>Derek Takahashi</b> | Last Updated: <b>13-Sep-1998</b></font>
+</td></tr>
+</table>
+</center>
+<br>
+<center>
+<table border="1" cellpadding="6" cellspacing="0" width="94%" bgcolor="#16112c">
+<tr><td bgcolor="#2b1d52"><font face="Arial, Helvetica, sans-serif" size="3" color="#ffd700"><b>Gamer Briefing</b></font></td></tr>
+<tr><td>
+<p><font face="Times New Roman, Times, serif" size="3">Running dual <b>Diamond Monster 3D II (12MB Voodoo2 SLI)</b> cards on a Pentium II 350MHz? Stop playing in software mode like a caveman! Drop these cvars into <tt>quake2\baseq2\autoexec.cfg</tt> for silky 64 fps at 1024x768!</font></p>
+</td></tr>
+</table>
+</center>
+<br>
+<center>
+<table border="1" cellpadding="6" cellspacing="0" width="94%" bgcolor="#16112c">
+<tr><td bgcolor="#2b1d52"><font face="Arial, Helvetica, sans-serif" size="3" color="#ffd700"><b>Quake II Voodoo2 SLI autoexec.cfg</b></font></td></tr>
+<tr><td>
+<pre><font face="Courier New, Courier, monospace" size="2" color="#66ff99">set gl_driver "3dfxgl"
+set vid_ref "gl"
+set gl_mode "6"            // 1024x768 Glide
+set gl_swapinterval "0"    // Disable vsync cap
+set gl_ext_multitexture "1"
+set cl_maxfps "72"
+set intensity "2.4"        // Brighten dark DM1 corners</font></pre>
+</td></tr>
+</table>
+</center>
+<br>
+<center>
+<table border="1" cellpadding="6" cellspacing="0" width="94%" bgcolor="#16112c">
+<tr><td bgcolor="#2b1d52"><font face="Arial, Helvetica, sans-serif" size="3" color="#ffd700"><b>Voodoo2 SLI Hardware Tips</b></font></td></tr>
+<tr><td>
+<table border="1" cellpadding="4" cellspacing="0" width="100%">
+<tr><th bgcolor="#2b1d52" align="left"><font face="Arial, Helvetica, sans-serif" size="2" color="#ffd700">Tweak</font></th><th bgcolor="#2b1d52" align="left"><font face="Arial, Helvetica, sans-serif" size="2" color="#ffd700">Result</font></th></tr>
+<tr bgcolor="#16112c"><td><font face="Times New Roman, Times, serif" size="2">Attach 80mm case fan blowing across SLI ribbon</font></td><td><font face="Times New Roman, Times, serif" size="2">Prevents lockups after 3 hours of Unreal / Quake II CTF</font></td></tr>
+<tr bgcolor="#221d38"><td><font face="Times New Roman, Times, serif" size="2">Set <tt>SSTV2_SWAP_EN_WAIT_ON_VSYNC=0</tt> in AUTOEXEC.BAT</font></td><td><font face="Times New Roman, Times, serif" size="2">Boosts Timedemo1 demo2.dm2 from 48 fps to 64.3 fps!</font></td></tr>
+</table>
+
+</td></tr>
+</table>
+</center>
+<br>
+<center>
+<table border="1" cellpadding="6" cellspacing="0" width="94%" bgcolor="#16112c">
+<tr><td bgcolor="#2b1d52"><font face="Arial, Helvetica, sans-serif" size="3" color="#ffd700"><b>Featured Links &amp; Neighbors</b></font></td></tr>
+<tr><td>
+<font face="Times New Roman, Times, serif" size="3"><ul>
+<li><a href="http://www.penguinos.org/3dfx-voodoo2-linux.html">3dfx Voodoo2 Glide & Quake II on Linux Mini-HOWTO</a></li>
+<li><a href="http://www.y2k-watchtower.org/index.html">The Y2K Watchtower</a></li>
+</ul></font>
+</td></tr>
+</table>
+</center>
+<br>
+<center>
+<table border="2" cellpadding="5" cellspacing="2" bgcolor="#000033" width="92%">
+<tr>
+<td bgcolor="#000033" align="center" width="130"><img src="../../assets/webring_badge.gif" width="120" height="32" border="0" alt="WebRing"></td>
+<td bgcolor="#000033" align="center"><font face="Arial, Helvetica, sans-serif" size="2" color="#ffcc00"><b>The '98 WebRing Network</b></font><br>
+<font face="Arial, Helvetica, sans-serif" size="1" color="#ffffff">Surf the ring forward, backward, or return to hub!</font></td>
+</tr>
+<tr><td colspan="2" bgcolor="#000033" align="center">
+<font face="Arial, Helvetica, sans-serif" size="2">
+[ &lt;&lt; <a href="http://www.chronoblade64.net/dungeon-marauder-2.html">Previous WebRing Site: Dungeon Marauder II (PC)</a> ]<br>
+[ WebRing Hub: <a href="http://webring.98ring.org/3dfx-voodoo.html">3dfx Voodoo2 & Quake II Clan WebRing</a> ]<br>
+[ <a href="http://www.chronoblade64.net/lan-party-checklist.html">Next WebRing Site: 1998 Garage LAN Party Checklist: BNC Coax, 10baseT Hubs & Bawls</a> &gt;&gt; ]
+</font>
+</td></tr>
+</table>
+</center>
+<hr width="94%">
+<center>
+<font face="Arial, Helvetica, sans-serif" size="1">
+<tt>[ Visitor #007706 since May 1998 ]</tt> &nbsp; <br>
+Best viewed in <b>Netscape Communicator 4.0</b> at <b>800x600</b> | ICQ# <b>17294002</b> | E-mail: <tt>shadowknight98@chronoblade64.net</tt><br>
+Copyright (c) 1998 Derek Takahashi | Page updated 13-Sep-1998
+</font>
+</center>
+
+</body></html>

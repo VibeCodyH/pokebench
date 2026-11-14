@@ -1,0 +1,381 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Google Cache</title>
+<style type="text/css">
+body {
+  background-color: #ffffff;
+  color: #000000;
+  font-family: "Times New Roman", Times, serif;
+  margin: 8px;
+}
+.cache-banner {
+  background-color: #ffffff;
+  border: 2px solid #3366cc;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+}
+.cache-header-strip {
+  background-color: #cbdced;
+  border-bottom: 1px solid #3366cc;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+}
+.term-badge {
+  color: #000000;
+  font-weight: bold;
+  padding: 1px 4px;
+  border: 1px solid #888888;
+}
+.cache-highlight {
+  color: #000000;
+  font-weight: bold;
+}
+</style>
+</head>
+<body bgcolor="#ffffff" text="#000000" link="#0000cc" vlink="#551a8b" alink="#ff0000">
+
+<table class="cache-banner" border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff">
+  <tr>
+    <td class="cache-header-strip" bgcolor="#cbdced" style="padding:4px 8px;">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr valign="middle">
+          <td align="left">
+            <font face="Arial, Helvetica, sans-serif" size="-1" color="#000080">
+              <b>Google! 1998 Web Cache</b>
+            </font>
+          </td>
+          <td align="right">
+            <font face="Arial, Helvetica, sans-serif" size="-1">
+              <a id="liveFrameLink" href="viewer.html">View live page in Netscape Browser Frame</a>
+              &nbsp;|&nbsp;
+              <a id="backSearchLink" href="index.html">Back to search results</a>
+            </font>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:8px;">
+      <table border="0" cellpadding="4" cellspacing="0" width="100%">
+        <tr valign="middle">
+          <td width="155" align="left">
+            <a href="index.html"><img src="assets/google98_logo_sm.gif" width="166" height="50" border="0" alt="Google!"></a>
+          </td>
+          <td align="left">
+            <font face="Arial, Helvetica, sans-serif" size="-1">
+              <div id="cacheStatusLine">
+                This is Google's cache of <b id="cacheUrlText">...</b> as retrieved in September 1998.
+              </div>
+              <div id="cacheMetaLine" style="margin-top:3px; color:#444444; font-size:12px;"></div>
+              <div id="highlightLegend" style="margin-top:5px;">
+                These search terms have been highlighted: <span id="termBadges"></span>
+              </div>
+            </font>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<hr size="2" noshade>
+
+<div id="cachedContent">
+  <p><font face="Arial, Helvetica, sans-serif" size="-1" color="#666666">Loading cached September 1998 snapshot...</font></p>
+</div>
+
+<script type="text/javascript" src="data/bundle.js"></script>
+<script type="text/javascript" src="js/engine.js"></script>
+<script type="text/javascript">
+(function () {
+  var HIGHLIGHT_COLORS = ["#ffff66", "#a0ffff", "#99ff99", "#ff9999"];
+  var params = new URLSearchParams(window.location.search);
+  var docId = params.get("id") || "";
+  var urlParam = params.get("url") || "";
+  var query = params.get("q") || "";
+
+  var cacheUrlText = document.getElementById("cacheUrlText");
+  var cacheMetaLine = document.getElementById("cacheMetaLine");
+  var highlightLegend = document.getElementById("highlightLegend");
+  var termBadges = document.getElementById("termBadges");
+  var liveFrameLink = document.getElementById("liveFrameLink");
+  var backSearchLink = document.getElementById("backSearchLink");
+  var cachedContent = document.getElementById("cachedContent");
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function buildHighlightTerms(qStr) {
+    var trimmed = (qStr || "").replace(/^\s+|\s+$/g, "");
+    if (!trimmed) return [];
+    var seen = {};
+    var terms = [];
+
+    function addTerm(t) {
+      var low = (t || "").toLowerCase();
+      if (low.length < 2 || seen[low]) return;
+      seen[low] = true;
+      terms.push(low);
+    }
+
+    var rawParts = trimmed.split(/[^a-zA-Z0-9-]+/);
+    for (var i = 0; i < rawParts.length; i++) {
+      addTerm(rawParts[i]);
+    }
+    if (window.Google98Engine && typeof window.Google98Engine.tokenize === "function") {
+      var tok = window.Google98Engine.tokenize(trimmed) || [];
+      for (var j = 0; j < tok.length; j++) {
+        addTerm(tok[j]);
+      }
+    }
+    return terms;
+  }
+
+  function resolveRelativePath(relPath, basePagePath) {
+    if (!relPath) return relPath;
+    if (/^(https?:|data:|mailto:|javascript:|#)/i.test(relPath)) {
+      return relPath;
+    }
+    var dir = "";
+    if (basePagePath) {
+      var slashIdx = basePagePath.lastIndexOf("/");
+      dir = slashIdx >= 0 ? basePagePath.substring(0, slashIdx + 1) : "";
+    }
+    var combined = (dir + relPath).split("/");
+    var stack = [];
+    for (var i = 0; i < combined.length; i++) {
+      var seg = combined[i];
+      if (!seg || seg === ".") continue;
+      if (seg === "..") {
+        if (stack.length > 0) stack.pop();
+      } else {
+        stack.push(seg);
+      }
+    }
+    return stack.join("/");
+  }
+
+  function resolveCorpusUrl(rawHref, baseUrl) {
+    if (!rawHref) return null;
+    try {
+      var resolved = new URL(rawHref, baseUrl).href;
+      var hashPos = resolved.indexOf("#");
+      var clean = hashPos >= 0 ? resolved.substring(0, hashPos) : resolved;
+      var pg = window.Google98Engine.getPageByUrl(clean);
+      if (pg) return pg;
+      if (clean.charAt(clean.length - 1) === "/") {
+        pg = window.Google98Engine.getPageByUrl(clean + "index.html");
+        if (pg) return pg;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function highlightTextNodes(rootEl, terms) {
+    if (!rootEl || !terms || terms.length === 0) return;
+
+    var colorMap = {};
+    for (var i = 0; i < terms.length; i++) {
+      colorMap[terms[i]] = HIGHLIGHT_COLORS[i % HIGHLIGHT_COLORS.length];
+    }
+
+    var sortedTerms = terms.slice().sort(function (a, b) { return b.length - a.length; });
+    var escapedPatterns = [];
+    for (var k = 0; k < sortedTerms.length; k++) {
+      escapedPatterns.push(sortedTerms[k].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    }
+    if (escapedPatterns.length === 0) return;
+    var regex = new RegExp("(" + escapedPatterns.join("|") + ")", "gi");
+
+    var walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT, null, false);
+    var nodes = [];
+    var n;
+    while ((n = walker.nextNode())) {
+      var p = n.parentNode;
+      if (!p) continue;
+      var tag = p.nodeName ? p.nodeName.toUpperCase() : "";
+      if (tag === "SCRIPT" || tag === "STYLE" || tag === "TEXTAREA" || tag === "NOSCRIPT") continue;
+      if (p.className && String(p.className).indexOf("cache-highlight") !== -1) continue;
+      if (n.nodeValue && regex.test(n.nodeValue)) {
+        nodes.push(n);
+      }
+      regex.lastIndex = 0;
+    }
+
+    for (var idx = 0; idx < nodes.length; idx++) {
+      var textNode = nodes[idx];
+      var text = textNode.nodeValue;
+      var frag = document.createDocumentFragment();
+      var lastIndex = 0;
+      regex.lastIndex = 0;
+      var match;
+      while ((match = regex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+          frag.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+        }
+        var span = document.createElement("span");
+        var matchedLow = match[0].toLowerCase();
+        var bg = colorMap[matchedLow] || HIGHLIGHT_COLORS[0];
+        span.className = "cache-highlight";
+        span.style.backgroundColor = bg;
+        span.style.color = "#000000";
+        span.appendChild(document.createTextNode(match[0]));
+        frag.appendChild(span);
+        lastIndex = regex.lastIndex;
+      }
+      if (lastIndex < text.length) {
+        frag.appendChild(document.createTextNode(text.substring(lastIndex)));
+      }
+      if (textNode.parentNode) {
+        textNode.parentNode.replaceChild(frag, textNode);
+      }
+    }
+  }
+
+  function renderFallbackBody(page) {
+    var html = '<table border="0" cellpadding="14" cellspacing="0" width="100%" bgcolor="#ffffff"><tr><td>';
+    html += '<font face="Times New Roman, Times, serif" size="+1"><b>' + escapeHtml(page.title || page.url) + "</b></font><br>";
+    html += '<font face="Arial, Helvetica, sans-serif" size="-1" color="#666666">' + escapeHtml(page.url) + "</font><hr>";
+    html += '<font face="Times New Roman, Times, serif"><p>' + escapeHtml(page.body_text || page.excerpt || "") + "</p></font>";
+    html += "</td></tr></table>";
+    return html;
+  }
+
+  function renderTermBadges(terms) {
+    if (!highlightLegend || !termBadges) return;
+    if (!terms || terms.length === 0) {
+      highlightLegend.innerHTML = "<i>No search terms highlighted.</i>";
+      return;
+    }
+    var badges = [];
+    for (var i = 0; i < terms.length; i++) {
+      var bg = HIGHLIGHT_COLORS[i % HIGHLIGHT_COLORS.length];
+      badges.push('<span class="term-badge" style="background-color:' + bg + ';">' + escapeHtml(terms[i]) + "</span>");
+    }
+    termBadges.innerHTML = badges.join(" ");
+  }
+
+  if (backSearchLink) {
+    backSearchLink.href = query ? ("search.html?q=" + encodeURIComponent(query)) : "index.html";
+  }
+
+  var terms = buildHighlightTerms(query);
+  renderTermBadges(terms);
+
+  if (!window.Google98Engine || typeof window.Google98Engine.ready !== "function") {
+    if (cachedContent) {
+      cachedContent.innerHTML = "<p>Unable to load Google98Engine (js/engine.js).</p>";
+    }
+    return;
+  }
+
+  window.Google98Engine.ready().then(function () {
+    var page = null;
+    if (docId) {
+      page = window.Google98Engine.getPageById(docId);
+    } else if (urlParam) {
+      page = window.Google98Engine.getPageByUrl(urlParam);
+    }
+
+    if (!page) {
+      if (cacheUrlText) cacheUrlText.innerHTML = escapeHtml(docId || urlParam || "Unknown URL");
+      if (cachedContent) {
+        cachedContent.innerHTML = '<p><font face="Arial, Helvetica, sans-serif" size="-1" color="#cc0000">Requested document was not found in Google\'s September 1998 cache.</font></p>';
+      }
+      return;
+    }
+
+    document.title = "Google Cache: " + (page.title || page.url);
+    if (cacheUrlText) cacheUrlText.innerHTML = escapeHtml(page.url);
+    if (cacheMetaLine) {
+      cacheMetaLine.innerHTML =
+        "<b>Title:</b> " + escapeHtml(page.title || "") +
+        " &nbsp;|&nbsp; <b>Author:</b> " + escapeHtml(page.author || "Unknown") +
+        " &nbsp;|&nbsp; <b>Last Modified:</b> " + escapeHtml(page.last_modified || "Sep 1998") +
+        " &nbsp;|&nbsp; <b>PageRank:</b> " + escapeHtml(page.pr_score_10 !== undefined ? (page.pr_score_10 + "/10") : "N/A");
+    }
+    if (liveFrameLink) {
+      var qPart = query ? ("&q=" + encodeURIComponent(query)) : "";
+      liveFrameLink.href = "viewer.html?id=" + encodeURIComponent(page.id) + qPart;
+    }
+
+    fetch(page.path).then(function (resp) {
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      return resp.text();
+    }).then(function (rawHtml) {
+      var parser = new DOMParser();
+      var parsed = parser.parseFromString(rawHtml, "text/html");
+      var bodyEl = parsed && parsed.body ? parsed.body : null;
+
+      if (!bodyEl) {
+        cachedContent.innerHTML = renderFallbackBody(page);
+        highlightTextNodes(cachedContent, terms);
+        return;
+      }
+
+      var imgs = bodyEl.getElementsByTagName("img");
+      for (var i = 0; i < imgs.length; i++) {
+        var origSrc = imgs[i].getAttribute("src");
+        if (origSrc) {
+          imgs[i].setAttribute("src", resolveRelativePath(origSrc, page.path));
+        }
+      }
+
+      var links = bodyEl.getElementsByTagName("a");
+      var qPart = query ? ("&q=" + encodeURIComponent(query)) : "";
+      for (var j = 0; j < links.length; j++) {
+        var a = links[j];
+        var rawHref = a.getAttribute("href");
+        if (!rawHref || rawHref.charAt(0) === "#" || /^(mailto:|javascript:)/i.test(rawHref)) continue;
+        var targetPage = resolveCorpusUrl(rawHref, page.url);
+        if (targetPage) {
+          a.setAttribute("href", "viewer.html?id=" + encodeURIComponent(targetPage.id) + qPart);
+        } else {
+          a.setAttribute("href", "viewer.html?url=" + encodeURIComponent(rawHref) + qPart);
+        }
+      }
+
+      var bgAttr = bodyEl.getAttribute("bgcolor") || "#ffffff";
+      var textAttr = bodyEl.getAttribute("text") || "#000000";
+
+      var wrapper = document.createElement("table");
+      wrapper.setAttribute("border", "0");
+      wrapper.setAttribute("cellpadding", "12");
+      wrapper.setAttribute("cellspacing", "0");
+      wrapper.setAttribute("width", "100%");
+      wrapper.setAttribute("bgcolor", bgAttr);
+      wrapper.style.backgroundColor = bgAttr;
+      wrapper.style.color = textAttr;
+
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      td.innerHTML = bodyEl.innerHTML;
+      tr.appendChild(td);
+      wrapper.appendChild(tr);
+
+      cachedContent.innerHTML = "";
+      cachedContent.appendChild(wrapper);
+      highlightTextNodes(td, terms);
+    }).catch(function () {
+      cachedContent.innerHTML = renderFallbackBody(page);
+      highlightTextNodes(cachedContent, terms);
+    });
+  }).catch(function (err) {
+    if (cachedContent) {
+      cachedContent.innerHTML = "<p>Error initializing cache viewer: " + escapeHtml(err && err.message ? err.message : String(err)) + "</p>";
+    }
+  });
+})();
+</script>
+</body>
+</html>

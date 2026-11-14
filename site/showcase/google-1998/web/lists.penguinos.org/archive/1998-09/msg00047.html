@@ -1,0 +1,29 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>[borealis-dev] Borealis 5.2 CD-ROM mastering script for mkisofs</title><meta name="author" content="alan-c@penguinos.org (Alan Croft)"><meta name="date" content="06-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#0000cc" vlink="#551a8b">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" bgcolor="#003366">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="3" color="#ffffff"><b>[borealis-dev] Borealis 5.2 CD-ROM mastering script for mkisofs</b></font></td></tr></table>
+<table width="100%" cellpadding="4" cellspacing="0" border="1" bgcolor="#f4f6f9">
+<tr><td><font face="Courier New, Courier, monospace" size="2"><b>From:</b> alan-c@penguinos.org (Alan Croft)<br>
+<b>To:</b> borealis-dev@lists.penguinos.org<br>
+<b>Date:</b> Sun, 06 Sep 1998 18:59:23 -0700<br>
+<b>Subject:</b> [borealis-dev] Borealis 5.2 CD-ROM mastering script for mkisofs<br>
+<b>Message-ID:</b> &lt;199809061859.B0127@lists.penguinos.org&gt;<br>
+<b>X-List:</b> Borealis Linux 5.2 Technical Discussion (<tt>doc_0127</tt>)<br>
+<b>X-Mailing-List:</b> &lt;borealis-dev@lists.penguinos.org&gt; archive/majordomo 1.94.4</font></td></tr></table>
+<p><font face="Courier New, Courier, monospace" size="2">
+Uploading our Borealis 5.2 bootable CD-ROM mastering script for mirror admins.<br>
+Uses `mkisofs 1.12b4` with Rock Ridge (`-R`), Joliet (`-J`), and El Torito<br>
+1.44MB floppy emulation (`-b images/boot.img`) tested on Yamaha CDR400t.<br>
+</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f0f0f0">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">mkisofs -R -J -V "BOREALIS_52" -b images/boot.img -c images/boot.cat \
+  -o /var/tmp/borealis-5.2-i386.iso /export/borealis-tree/</font></pre></td></tr>
+</table>
+<p><font face="Courier New, Courier, monospace" size="2">-- <br>Alan Croft | Borealis Core</font></p>
+<hr noshade size="1">
+<font face="Arial, Helvetica, sans-serif" size="2">[<a href="http://lists.penguinos.org/archive/1998-09/msg00046.html">Previous Message in Thread</a>] [<a href="http://lists.penguinos.org/archive/1998-09/msg00048.html">Next Message in Thread</a>] [<a href="http://www.penguinos.org/mailing-list-index.html">Back to Borealis-Dev &amp; PenguinOS Mailing List Archive (Sept 1998)</a>] [<a href="http://www.penguinos.org/index.html">Borealis Linux 5.2 Home</a>]</font>
+<p><font face="Courier New, Courier, monospace" size="1" color="#444444">This message was archived automatically by Hypermail 2.0b3 running on Apache/1.3.1 (Linux/i586) at lists.penguinos.org. Unified diffs preserve original tab indentation for <tt>patch -p1</tt>.</font></p>
+<br><font size="1" color="#555555">List FAQs: <a href="http://www.penguinos.org/download-mirrors.html">Borealis Linux 5.2 FTP Mirrors &amp; ISO Checksums</a> | <a href="http://www.penguinos.org/xfree86-modeline-guide.html">XFree86 3.3.2 XF86Config &amp; CRT Modeline Safety Guide</a></font>
+
+</body></html>

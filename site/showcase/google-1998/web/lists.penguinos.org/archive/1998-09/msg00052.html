@@ -1,0 +1,39 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>[borealis-dev] Re: PCMCIA Xircom - exclude irq 3 in /etc/pcmcia/config.opts</title><meta name="author" content="jwright@unixbox.org (Jason Wright)"><meta name="date" content="11-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#0000cc" vlink="#551a8b">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" bgcolor="#003366">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="3" color="#ffffff"><b>[borealis-dev] Re: PCMCIA Xircom - exclude irq 3 in /etc/pcmcia/config.opts</b></font></td></tr></table>
+<table width="100%" cellpadding="4" cellspacing="0" border="1" bgcolor="#f4f6f9">
+<tr><td><font face="Courier New, Courier, monospace" size="2"><b>From:</b> jwright@unixbox.org (Jason Wright)<br>
+<b>To:</b> borealis-dev@lists.penguinos.org<br>
+<b>Date:</b> Fri, 11 Sep 1998 08:24:48 -0700<br>
+<b>Subject:</b> [borealis-dev] Re: PCMCIA Xircom - exclude irq 3 in /etc/pcmcia/config.opts<br>
+<b>Message-ID:</b> &lt;199809110824.B0132@lists.penguinos.org&gt;<br>
+<b>X-List:</b> Borealis Linux 5.2 Technical Discussion (<tt>doc_0132</tt>)<br>
+<b>X-Mailing-List:</b> &lt;borealis-dev@lists.penguinos.org&gt; archive/majordomo 1.94.4</font></td></tr></table>
+<p><font face="Courier New, Courier, monospace" size="2">
+<font color="#006600"><i>&gt; Xircom CreditCard 10/100 + 56k combo card triggers IRQ 3 clash...</i></font><br>
+<br>
+
+Add `exclude irq 3` and `exclude irq 4` to `/etc/pcmcia/config.opts` if built-in<br>
+COM1/COM2 are enabled in BIOS, forcing the Xircom NIC onto IRQ 9 or 10 and the<br>
+internal PCMCIA modem onto ttyS2.<br>
+</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f0f0f0">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000"># /etc/pcmcia/config.opts
+exclude irq 3
+exclude irq 4
+include port 0x100-0x4ff, irq 9, 10, 11</font></pre></td></tr>
+</table>
+<p><font face="Courier New, Courier, monospace" size="2">-- <br>Jason Wright | unixbox.org</font></p>
+<p><font face="Arial, Helvetica, sans-serif" size="2"><b>Links cited in message:</b></font></p>
+<ul>
+<li><font size="2"><a href="http://www.silicon-chronicle.com/index.html">The Silicon Chronicle</a></font></li>
+<li><font size="2"><a href="http://www.bamboozle-search.com/index.html">Bamboozle Portal</a></font></li>
+</ul>
+<hr noshade size="1">
+<font face="Arial, Helvetica, sans-serif" size="2">[<a href="http://lists.penguinos.org/archive/1998-09/msg00051.html">Previous Message in Thread</a>] [<a href="http://lists.penguinos.org/archive/1998-09/msg00053.html">Next Message in Thread</a>] [<a href="http://www.penguinos.org/mailing-list-index.html">Back to Borealis-Dev &amp; PenguinOS Mailing List Archive (Sept 1998)</a>] [<a href="http://www.penguinos.org/index.html">Borealis Linux 5.2 Home</a>]</font>
+<p><font face="Courier New, Courier, monospace" size="1" color="#444444">This message was archived automatically by Hypermail 2.0b3 running on Apache/1.3.1 (Linux/i586) at lists.penguinos.org. Unified diffs preserve original tab indentation for <tt>patch -p1</tt>.</font></p>
+<br><font size="1" color="#555555">List FAQs: <a href="http://www.penguinos.org/kernel-smp-faq.html">Linux 2.1 SMP Kernel Spinlocks &amp; Dual Pentium II FAQ</a> | <a href="http://www.penguinos.org/download-mirrors.html">Borealis Linux 5.2 FTP Mirrors &amp; ISO Checksums</a></font>
+
+</body></html>

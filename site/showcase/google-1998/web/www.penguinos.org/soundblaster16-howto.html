@@ -1,0 +1,30 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>SoundBlaster 16 IRQ/DMA &amp; OSS Driver Configuration HOWTO</title><meta name="author" content="Borealis Documentation Project"><meta name="date" content="11-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#003399" vlink="#551a8b">
+<table width="100%" cellpadding="6" cellspacing="0" border="0" bgcolor="#003366">
+<tr><td width="56"><img src="../../assets/linux_penguin.gif" alt="Borealis Penguin" width="48" height="48"></td>
+<td><font face="Arial, Helvetica, sans-serif" size="4" color="#ffffff"><b>SoundBlaster 16 IRQ/DMA &amp; OSS Driver Configuration HOWTO</b></font><br>
+<font face="Arial, Helvetica, sans-serif" size="2" color="#ccddff">Borealis Linux 5.2 Documentation Project | Updated 11-Sep-1998</font></td></tr></table>
+<p><font size="3">ISA SoundBlaster 16 and AWE64 PnP cards require initialization via <tt>isapnptools</tt> before loading the OSS <tt>sb.o</tt> kernel module. Dump your PnP BIOS resource table first, uncomment non-conflicting IRQ/DMA lines, then test <tt>/dev/dsp</tt>.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000"># /etc/isapnp.conf excerpt for Creative SB16 PnP
+(CONFIGURE CTL0044/123456 (LD 0
+  (IO 0 (BASE 0x0220)) (IO 1 (BASE 0x0330)) (IO 2 (BASE 0x0388))
+  (INT 0 (IRQ 5 (MODE +E))) (DMA 0 (CHANNEL 1)) (DMA 1 (CHANNEL 5))
+  (ACT Y)
+))
+
+# /etc/conf.modules
+options sb io=0x220 irq=5 dma=1 dma16=5 mpu_io=0x330</font></pre></td></tr>
+</table>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f4f4ee" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Related Linux Guides &amp; Links</b> -- Cross-referenced Borealis documentation and discussions:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.penguinos.org/kernel-smp-faq.html">Linux 2.1 SMP Kernel Spinlocks &amp; Dual Pentium II FAQ</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.penguinos.org/xfree86-modeline-guide.html">XFree86 3.3.2 XF86Config &amp; CRT Modeline Safety Guide</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.penguinos.org/download-mirrors.html">Borealis Linux 5.2 FTP Mirrors &amp; ISO Checksums</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><font size="2"><a href="http://www.penguinos.org/index.html">Back to Borealis Linux 5.2</a></font>
+
+</body></html>

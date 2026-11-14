@@ -1,0 +1,28 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Configuring Pine, Elm, and .forward Files on Turing</title><meta name="author" content="Redwood CS Lab Staff"><meta name="date" content="12-Sep-1998"></head>
+<body bgcolor="#eeeeee" text="#000000" link="#0000ee" vlink="#551a8b">
+<font face="Arial, Helvetica, sans-serif" size="4" color="#800000"><b>Configuring Pine, Elm, and .forward Files on Turing</b></font><br>
+<font size="2">Redwood CS Lab Staff | Mail Server <tt>mail.cs.redwood.edu</tt></font><hr noshade size="2">
+<p><font face="Times New Roman, Times, serif" size="3">Campus mail arrives via sendmail 8.9.1 on <tt>turing.cs.redwood.edu</tt>. Students may read mail directly on Unix via Pine 4.02 or Elm 2.4, or configure POP3 in Netscape Messenger 4.06. To filter mailing lists into separate mbox folders, set up a <tt>.forward</tt> pipeline invoking <tt>procmail</tt>.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000"># ~/.forward (chmod 644 ~/.forward)
+"|IFS=' ' &amp;&amp; exec /usr/local/bin/procmail -f- || exit 75 #username"
+
+# ~/.procmailrc snippet for borealis-dev list
+:0:
+* ^Sender:.*borealis-dev@lists.penguinos.org
+Mail/borealis-dev</font></pre></td></tr>
+</table>
+<br><table width="100%" cellpadding="5" cellspacing="0" border="1" bgcolor="#f4f4ee">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2"><b>Soda Hall Support &amp; Quick Checklist:</b> Before emailing <tt>helpdesk@cs.redwood.edu</tt>, verify disk blocks with <tt>quota -v</tt>, confirm your NFS automount path under <tt>/home/grad</tt> or <tt>/usr/local/bin</tt>, and record the SPARCstation hostname printed on the bezel. Paper jams in Room 310 belong in the log binder beside the HP LaserJet 4M rather than restarting the <tt>lpd</tt> spooler.</font></td></tr></table>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f4f4ee" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Related Campus &amp; Web Links</b> -- Additional resources cited on this page:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://lists.penguinos.org/archive/1998-09/msg00053.html">[borealis-dev] Cron job rotating /var/log/messages fills 2GB SCSI drive</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/~nwilliams/index.html">Nathaniel Williams's Grad Page</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/~hvance/index.html">Prof. Harold Vance's Home Page</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><font size="2"><a href="http://www.cs.redwood.edu/index.html">Back to Redwood State University</a></font>
+
+</body></html>

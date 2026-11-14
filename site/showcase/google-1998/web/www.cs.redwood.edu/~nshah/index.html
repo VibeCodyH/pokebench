@@ -1,0 +1,34 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Neha Shah's Grad Page - Inverted Index Compression &amp; Stemming</title><meta name="author" content="Neha Shah"><meta name="date" content="13-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#0000cc" vlink="#551a8b">
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#334466" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="4" color="#ffffff"><b>Neha Shah</b></font><br>
+<font face="Courier New, Courier, monospace" size="2" color="#ffffff">~nshah@cs.redwood.edu | Soda 441-A | ICQ #29301184</font></td>
+<td align="right" valign="middle"><img src="../../../assets/new_burst.gif" alt="Retro Badge"></td></tr></table>
+<p><font face="Times New Roman, Times, serif" size="3" color="#000000">Information retrieval Ph.D. student compressing inverted posting lists with Elias gamma/delta codes and evaluating Porter stemming recall.</font></p>
+<table width="100%" cellpadding="5" cellspacing="0" border="1" bgcolor="#f4f4ee" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Workstation:</b> <tt>SPARCstation 5 / Perl 5.004 + gcc</tt><br>
+<b>Offline Hours:</b> Collecting vintage dictionaries and writing ultra-terse Perl one-liners.</font></td></tr>
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Fall 1998 Desk &amp; Reading:</b> Catch me in the fourth-floor Soda Hall grad cluster late evenings, or run <tt>finger</tt> on <tt>cs.redwood.edu</tt> to read my <tt>.plan</tt> file. Keeping Stevens <i>UNIX Network Programming</i>, three 1.44 MB floppies, and an open <tt>xterm</tt> beside the CRT.</font></td></tr></table>
+<br>
+<font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Variable-Byte Integer Compression Loop (C):</b></font>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f4f4ee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">while (gap &gt;= 128) {
+    *out++ = (gap &amp; 0x7f);
+    gap &gt;&gt;= 7;
+}
+*out++ = gap | 0x80;</font></pre></td></tr>
+</table>
+<blockquote><font face="Courier New, Courier, monospace" size="2" color="#000000"><i>Good delta encoding shrinks an inverted index to 15% of raw corpus size.</i></font></blockquote>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f4f4ee" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>My Bookmarks &amp; Campus Links</b> -- Sites and projects linked from Neha Shah's hotlist:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/index.html">Back to Redwood State University</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/~hvance/backrub-pagerank.html">Inverted index + citation authority algorithm</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/~msterling/index.html">Prof. Marcus Sterling</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.perlmonk-archive.org/cookie-session-notes.html">Netscape Persistent Client State HTTP Cookies in CGI.pm</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><center><font face="Courier New, Courier, monospace" size="1" color="#000000">Hit Counter: [01661] | Last modified 13-Sep-1998 | Netscape 4.06 Compatible</font></center>
+
+</body></html>

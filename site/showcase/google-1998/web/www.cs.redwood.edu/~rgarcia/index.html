@@ -1,0 +1,32 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Rosa Garcia's Grad Page - Natural Language Tokenizers &amp; Five-Alarm Chili</title><meta name="author" content="Rosa Garcia"><meta name="date" content="13-Sep-1998"></head>
+<body bgcolor="#e8eef5" text="#111111" link="#003399" vlink="#551a8b">
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#334466" bordercolor="#6688aa">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="4" color="#ffffff"><b>Rosa Garcia</b></font><br>
+<font face="Courier New, Courier, monospace" size="2" color="#ffffff">~rgarcia@cs.redwood.edu | Soda 510-C | ICQ #24910382</font></td>
+<td align="right" valign="middle"><img src="../../../assets/cool_site.gif" alt="Retro Badge"></td></tr></table>
+<p><font face="Times New Roman, Times, serif" size="3" color="#111111">Ph.D. student building deterministic lexical tokenizers and rule-based sentence splitters for noisy HTML web crawls.</font></p>
+<table width="100%" cellpadding="5" cellspacing="0" border="1" bgcolor="#ffffff" bordercolor="#6688aa">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#111111"><b>Workstation:</b> <tt>SPARCstation 5 / Perl 5.004 + Standard ML</tt><br>
+<b>Offline Hours:</b> Entering Austin-style five-alarm chili cookoffs across the CS department.</font></td></tr>
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#111111"><b>Fall 1998 Desk &amp; Reading:</b> Catch me in the fourth-floor Soda Hall grad cluster late evenings, or run <tt>finger</tt> on <tt>cs.redwood.edu</tt> to read my <tt>.plan</tt> file. Keeping Stevens <i>UNIX Network Programming</i>, three 1.44 MB floppies, and an open <tt>xterm</tt> beside the CRT.</font></td></tr></table>
+<br>
+<font face="Arial, Helvetica, sans-serif" size="2" color="#111111"><b>Perl HTML Entity &amp; Alphanumeric Tokenizer:</b></font>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#ffffff">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#111111">$text =~ s/&lt;[^&gt;]+&gt;/ /g;
+my @tokens = grep { length($_) &gt; 1 } split /[^a-z0-9]+/, lc($text);</font></pre></td></tr>
+</table>
+<blockquote><font face="Courier New, Courier, monospace" size="2" color="#111111"><i>Never tokenize HTML without stripping script and comment tags first.</i></font></blockquote>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#ffffff" bordercolor="#6688aa">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#111111"><b>My Bookmarks &amp; Campus Links</b> -- Sites and projects linked from Rosa Garcia's hotlist:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#111111"><a href="http://www.cs.redwood.edu/index.html">Back to Redwood State University</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#111111"><a href="http://www.chili-cauldron.org/index.html">The Five-Alarm Chili Cauldron</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#111111"><a href="http://www.hearthside-recipes.com/index.html">Hearthside Recipes</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#111111"><a href="http://www.perlmonk-archive.org/index.html">PerlMonk 5.004 CGI &amp; Text Processing Archive</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#111111"><a href="http://www.perlmonk-archive.org/cgi-guestbook-script.html">Writing a Flat-File Perl 5 CGI Guestbook with flock()</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><center><font face="Courier New, Courier, monospace" size="1" color="#111111">Hit Counter: [04700] | Last modified 13-Sep-1998 | Netscape 4.06 Compatible</font></center>
+
+</body></html>
