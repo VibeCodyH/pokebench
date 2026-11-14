@@ -1,0 +1,29 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>XFree86 3.3.2 XF86Config &amp; CRT Modeline Safety Guide</title><meta name="author" content="Borealis Documentation Project"><meta name="date" content="11-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#003399" vlink="#551a8b">
+<table width="100%" cellpadding="6" cellspacing="0" border="0" bgcolor="#003366">
+<tr><td width="56"><img src="../../assets/linux_penguin.gif" alt="Borealis Penguin" width="48" height="48"></td>
+<td><font face="Arial, Helvetica, sans-serif" size="4" color="#ffffff"><b>XFree86 3.3.2 XF86Config &amp; CRT Modeline Safety Guide</b></font><br>
+<font face="Arial, Helvetica, sans-serif" size="2" color="#ccddff">Borealis Linux 5.2 Documentation Project | Updated 11-Sep-1998</font></td></tr></table>
+<table width="100%" cellpadding="5" cellspacing="0" border="1" bgcolor="#ffeeee">
+<tr><td><font size="2" color="#990000"><b>CRT HARDWARE WARNING:</b> Driving an older fixed-frequency 14-inch or 15-inch SVGA monitor outside its horizontal scan range can overheat the flyback coil. Always verify <tt>HorizSync</tt> and <tt>VertRefresh</tt> in your monitor manual before starting XFree86 3.3.2!</font></td></tr></table>
+<p><font size="3">Configure <tt>/etc/X11/XF86Config</tt> using <tt>xf86config</tt> or <tt>XF86Setup</tt>. For S3 ViRGE and ATI Mach64 cards, 16bpp avoids 24bpp framebuffer glitches.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">Section "Monitor"
+    Identifier  "Sony Trinitron 17seII"
+    HorizSync   31.5 - 82.0
+    VertRefresh 50.0 - 120.0
+    Modeline "1024x768" 78.80 1024 1040 1136 1312 768 769 772 800 +hsync +vsync
+EndSection</font></pre></td></tr>
+</table>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f4f4ee" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Related Linux Guides &amp; Links</b> -- Cross-referenced Borealis documentation and discussions:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.penguinos.org/download-mirrors.html">Borealis Linux 5.2 FTP Mirrors &amp; ISO Checksums</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.starquest-online.org/index.html">StarQuest: Deep Nebula</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://lists.penguinos.org/archive/1998-09/msg00033.html">[borealis-dev] sendmail 8.9.1 anti-relay rules blocking dialup users</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><font size="2"><a href="http://www.penguinos.org/index.html">Back to Borealis Linux 5.2</a></font>
+
+</body></html>

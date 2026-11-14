@@ -1,0 +1,31 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Zachary Miller's Grad Page - BSD Sockets &amp; Late-Night Ramen Engineering</title><meta name="author" content="Zachary Miller"><meta name="date" content="13-Sep-1998"></head>
+<body bgcolor="#d8d8d8" text="#000000" link="#0000ee" vlink="#551a8b">
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#334466" bordercolor="#666666">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="4" color="#ffffff"><b>Zachary Miller</b></font><br>
+<font face="Courier New, Courier, monospace" size="2" color="#ffffff">~zmiller@cs.redwood.edu | Soda 438-B | ICQ #14119305</font></td>
+<td align="right" valign="middle"><img src="../../../assets/under_construction.gif" alt="Retro Badge"></td></tr></table>
+<p><font face="Times New Roman, Times, serif" size="3" color="#000000">CS 312 TA and distributed systems grad hacking non-blocking BSD socket multiplexers and epoll/poll wrappers.</font></p>
+<table width="100%" cellpadding="5" cellspacing="0" border="1" bgcolor="#eeeeee" bordercolor="#666666">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Workstation:</b> <tt>Pentium 233 MMX / FreeBSD + Solaris</tt><br>
+<b>Offline Hours:</b> Engineering gourmet dorm ramen with poached eggs, scallions, and sesame oil at 2 AM.</font></td></tr>
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Fall 1998 Desk &amp; Reading:</b> Usually logged into <tt>soda-07.cs.redwood.edu</tt> running overnight benchmarks while the laser spooler is idle. Desk stack: Tanenbaum <i>Modern Operating Systems</i>, the Camel Book, and printed PostScript drafts from SIGIR.</font></td></tr></table>
+<br>
+<font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Non-Blocking Socket Flag Helper in C:</b></font>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">int flags = fcntl(sock, F_GETFL, 0);
+fcntl(sock, F_SETFL, flags | O_NONBLOCK);</font></pre></td></tr>
+</table>
+<blockquote><font face="Courier New, Courier, monospace" size="2" color="#000000"><i>select() works fine until fd_set hits FD_SETSIZE = 1024.</i></font></blockquote>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee" bordercolor="#666666">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>My Bookmarks &amp; Campus Links</b> -- Sites and projects linked from Zachary Miller's hotlist:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/index.html">Back to Redwood State University</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.petchow-express.com/index.html">overnight dog food delivery via PetChow</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.penguinos.org/index.html">Borealis Linux 5.2</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://lists.penguinos.org/archive/1998-09/msg00027.html">[borealis-dev] XFree86 3.3.2 ATI Rage Pro AGP flicker at 1024x768 85Hz</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><center><font face="Courier New, Courier, monospace" size="1" color="#000000">Hit Counter: [01232] | Last modified 13-Sep-1998 | Netscape 4.06 Compatible</font></center>
+
+</body></html>

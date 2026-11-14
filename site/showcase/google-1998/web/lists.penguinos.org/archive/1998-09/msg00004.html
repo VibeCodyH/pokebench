@@ -1,0 +1,33 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>[borealis-dev] DEC Tulip 21143 card drops packets at 100baseTx full duplex</title><meta name="author" content="jwright@unixbox.org (Jason Wright)"><meta name="date" content="05-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#0000cc" vlink="#551a8b">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" bgcolor="#003366">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="3" color="#ffffff"><b>[borealis-dev] DEC Tulip 21143 card drops packets at 100baseTx full duplex</b></font></td></tr></table>
+<table width="100%" cellpadding="4" cellspacing="0" border="1" bgcolor="#f4f6f9">
+<tr><td><font face="Courier New, Courier, monospace" size="2"><b>From:</b> jwright@unixbox.org (Jason Wright)<br>
+<b>To:</b> borealis-dev@lists.penguinos.org<br>
+<b>Date:</b> Sat, 05 Sep 1998 17:48:36 -0700<br>
+<b>Subject:</b> [borealis-dev] DEC Tulip 21143 card drops packets at 100baseTx full duplex<br>
+<b>Message-ID:</b> &lt;199809051748.B0084@lists.penguinos.org&gt;<br>
+<b>X-List:</b> Borealis Linux 5.2 Technical Discussion (<tt>doc_0084</tt>)<br>
+<b>X-Mailing-List:</b> &lt;borealis-dev@lists.penguinos.org&gt; archive/majordomo 1.94.4</font></td></tr></table>
+<p><font face="Courier New, Courier, monospace" size="2">
+Our DEC 21143 Tulip PCI card keeps incrementing RX frame errors and dropping 8% of<br>
+packets when plugged into a 3Com SuperStack II 100baseTx switch at full duplex.<br>
+Half duplex works fine at 10Mbps, but 100FD stalls NFS transfers after 30 seconds.<br>
+</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f0f0f0">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">eth0: Digital DS21143 Tulip at 0xe800, 00:00:c0:8b:41:19, IRQ 11.
+RX packets:41290 errors:3102 dropped:884 overruns:12</font></pre></td></tr>
+</table>
+<p><font face="Courier New, Courier, monospace" size="2">-- <br>Jason Wright | unixbox.org</font></p>
+<p><font face="Arial, Helvetica, sans-serif" size="2"><b>Links cited in message:</b></font></p>
+<ul>
+<li><font size="2"><a href="http://www.silicon-chronicle.com/index.html">The Silicon Chronicle</a></font></li>
+</ul>
+<hr noshade size="1">
+<font face="Arial, Helvetica, sans-serif" size="2">[<a href="http://lists.penguinos.org/archive/1998-09/msg00003.html">Previous Message in Thread</a>] [<a href="http://lists.penguinos.org/archive/1998-09/msg00005.html">Next Message in Thread</a>] [<a href="http://www.penguinos.org/mailing-list-index.html">Back to Borealis-Dev &amp; PenguinOS Mailing List Archive (Sept 1998)</a>] [<a href="http://www.penguinos.org/index.html">Borealis Linux 5.2 Home</a>]</font>
+<p><font face="Courier New, Courier, monospace" size="1" color="#444444">This message was archived automatically by Hypermail 2.0b3 running on Apache/1.3.1 (Linux/i586) at lists.penguinos.org. Unified diffs preserve original tab indentation for <tt>patch -p1</tt>.</font></p>
+<br><font size="1" color="#555555">List FAQs: <a href="http://www.penguinos.org/kernel-smp-faq.html">Linux 2.1 SMP Kernel Spinlocks &amp; Dual Pentium II FAQ</a> | <a href="http://www.penguinos.org/xfree86-modeline-guide.html">XFree86 3.3.2 XF86Config &amp; CRT Modeline Safety Guide</a> | <a href="http://www.penguinos.org/download-mirrors.html">Borealis Linux 5.2 FTP Mirrors &amp; ISO Checksums</a></font>
+
+</body></html>

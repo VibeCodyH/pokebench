@@ -1,0 +1,29 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>[borealis-dev] Laptop PCMCIA Xircom Ethernet+Modem combo card IRQ clash</title><meta name="author" content="kernel-hacker@northstar.net (Martin Lind)"><meta name="date" content="10-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#0000cc" vlink="#551a8b">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" bgcolor="#003366">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="3" color="#ffffff"><b>[borealis-dev] Laptop PCMCIA Xircom Ethernet+Modem combo card IRQ clash</b></font></td></tr></table>
+<table width="100%" cellpadding="4" cellspacing="0" border="1" bgcolor="#f4f6f9">
+<tr><td><font face="Courier New, Courier, monospace" size="2"><b>From:</b> kernel-hacker@northstar.net (Martin Lind)<br>
+<b>To:</b> borealis-dev@lists.penguinos.org<br>
+<b>Date:</b> Thu, 10 Sep 1998 19:07:19 -0700<br>
+<b>Subject:</b> [borealis-dev] Laptop PCMCIA Xircom Ethernet+Modem combo card IRQ clash<br>
+<b>Message-ID:</b> &lt;199809101907.B0131@lists.penguinos.org&gt;<br>
+<b>X-List:</b> Borealis Linux 5.2 Technical Discussion (<tt>doc_0131</tt>)<br>
+<b>X-Mailing-List:</b> &lt;borealis-dev@lists.penguinos.org&gt; archive/majordomo 1.94.4</font></td></tr></table>
+<p><font face="Courier New, Courier, monospace" size="2">
+On my ThinkPad 560X running `pcmcia-cs 3.0.5`, inserting a Xircom CreditCard<br>
+10/100 + 56k combo card triggers `xirc2ps_cs: IRQ 3 clash` and drops ttyS1.<br>
+Anyone have clean `/etc/pcmcia/config.opts` exclusions for Xircom combo cards?<br>
+</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f0f0f0">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">cs: memory probe 0x0d0000-0x0dffff: clean.
+xirc2ps_cs: unable to register irq 3 (serial_cs conflict)</font></pre></td></tr>
+</table>
+<p><font face="Courier New, Courier, monospace" size="2">-- <br>Martin Lind | Northstar Systems</font></p>
+<hr noshade size="1">
+<font face="Arial, Helvetica, sans-serif" size="2">[<a href="http://lists.penguinos.org/archive/1998-09/msg00050.html">Previous Message in Thread</a>] [<a href="http://lists.penguinos.org/archive/1998-09/msg00052.html">Next Message in Thread</a>] [<a href="http://www.penguinos.org/mailing-list-index.html">Back to Borealis-Dev &amp; PenguinOS Mailing List Archive (Sept 1998)</a>] [<a href="http://www.penguinos.org/index.html">Borealis Linux 5.2 Home</a>]</font>
+<p><font face="Courier New, Courier, monospace" size="1" color="#444444">This message was archived automatically by Hypermail 2.0b3 running on Apache/1.3.1 (Linux/i586) at lists.penguinos.org. Unified diffs preserve original tab indentation for <tt>patch -p1</tt>.</font></p>
+<br><font size="1" color="#555555">List FAQs: <a href="http://www.penguinos.org/kernel-smp-faq.html">Linux 2.1 SMP Kernel Spinlocks &amp; Dual Pentium II FAQ</a> | <a href="http://www.penguinos.org/xfree86-modeline-guide.html">XFree86 3.3.2 XF86Config &amp; CRT Modeline Safety Guide</a></font>
+
+</body></html>

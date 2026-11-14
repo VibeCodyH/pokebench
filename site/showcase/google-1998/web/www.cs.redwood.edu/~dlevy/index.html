@@ -1,0 +1,34 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Daniel Levy's Grad Page - DNS Root Servers &amp; BIND 8 Configuration</title><meta name="author" content="Daniel Levy"><meta name="date" content="13-Sep-1998"></head>
+<body bgcolor="#d8d8d8" text="#000000" link="#0000ee" vlink="#551a8b">
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#334466" bordercolor="#666666">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="4" color="#ffffff"><b>Daniel Levy</b></font><br>
+<font face="Courier New, Courier, monospace" size="2" color="#ffffff">~dlevy@cs.redwood.edu | Soda 419-D | ICQ #13390211</font></td>
+<td align="right" valign="middle"><img src="../../../assets/under_construction.gif" alt="Retro Badge"></td></tr></table>
+<p><font face="Times New Roman, Times, serif" size="3" color="#000000">Network admin grad student helping manage Redwood's secondary DNS resolvers, BIND 8 zone transfers, and reverse ARPA lookups.</font></p>
+<table width="100%" cellpadding="5" cellspacing="0" border="1" bgcolor="#eeeeee" bordercolor="#666666">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Workstation:</b> <tt>Sun SparcClassic / BIND 8.1.2</tt><br>
+<b>Offline Hours:</b> Collecting weird DNS TXT records and debugging TTL propagation delays.</font></td></tr>
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Fall 1998 Desk &amp; Reading:</b> Drop by Soda Hall Room 418 after afternoon colloquium, or check <tt>who</tt> on the CS cluster before stopping by. Desk stack: the Red Dragon Book, a spiral notebook of RFC diagrams, and spare 10BASE2 BNC terminator tees.</font></td></tr></table>
+<br>
+<font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>BIND 8 /etc/named.conf Zone Snippet:</b></font>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">zone "cs.redwood.edu" IN {
+    type master;
+    file "db.cs.redwood.edu";
+    allow-transfer { 128.32.44.10; };
+};</font></pre></td></tr>
+</table>
+<blockquote><font face="Courier New, Courier, monospace" size="2" color="#000000"><i>It is always DNS, even when you swear it is a routing loop.</i></font></blockquote>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee" bordercolor="#666666">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>My Bookmarks &amp; Campus Links</b> -- Sites and projects linked from Daniel Levy's hotlist:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/index.html">Back to Redwood State University</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://dir.webguide98.org/index.html">WebGuide '98 Directory</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.html32-wizard.net/webring-html-snippet.html">How to Embed a WebRing Navigation Table cleanly on Your Page</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/resources/bib-ir-links.html">Classic Information Retrieval &amp; Hypertext Bookmarks</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><center><font face="Courier New, Courier, monospace" size="1" color="#000000">Hit Counter: [02396] | Last modified 13-Sep-1998 | Netscape 4.06 Compatible</font></center>
+
+</body></html>

@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Jeff's MS-DOS 6.22 Config.sys Boot Disk Heaven</title><meta name="author" content="Jeff Kramer"><meta name="date" content="11-Sep-1998"></head>
+<body bgcolor="#000080" text="#ffffff" link="#ffff00" vlink="#00ffff">
+<center>
+<table border="2" cellpadding="6" cellspacing="0" width="96%" bgcolor="#aaaaaa">
+<tr>
+<td align="left" valign="middle">
+<font face="Arial, Helvetica, sans-serif" size="4" color="#000000"><b>Jeff's MS-DOS 6.22 Config.sys Boot Disk Heaven</b></font><br>
+<font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><i>Welcome to Jeff Kramer's Corner of the Web!</i></font>
+</td>
+<td align="right" valign="middle" width="100"><img src="../../../assets/under_construction.gif" border="0" alt="Retro Badge"></td>
+</tr>
+<tr><td colspan="2" bgcolor="#141c44"><font face="Arial, Helvetica, sans-serif" size="2"><b>Nav:</b> [ <a href="http://www.angelforge.net/index.html">Back to AngelForge Homesteads</a> ]</font></td></tr>
+<tr><td colspan="2" bgcolor="#000055">
+<font face="Arial, Helvetica, sans-serif" size="1">Maintained by <b>Jeff Kramer</b> | Last Updated: <b>11-Sep-1998</b></font>
+</td></tr>
+</table>
+</center>
+<br>
+<center>
+<table border="1" cellpadding="6" cellspacing="0" width="94%" bgcolor="#000055">
+<tr><td bgcolor="#aaaaaa"><font face="Arial, Helvetica, sans-serif" size="3" color="#000000"><b>About Jeff Kramer</b></font></td></tr>
+<tr><td>
+<p><font face="Times New Roman, Times, serif" size="3">C:\&gt; DIR /W -- Welcome to <b>Jeff's MS-DOS 6.22 Config.sys Boot Disk Heaven</b> (styled after classic DOS <tt>EDIT.COM</tt> white-on-blue!). Squeeze <b>622 KB</b> of free conventional memory under 640K so X-Wing, Doom II, and Privateer run without EMS errors!</font></p><p><font face="Arial, Helvetica, sans-serif" size="2"><img src="../../../assets/new_burst.gif" border="0" alt="NEW!"> <b>Leaving so soon?</b> Please <a href="http://www.angelforge.net/~jeff-dos/guestbook.html">Sign My Guestbook!</a> before you surf away! Also page me on <b>ICQ# 17382910</b>.</font></p>
+</td></tr>
+</table>
+</center>
+<br>
+<center>
+<table border="1" cellpadding="6" cellspacing="0" width="94%" bgcolor="#000055">
+<tr><td bgcolor="#aaaaaa"><font face="Arial, Helvetica, sans-serif" size="3" color="#000000"><b>ASCII Corner &amp; Snippets</b></font></td></tr>
+<tr><td>
+<pre><font face="Courier New, Courier, monospace" size="2" color="#55ffff">[MENU]
+menuitem=XWING,  Boot 1: EMS + Mouse + SB16 (622 KB Free)
+menuitem=WIN31,  Boot 2: Windows 3.11 for Workgroups
+[XWING]
+DEVICE=C:\DOS\HIMEM.SYS /TESTMEM:OFF
+DEVICE=C:\DOS\EMM386.EXE RAM HIGHSCAN I=B000-B7FF
+DOS=HIGH,UMB
+DEVICEHIGH=C:\CDROM\OAKCDROM.SYS /D:MSCD001</font></pre>
+</td></tr>
+</table>
+</center>
+<br>
+<center>
+<table border="1" cellpadding="6" cellspacing="0" width="94%" bgcolor="#000055">
+<tr><td bgcolor="#aaaaaa"><font face="Arial, Helvetica, sans-serif" size="3" color="#000000"><b>Conventional RAM Optimization Tricks</b></font></td></tr>
+<tr><td>
+<table border="1" cellpadding="4" cellspacing="0" width="100%">
+<tr><th bgcolor="#aaaaaa" align="left"><font face="Arial, Helvetica, sans-serif" size="2" color="#000000">Driver</font></th><th bgcolor="#aaaaaa" align="left"><font face="Arial, Helvetica, sans-serif" size="2" color="#000000">Standard Load</font></th><th bgcolor="#aaaaaa" align="left"><font face="Arial, Helvetica, sans-serif" size="2" color="#000000">Upper Memory Trick</font></th></tr>
+<tr bgcolor="#000055"><td><font face="Times New Roman, Times, serif" size="2"><tt>MSCDEX.EXE</tt></font></td><td><font face="Times New Roman, Times, serif" size="2">28 KB Base RAM</font></td><td><font face="Times New Roman, Times, serif" size="2"><tt>LH C:\DOS\MSCDEX.EXE /D:MSCD001 /E</tt> (loads into EMS!)</font></td></tr>
+<tr bgcolor="#0c0c61"><td><font face="Times New Roman, Times, serif" size="2"><tt>CTMOUSE.EXE</tt></font></td><td><font face="Times New Roman, Times, serif" size="2">CuteMouse 3 KB</font></td><td><font face="Times New Roman, Times, serif" size="2">Replaces bloated 24 KB Microsoft Mouse driver completely!</font></td></tr>
+</table>
+
+</td></tr>
+</table>
+</center>
+<br>
+<center>
+<table border="1" cellpadding="6" cellspacing="0" width="94%" bgcolor="#000055">
+<tr><td bgcolor="#aaaaaa"><font face="Arial, Helvetica, sans-serif" size="3" color="#000000"><b>My Favorite Background MIDIs</b></font></td></tr>
+<tr><td>
+<table border="1" cellpadding="4" cellspacing="0" width="100%">
+<tr><th bgcolor="#aaaaaa" align="left"><font face="Arial, Helvetica, sans-serif" size="2" color="#000000">MIDI Filename</font></th><th bgcolor="#aaaaaa" align="left"><font face="Arial, Helvetica, sans-serif" size="2" color="#000000">Size</font></th><th bgcolor="#aaaaaa" align="left"><font face="Arial, Helvetica, sans-serif" size="2" color="#000000">Now Playing on SoundBlaster</font></th></tr>
+<tr bgcolor="#000055"><td><font face="Times New Roman, Times, serif" size="2"><tt>doom_e1m1.mid</tt></font></td><td><font face="Times New Roman, Times, serif" size="2">28 KB</font></td><td><font face="Times New Roman, Times, serif" size="2">AdLib/OPL3 rock cover</font></td></tr>
+<tr bgcolor="#0c0c61"><td><font face="Times New Roman, Times, serif" size="2"><tt>xwing_brief.mid</tt></font></td><td><font face="Times New Roman, Times, serif" size="2">19 KB</font></td><td><font face="Times New Roman, Times, serif" size="2">iMUSE orchestral</font></td></tr>
+</table>
+
+</td></tr>
+</table>
+</center>
+<br>
+<center>
+<table border="1" cellpadding="6" cellspacing="0" width="94%" bgcolor="#000055">
+<tr><td bgcolor="#aaaaaa"><font face="Arial, Helvetica, sans-serif" size="3" color="#000000"><b>My Cool Links &amp; Cyber Neighbors</b></font></td></tr>
+<tr><td>
+<font face="Times New Roman, Times, serif" size="3"><ul>
+<li><a href="http://www.y2k-watchtower.org/index.html">The Y2K Watchtower</a></li>
+</ul></font>
+</td></tr>
+</table>
+</center>
+<br>
+<center>
+<table border="2" cellpadding="5" cellspacing="2" bgcolor="#000033" width="92%">
+<tr>
+<td bgcolor="#000033" align="center" width="130"><img src="../../../assets/webring_badge.gif" width="120" height="32" border="0" alt="WebRing"></td>
+<td bgcolor="#000033" align="center"><font face="Arial, Helvetica, sans-serif" size="2" color="#ffcc00"><b>The '98 WebRing Network</b></font><br>
+<font face="Arial, Helvetica, sans-serif" size="1" color="#ffffff">Surf the ring forward, backward, or return to hub!</font></td>
+</tr>
+<tr><td colspan="2" bgcolor="#000033" align="center">
+<font face="Arial, Helvetica, sans-serif" size="2">
+[ &lt;&lt; <a href="http://www.angelforge.net/~claire-bread/index.html">Previous WebRing Site: Claire's Panasonic Bread Machine Experiments</a> ]<br>
+[ WebRing Hub: <a href="http://webring.98ring.org/index.html">'98 WebRing Hub</a> ]<br>
+[ <a href="http://www.angelforge.net/~nina-art/index.html">Next WebRing Site: Nina's Ink Drawings, HyperCard Stacks & Zine Links</a> &gt;&gt; ]
+</font>
+</td></tr>
+</table>
+</center>
+<hr width="94%">
+<center>
+<font face="Arial, Helvetica, sans-serif" size="1">
+<img src="../../../assets/cool_site.gif" border="0" alt="cool_site.gif"> &nbsp; <tt>[ Visitor #006431 since May 1998 ]</tt> &nbsp; <br>
+Best viewed in <b>Netscape Communicator 4.0</b> at <b>800x600</b> | ICQ# <b>17382910</b> | E-mail: <tt>jeff_dos@angelforge.net</tt><br>
+Copyright (c) 1998 Jeff Kramer | Page updated 11-Sep-1998
+</font>
+</center>
+
+</body></html>

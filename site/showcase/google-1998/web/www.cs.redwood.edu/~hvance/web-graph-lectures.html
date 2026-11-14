@@ -1,0 +1,21 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>CS 404 Lecture Notes: Eigenvectors of the World Wide Web Graph</title><meta name="author" content="Prof. Harold Vance"><meta name="date" content="09-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#0000cc" vlink="#551a8b">
+<font face="Arial, Helvetica, sans-serif" size="4" color="#003366"><b>CS 404 Lecture Notes: Eigenvectors of the World Wide Web Graph</b></font><br>
+<font size="2" color="#555555">Prof. Harold Vance | Lecture 7 -- Updated 09-Sep-1998</font>
+<hr noshade size="2">
+<p><font face="Times New Roman, Times, serif" size="3">Today we analyze why power iteration converges rapidly on the Web adjacency matrix. Let M be the column-stochastic hyperlink matrix where M[i,j] = 1/outdeg(j) if page j links to page i. Because real web graphs contain dead ends (dangling nodes) and disconnected components (spider traps), we form the Google matrix G = d*M + (1-d)/N * E with damping factor d = 0.85, ensuring strict positivity and ergodicity.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">/* Power iteration loop (N = 500 .. 24,000,000) */
+for (iter = 0; iter &lt; MAX_ITER; iter++) {
+    dangling_mass = sum(pr[u] for u in dangling_nodes);
+    base = (1.0 - 0.85) / N + 0.85 * dangling_mass / N;
+    for (v = 0; v &lt; N; v++) next_pr[v] = base;
+    for ((u, v) in edges) next_pr[v] += 0.85 * pr[u] / outdeg[u];
+    if (l1_norm(next_pr - pr) &lt; 1e-9) break;
+}</font></pre></td></tr>
+</table>
+<p><font face="Times New Roman, Times, serif" size="3">Since the second eigenvalue magnitude of G is bounded by d = 0.85, the L1 residual shrinks geometrically: 0.85^52 &lt; 0.00022, typically reaching 1e-9 convergence within 50 to 65 passes. Review the <a href="http://www.cs.redwood.edu/~hvance/backrub-pagerank.html">citation authority algorithm foundation paper</a> for empirical timings, and see <a href="http://www.cs.redwood.edu/~bcalloway/index.html">Prof. Beatrice Calloway</a> for disk-backed sparse matrix storage notes. On the lighter side, track lecture page traffic via <a href="http://www.perlmonk-archive.org/hit-counter-gd.html">Odometer GIF Hit Counter in Perl Using GD.pm</a>.</font></p>
+<hr noshade size="1"><font size="2"><a href="http://www.cs.redwood.edu/index.html">Back to Redwood State University</a></font>
+
+</body></html>

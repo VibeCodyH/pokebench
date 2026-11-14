@@ -1,0 +1,755 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Google Search</title>
+<style type="text/css">
+body {
+  background-color: #ffffff;
+  color: #000000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  margin: 2px 3px;
+}
+a:link { color: #0000cc; }
+a:visited { color: #551a8b; }
+a:active { color: #ff0000; }
+.input98 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 1px solid #cccccc;
+  border-bottom: 1px solid #cccccc;
+  padding: 2px 4px;
+  background-color: #ffffff;
+  color: #000000;
+}
+.select98 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  background-color: #ffffff;
+  color: #000000;
+}
+.btn98 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  background-color: #dddddd;
+  color: #000000;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #666666;
+  border-bottom: 2px solid #666666;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.hood-btn {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: #d4d0c8;
+  color: #000080;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.hood-btn-active {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: #b8c8e0;
+  color: #000066;
+  border-top: 2px solid #404040;
+  border-left: 2px solid #404040;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.info-strip {
+  background-color: #cbdced;
+  border-top: 2px solid #3366cc;
+  border-bottom: 1px solid #99bbee;
+}
+.result-title {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+}
+.result-snippet {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 14px;
+  color: #000000;
+}
+.result-anchor {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  color: #444444;
+  background-color: #f6f8fb;
+  border-left: 2px solid #3366cc;
+  padding: 2px 6px;
+}
+.result-meta {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  color: #008000;
+}
+.filter-pill {
+  background-color: #ffffcc;
+  border: 1px solid #999966;
+  padding: 1px 5px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+}
+.hood-wrap {
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+</style>
+</head>
+<body bgcolor="#ffffff" text="#000000" link="#0000cc" vlink="#551a8b" alink="#ff0000">
+
+<table border="0" cellpadding="3" cellspacing="0" width="100%">
+  <tr valign="middle">
+    <td width="155" align="left" valign="top">
+      <a href="index.html"><img src="assets/google98_logo_sm.gif" width="166" height="50" border="0" alt="Google!"></a>
+    </td>
+    <td align="left" valign="top">
+      <form id="topSearchForm" action="search.html" method="get" style="margin:0;">
+        <input type="hidden" name="slice" id="hiddenSlice" value="">
+        <input type="hidden" name="site" id="hiddenSite" value="">
+        <table border="0" cellpadding="2" cellspacing="0" width="100%">
+          <tr>
+            <td nowrap>
+              <input type="text" name="q" id="topQueryInput" class="input98" size="30" maxlength="256" value="">
+              <select name="num" id="topNumSelect" class="select98">
+                <option value="10">10 results</option>
+                <option value="25">25 results</option>
+                <option value="50">50 results</option>
+              </select>
+              <input type="submit" class="btn98" value="Google Search">
+              <input type="button" id="topLuckyBtn" class="btn98" value="I'm Feeling Lucky">
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr valign="middle">
+                  <td align="left">
+                    <font face="Arial, Helvetica, sans-serif" size="-2" color="#333333">
+                      Slice:
+                      <span id="sliceLinksBar"></span>
+                    </font>
+                  </td>
+                  <td align="right">
+                    <input type="button" id="hoodToggleBtn" class="hood-btn" value="[+] Under the Hood: PageRank Graph">
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </form>
+    </td>
+  </tr>
+</table>
+
+<table class="info-strip" border="0" cellpadding="4" cellspacing="0" width="100%" bgcolor="#cbdced">
+  <tr valign="middle">
+    <td align="left">
+      <font face="Arial, Helvetica, sans-serif" size="-1" color="#000000">
+        <span id="infoText">Loading September 1998 search index...</span>
+      </font>
+    </td>
+    <td align="right" nowrap>
+      <font face="Arial, Helvetica, sans-serif" size="-2">
+        <span id="filterPillContainer"></span>
+      </font>
+    </td>
+  </tr>
+</table>
+
+<div id="hoodContainer" class="hood-wrap" style="display:none;"></div>
+
+<table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr>
+    <td>
+      <div id="resultsList" style="margin-top:8px;">
+        <p><font face="Arial, Helvetica, sans-serif" size="-1" color="#666666">Querying 1998 index...</font></p>
+      </div>
+    </td>
+  </tr>
+</table>
+
+<center>
+<div id="paginationContainer" style="margin-top:14px; margin-bottom:14px;"></div>
+
+<form id="bottomSearchForm" action="search.html" method="get" style="margin:0;">
+<input type="hidden" name="slice" id="bottomHiddenSlice" value="">
+<input type="hidden" name="site" id="bottomHiddenSite" value="">
+<table border="0" cellpadding="6" cellspacing="0" width="90%" bgcolor="#eeeeee" style="border: 1px solid #cccccc;">
+  <tr>
+    <td align="center" bgcolor="#eeeeee">
+      <input type="text" name="q" id="bottomQueryInput" class="input98" size="35" maxlength="256" value="">
+      &nbsp;
+      <select name="num" id="bottomNumSelect" class="select98">
+        <option value="10">10 results</option>
+        <option value="25">25 results</option>
+        <option value="50">50 results</option>
+      </select>
+      &nbsp;
+      <input type="submit" class="btn98" value="Google Search">
+    </td>
+  </tr>
+</table>
+</form>
+
+<br>
+<font face="Arial, Helvetica, sans-serif" size="-2" color="#333333">
+  Copyright &copy; 1998 Google Inc. (Historical Simulation)
+  &nbsp;|&nbsp;
+  <a href="index.html">Google! Home</a>
+  &nbsp;|&nbsp;
+  <a href="viewer.html?id=doc_0451">1998 Web Directory</a>
+</font>
+<br><br>
+</center>
+
+<script type="text/javascript" src="data/bundle.js"></script>
+<script type="text/javascript" src="js/engine.js"></script>
+<script type="text/javascript" src="js/viz.js"></script>
+<script type="text/javascript">
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var query = params.get("q") || "";
+  var num = parseInt(params.get("num") || "10", 10);
+  if (isNaN(num) || (num !== 10 && num !== 25 && num !== 50)) {
+    num = 10;
+  }
+  var start = parseInt(params.get("start") || "0", 10);
+  if (isNaN(start) || start < 0) {
+    start = 0;
+  }
+  var activeSlice = params.get("slice") || "";
+  var activeSite = params.get("site") || "";
+  var similarId = params.get("similar") || "";
+  var autoHood = params.get("hood") === "1";
+
+  var topQueryInput = document.getElementById("topQueryInput");
+  var bottomQueryInput = document.getElementById("bottomQueryInput");
+  var topNumSelect = document.getElementById("topNumSelect");
+  var bottomNumSelect = document.getElementById("bottomNumSelect");
+  var hiddenSlice = document.getElementById("hiddenSlice");
+  var hiddenSite = document.getElementById("hiddenSite");
+  var bottomHiddenSlice = document.getElementById("bottomHiddenSlice");
+  var bottomHiddenSite = document.getElementById("bottomHiddenSite");
+  var sliceLinksBar = document.getElementById("sliceLinksBar");
+  var infoText = document.getElementById("infoText");
+  var filterPillContainer = document.getElementById("filterPillContainer");
+  var resultsList = document.getElementById("resultsList");
+  var paginationContainer = document.getElementById("paginationContainer");
+  var hoodContainer = document.getElementById("hoodContainer");
+  var hoodToggleBtn = document.getElementById("hoodToggleBtn");
+  var topLuckyBtn = document.getElementById("topLuckyBtn");
+
+  var currentSearchResponse = null;
+  var activeDocId = "doc_0001";
+  var hoodOpen = false;
+
+  if (topQueryInput) topQueryInput.value = query;
+  if (bottomQueryInput) bottomQueryInput.value = query;
+  if (topNumSelect) topNumSelect.value = String(num);
+  if (bottomNumSelect) bottomNumSelect.value = String(num);
+  if (hiddenSlice) hiddenSlice.value = activeSlice;
+  if (hiddenSite) hiddenSite.value = activeSite;
+  if (bottomHiddenSlice) bottomHiddenSlice.value = activeSlice;
+  if (bottomHiddenSite) bottomHiddenSite.value = activeSite;
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function buildSearchUrl(overrides) {
+    var p = new URLSearchParams();
+    var qVal = (overrides.q !== undefined) ? overrides.q : query;
+    var numVal = (overrides.num !== undefined) ? overrides.num : num;
+    var startVal = (overrides.start !== undefined) ? overrides.start : 0;
+    var sliceVal = (overrides.slice !== undefined) ? overrides.slice : activeSlice;
+    var siteVal = (overrides.site !== undefined) ? overrides.site : activeSite;
+    var hoodVal = (overrides.hood !== undefined) ? overrides.hood : (hoodOpen ? "1" : "");
+
+    if (qVal) p.set("q", qVal);
+    if (numVal) p.set("num", String(numVal));
+    if (startVal > 0) p.set("start", String(startVal));
+    if (sliceVal) p.set("slice", sliceVal);
+    if (siteVal) p.set("site", siteVal);
+    if (hoodVal === "1") p.set("hood", "1");
+    return "search.html?" + p.toString();
+  }
+
+  function renderSliceLinks() {
+    if (!sliceLinksBar) return;
+    var slices = [
+      { key: "", label: "All Web" },
+      { key: "academia", label: "Academia" },
+      { key: "popculture", label: "Pop Culture" },
+      { key: "commerce", label: "Commerce &amp; Y2K" }
+    ];
+    var parts = [];
+    for (var i = 0; i < slices.length; i++) {
+      var s = slices[i];
+      if (activeSlice === s.key && !similarId) {
+        parts.push("<b>" + s.label + "</b>");
+      } else {
+        parts.push('<a href="' + escapeHtml(buildSearchUrl({ slice: s.key, start: 0 })) + '">' + s.label + "</a>");
+      }
+    }
+    sliceLinksBar.innerHTML = parts.join(" &middot; ");
+  }
+
+  function renderFilterPills() {
+    if (!filterPillContainer) return;
+    var pills = [];
+    if (activeSlice) {
+      pills.push('<span class="filter-pill">slice: <b>' + escapeHtml(activeSlice) + "</b></span>");
+    }
+    if (activeSite) {
+      pills.push('<span class="filter-pill">site: <b>' + escapeHtml(activeSite) + "</b></span>");
+    }
+    if (pills.length > 0) {
+      var clearHref = buildSearchUrl({ slice: "", site: "", start: 0 });
+      filterPillContainer.innerHTML = pills.join(" ") + ' [<a href="' + escapeHtml(clearHref) + '">Clear filter</a>]';
+    } else {
+      filterPillContainer.innerHTML = "";
+    }
+  }
+
+  function renderPageRankMeter(doc) {
+    var score10 = parseInt(doc.pr_score_10, 10);
+    if (isNaN(score10)) score10 = 0;
+    if (score10 < 0) score10 = 0;
+    if (score10 > 10) score10 = 10;
+
+    var cells = [];
+    for (var i = 0; i < 10; i++) {
+      var col = (i < score10) ? "#008000" : "#cccccc";
+      cells.push('<td width="4" height="8" bgcolor="' + col + '"></td>');
+    }
+    var prRankText = doc.pr_rank ? (" &middot; Rank #" + escapeHtml(doc.pr_rank)) : "";
+    var inDegText = (doc.in_degree !== undefined) ? (" &middot; " + escapeHtml(doc.in_degree) + " in-links") : "";
+
+    return (
+      '<table border="0" cellpadding="0" cellspacing="0" title="PageRank ' + score10 + '/10">' +
+      '<tr valign="middle">' +
+      '<td><table border="0" cellpadding="0" cellspacing="1" bgcolor="#808080"><tr>' + cells.join("") + '</tr></table></td>' +
+      '<td nowrap><font face="Arial, Helvetica, sans-serif" size="-2" color="#555555">&nbsp;PR: ' + score10 + "/10" + prRankText + inDegText + "</font></td>" +
+      "</tr></table>"
+    );
+  }
+
+  function highlightTermsHtml(text, terms) {
+    var escaped = escapeHtml(text);
+    if (!terms || terms.length === 0) return escaped;
+    var sorted = terms.slice().sort(function (a, b) { return b.length - a.length; });
+    var valid = [];
+    for (var i = 0; i < sorted.length; i++) {
+      if (sorted[i] && sorted[i].length >= 2) {
+        valid.push(sorted[i].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+      }
+    }
+    if (valid.length === 0) return escaped;
+    var re = new RegExp("(" + valid.join("|") + ")", "gi");
+    return escaped.replace(re, "<b>$1</b>");
+  }
+
+  function renderResults(response, startOffset) {
+    if (!resultsList) return;
+    var results = response.results || [];
+
+    if (results.length === 0) {
+      var emptyHtml = '<table border="0" cellpadding="8" cellspacing="0" width="95%"><tr><td>';
+      emptyHtml += '<font face="Arial, Helvetica, sans-serif" size="-1">';
+      if (query) {
+        emptyHtml += "Your search - <b>" + escapeHtml(query) + "</b> - did not match any documents in the September 1998 index.<br><br>";
+      } else {
+        emptyHtml += "No documents matched the selected filter.<br><br>";
+      }
+      emptyHtml += "Suggestions:<br><ul>";
+      emptyHtml += "<li>Make sure all words are spelled correctly.</li>";
+      if (activeSlice || activeSite) {
+        emptyHtml += '<li>Try <a href="' + escapeHtml(buildSearchUrl({ slice: "", site: "", start: 0 })) + '">clearing your active site/slice filter</a>.</li>';
+      }
+      emptyHtml += "<li>Try a featured 1998 query: " +
+        '<a href="search.html?q=pagerank">pagerank</a>, ' +
+        '<a href="search.html?q=dot-com+bubble+poster+child">dot-com bubble poster child</a>, ' +
+        '<a href="search.html?q=five-alarm+chili">five-alarm chili</a>, ' +
+        '<a href="search.html?q=y2k+bios+clock+test">y2k bios clock test</a>, ' +
+        '<a href="search.html?q=starquest+horizon">starquest horizon</a>.' +
+        "</li>";
+      emptyHtml += "</ul></font></td></tr></table>";
+      resultsList.innerHTML = emptyHtml;
+      return;
+    }
+
+    var qParam = query ? ("&q=" + encodeURIComponent(query)) : "";
+    var htmlParts = [];
+
+    for (var i = 0; i < results.length; i++) {
+      var item = results[i];
+      var doc = item.doc;
+      var numLabel = startOffset + i + 1;
+      var viewerHref = "viewer.html?id=" + encodeURIComponent(doc.id) + qParam;
+      var cachedHref = "cached.html?id=" + encodeURIComponent(doc.id) + qParam;
+      var similarHref = "search.html?similar=" + encodeURIComponent(doc.id);
+
+      var block = '<table border="0" cellpadding="2" cellspacing="0" width="95%" style="margin-bottom:10px;">';
+      block += "<tr><td>";
+      block += '<table border="0" cellpadding="0" cellspacing="0"><tr valign="middle"><td>';
+      block += '<font face="Arial, Helvetica, sans-serif" size="-1" color="#666666">' + numLabel + ".</font> ";
+      block += '<a class="result-title" href="' + escapeHtml(viewerHref) + '"><b>' + escapeHtml(doc.title || doc.url) + "</b></a>";
+      block += '</td><td width="10">&nbsp;</td><td nowrap>';
+      block += renderPageRankMeter(doc);
+      block += "</td></tr></table>";
+      block += "</td></tr>";
+
+      var snippet = item.snippetHtml ? item.snippetHtml : escapeHtml(doc.excerpt || "");
+      block += '<tr><td class="result-snippet">';
+      block += snippet;
+      block += "</td></tr>";
+
+      if (item.matchedAnchors && item.matchedAnchors.length > 0) {
+        var anchorLinks = [];
+        var maxAnchors = Math.min(2, item.matchedAnchors.length);
+        for (var a = 0; a < maxAnchors; a++) {
+          var ma = item.matchedAnchors[a];
+          var srcHref = "viewer.html?id=" + encodeURIComponent(ma.source_id || "") + qParam;
+          var srcTitle = escapeHtml(ma.source_title || ma.source_url || ma.source_id || "referring page");
+          anchorLinks.push(
+            "&ldquo;" + highlightTermsHtml(ma.anchor_text || "", response.terms || []) + "&rdquo; " +
+            '(from <a href="' + escapeHtml(srcHref) + '">' + srcTitle + "</a>)"
+          );
+        }
+        block += '<tr><td><div class="result-anchor">';
+        block += "<b>Inbound anchor match:</b> " + anchorLinks.join("; ");
+        block += "</div></td></tr>";
+      }
+
+      var sizeText = (doc.size_kb !== undefined && doc.size_kb !== null) ? (doc.size_kb + "k") : "2k";
+      var dateText = doc.last_modified ? (" - " + escapeHtml(doc.last_modified)) : "";
+      block += '<tr><td class="result-meta">';
+      block += '<font color="#008000" size="-1">' + escapeHtml(doc.url) + " - " + escapeHtml(sizeText) + dateText + "</font>";
+      block += '<font face="Arial, Helvetica, sans-serif" size="-1" color="#000000">';
+      block += ' - <a href="' + escapeHtml(cachedHref) + '">Cached</a>';
+      block += ' - <a href="' + escapeHtml(similarHref) + '">Similar pages</a>';
+      block += ' - <a href="#hood" data-inspect="' + escapeHtml(doc.id) + '">Inspect PageRank</a>';
+      block += "</font></td></tr>";
+      block += "</table>";
+
+      htmlParts.push(block);
+    }
+
+    resultsList.innerHTML = htmlParts.join("\n");
+  }
+
+  function renderPagination(totalResults, currentStart, pageSize) {
+    if (!paginationContainer) return;
+    if (totalResults <= pageSize) {
+      paginationContainer.innerHTML = "";
+      return;
+    }
+
+    var totalPages = Math.ceil(totalResults / pageSize);
+    var currentPage = Math.floor(currentStart / pageSize) + 1;
+    var maxShown = Math.min(totalPages, 10);
+    var startPage = 1;
+    if (totalPages > 10 && currentPage > 6) {
+      startPage = Math.min(currentPage - 5, totalPages - 9);
+    }
+    var endPage = Math.min(totalPages, startPage + 9);
+
+    function pageHref(pg) {
+      var st = (pg - 1) * pageSize;
+      if (similarId) {
+        var sp = new URLSearchParams();
+        sp.set("similar", similarId);
+        sp.set("num", String(pageSize));
+        if (st > 0) sp.set("start", String(st));
+        return "search.html?" + sp.toString();
+      }
+      return buildSearchUrl({ start: st });
+    }
+
+    var cells = [];
+    cells.push('<td><font face="Arial, Helvetica, sans-serif" size="-1">Result Page:&nbsp;</font></td>');
+    if (currentPage > 1) {
+      cells.push('<td><a href="' + escapeHtml(pageHref(currentPage - 1)) + '"><b>Previous</b></a>&nbsp;&nbsp;</td>');
+    }
+
+    for (var p = startPage; p <= endPage; p++) {
+      if (p === currentPage) {
+        cells.push('<td><font face="Arial, Helvetica, sans-serif" size="-1" color="#cc0000"><b>' + p + "</b></font>&nbsp;</td>");
+      } else {
+        cells.push('<td><a href="' + escapeHtml(pageHref(p)) + '">' + p + "</a>&nbsp;</td>");
+      }
+    }
+
+    if (currentPage < totalPages) {
+      cells.push('<td>&nbsp;<a href="' + escapeHtml(pageHref(currentPage + 1)) + '"><b>Next</b></a></td>');
+    }
+
+    paginationContainer.innerHTML = '<table border="0" cellpadding="2" cellspacing="0"><tr>' + cells.join("") + "</tr></table>";
+  }
+
+  function openHood(targetDocId) {
+    if (!hoodContainer) return;
+    if (targetDocId) {
+      activeDocId = targetDocId;
+    }
+    hoodOpen = true;
+    hoodContainer.style.display = "block";
+    if (hoodToggleBtn) {
+      hoodToggleBtn.value = "[-] Hide PageRank Graph";
+      hoodToggleBtn.className = "hood-btn-active";
+    }
+
+    if (window.Google98Viz && typeof window.Google98Viz.init === "function") {
+      window.Google98Viz.init(hoodContainer);
+      if (typeof window.Google98Viz.inspect === "function") {
+        window.Google98Viz.inspect(activeDocId, currentSearchResponse);
+      }
+    } else {
+      hoodContainer.innerHTML =
+        '<table border="0" cellpadding="8" cellspacing="0" width="100%"><tr><td>' +
+        '<font face="Arial, Helvetica, sans-serif" size="-1" color="#660000">' +
+        "PageRank visualization module (js/viz.js) is not available." +
+        "</font></td></tr></table>";
+    }
+  }
+
+  function closeHood() {
+    if (!hoodContainer) return;
+    hoodOpen = false;
+    hoodContainer.style.display = "none";
+    if (hoodToggleBtn) {
+      hoodToggleBtn.value = "[+] Under the Hood: PageRank Graph";
+      hoodToggleBtn.className = "hood-btn";
+    }
+    if (window.Google98Viz && typeof window.Google98Viz.pause === "function") {
+      window.Google98Viz.pause();
+    }
+  }
+
+  if (hoodToggleBtn) {
+    hoodToggleBtn.onclick = function () {
+      if (hoodOpen) {
+        closeHood();
+      } else {
+        openHood(activeDocId);
+      }
+    };
+  }
+
+  if (resultsList) {
+    resultsList.onclick = function (evt) {
+      var e = evt || window.event;
+      var target = e.target || e.srcElement;
+      while (target && target !== resultsList) {
+        if (target.tagName && target.tagName.toUpperCase() === "A") {
+          var inspectId = target.getAttribute("data-inspect");
+          if (inspectId) {
+            if (e.preventDefault) e.preventDefault();
+            e.returnValue = false;
+            openHood(inspectId);
+            if (hoodContainer && hoodContainer.scrollIntoView) {
+              hoodContainer.scrollIntoView();
+            }
+            return false;
+          }
+          break;
+        }
+        target = target.parentNode;
+      }
+    };
+  }
+
+  if (topLuckyBtn) {
+    topLuckyBtn.onclick = function () {
+      var qVal = (topQueryInput && topQueryInput.value) ? topQueryInput.value.replace(/^\s+|\s+$/g, "") : "";
+      if (!qVal) {
+        if (topQueryInput) topQueryInput.focus();
+        return;
+      }
+      if (!window.Google98Engine) return;
+      window.Google98Engine.ready().then(function () {
+        var opts = { limit: 1 };
+        if (activeSlice) opts.filterSlice = activeSlice;
+        if (activeSite) opts.filterDomain = activeSite;
+        var res = window.Google98Engine.search(qVal, opts);
+        if (res && res.results && res.results.length > 0) {
+          window.location.href = "viewer.html?id=" + encodeURIComponent(res.results[0].doc.id) + "&q=" + encodeURIComponent(qVal);
+        } else {
+          window.location.href = buildSearchUrl({ q: qVal, start: 0 });
+        }
+      });
+    };
+  }
+
+  function buildBrowseFallbackResponse(sliceFilter, siteFilter, offset, limit) {
+    var map = window.Google98Engine.getPagesMap();
+    var all = [];
+    for (var k in map) {
+      if (Object.prototype.hasOwnProperty.call(map, k)) {
+        var p = map[k];
+        if (sliceFilter && p.slice !== sliceFilter) continue;
+        if (siteFilter && (!p.url || p.url.toLowerCase().indexOf(siteFilter.toLowerCase()) === -1)) continue;
+        all.push(p);
+      }
+    }
+    all.sort(function (a, b) {
+      return (b.pagerank || 0) - (a.pagerank || 0);
+    });
+    var sliced = all.slice(offset, offset + limit);
+    var wrapped = [];
+    for (var i = 0; i < sliced.length; i++) {
+      var pg = sliced[i];
+      wrapped.push({
+        doc: pg,
+        finalScore: (pg.pagerank || 0) * 1000,
+        irScore: 0,
+        titleScore: 0,
+        anchorScore: 0,
+        bodyScore: 0,
+        prScore: (pg.pagerank || 0) * 1000,
+        matchedTerms: [],
+        matchedAnchors: [],
+        snippetHtml: escapeHtml(pg.excerpt || "")
+      });
+    }
+    return {
+      query: "",
+      terms: [],
+      totalResults: all.length,
+      elapsedSec: "0.01",
+      results: wrapped
+    };
+  }
+
+  renderSliceLinks();
+  renderFilterPills();
+
+  if (!window.Google98Engine || typeof window.Google98Engine.ready !== "function") {
+    if (infoText) infoText.innerHTML = "Search engine (js/engine.js) could not be loaded.";
+    if (resultsList) resultsList.innerHTML = "<p>Please ensure build scripts have generated site/js/engine.js and site/data/*.</p>";
+    return;
+  }
+
+  window.Google98Engine.ready().then(function () {
+    if (similarId) {
+      var basePage = window.Google98Engine.getPageById(similarId);
+      var simPages = window.Google98Engine.getSimilarPages(similarId) || [];
+      document.title = "Google Search: Similar to " + (basePage ? basePage.title : similarId);
+
+      var simWrapped = [];
+      for (var i = 0; i < simPages.length; i++) {
+        var sp = simPages[i];
+        simWrapped.push({
+          doc: sp,
+          finalScore: (sp.pagerank || 0) * 1000,
+          irScore: 0,
+          titleScore: 0,
+          anchorScore: 0,
+          bodyScore: 0,
+          prScore: (sp.pagerank || 0) * 1000,
+          matchedTerms: [],
+          matchedAnchors: [],
+          snippetHtml: escapeHtml(sp.excerpt || "")
+        });
+      }
+      var pagedSim = simWrapped.slice(start, start + num);
+      currentSearchResponse = {
+        query: "similar:" + similarId,
+        terms: [],
+        totalResults: simWrapped.length,
+        elapsedSec: "0.01",
+        results: pagedSim
+      };
+
+      var baseTitle = basePage ? escapeHtml(basePage.title || basePage.url) : escapeHtml(similarId);
+      if (infoText) {
+        infoText.innerHTML = "Pages similar to <b>" + baseTitle + "</b>. Showing <b>" +
+          (pagedSim.length > 0 ? (start + 1) : 0) + " - " + (start + pagedSim.length) +
+          "</b> of <b>" + simWrapped.length + "</b>.";
+      }
+      activeDocId = (pagedSim.length > 0) ? pagedSim[0].doc.id : similarId;
+      renderResults(currentSearchResponse, start);
+      renderPagination(simWrapped.length, start, num);
+    } else if (!query.replace(/^\s+|\s+$/g, "")) {
+      document.title = "Google Search: 1998 Index Directory";
+      currentSearchResponse = buildBrowseFallbackResponse(activeSlice, activeSite, start, num);
+      var bTotal = currentSearchResponse.totalResults;
+      var bShown = currentSearchResponse.results.length;
+      if (infoText) {
+        infoText.innerHTML = "Browsing top PageRank pages in the 1998 Web. Results <b>" +
+          (bShown > 0 ? (start + 1) : 0) + " - " + (start + bShown) +
+          "</b> of <b>" + bTotal + "</b>. Search took <b>" + escapeHtml(currentSearchResponse.elapsedSec) + "</b> seconds.";
+      }
+      if (bShown > 0) {
+        activeDocId = currentSearchResponse.results[0].doc.id;
+      }
+      renderResults(currentSearchResponse, start);
+      renderPagination(bTotal, start, num);
+    } else {
+      document.title = "Google Search: " + query;
+      var opts = { limit: num, offset: start };
+      if (activeSlice) opts.filterSlice = activeSlice;
+      if (activeSite) opts.filterDomain = activeSite;
+
+      currentSearchResponse = window.Google98Engine.search(query, opts);
+      var total = currentSearchResponse.totalResults || 0;
+      var shown = (currentSearchResponse.results || []).length;
+      var fromN = shown > 0 ? (start + 1) : 0;
+      var toN = start + shown;
+      var elapsed = currentSearchResponse.elapsedSec || "0.02";
+
+      if (infoText) {
+        infoText.innerHTML = "Searched the 1998 Web for <b>" + escapeHtml(query) + "</b>. " +
+          "Results <b>" + fromN + " - " + toN + "</b> of about <b>" + total + "</b>. " +
+          "Search took <b>" + escapeHtml(elapsed) + "</b> seconds.";
+      }
+
+      if (shown > 0) {
+        activeDocId = currentSearchResponse.results[0].doc.id;
+      } else {
+        var st = window.Google98Engine.getStats();
+        if (st && st.top_pagerank && st.top_pagerank.length > 0) {
+          activeDocId = st.top_pagerank[0].id;
+        }
+      }
+
+      renderResults(currentSearchResponse, start);
+      renderPagination(total, start, num);
+    }
+
+    if (autoHood) {
+      openHood(activeDocId);
+    }
+  }).catch(function (err) {
+    if (infoText) {
+      infoText.innerHTML = "Error loading search index: " + escapeHtml(err && err.message ? err.message : String(err));
+    }
+    if (resultsList) {
+      resultsList.innerHTML = "<p>Unable to initialize Google98Engine.</p>";
+    }
+  });
+})();
+</script>
+</body>
+</html>

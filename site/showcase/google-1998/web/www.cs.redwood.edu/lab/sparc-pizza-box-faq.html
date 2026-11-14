@@ -1,0 +1,26 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Redwood CS Lab FAQ: SunOS 4.1.4 &amp; SPARCstation 5 Guide</title><meta name="author" content="Sysadmin Greg Lindqvist"><meta name="date" content="12-Sep-1998"></head>
+<body bgcolor="#eeeeee" text="#000000" link="#0000ee" vlink="#551a8b">
+<font face="Arial, Helvetica, sans-serif" size="4" color="#800000"><b>Redwood CS Lab FAQ: SunOS 4.1.4 &amp; SPARCstation 5 Guide</b></font><br>
+<font size="2">Maintained by Sysadmin Greg Lindqvist (Soda Hall 260)</font><hr noshade size="2">
+<p><font face="Times New Roman, Times, serif" size="3">The 3rd-floor instructional labs run 48 Sun SPARCstation 5 "pizza-box" workstations (85MHz microSPARC-II, 64MB RAM, 17-inch Trinitron CRT) running Solaris 2.6, plus four legacy SunOS 4.1.4 SparcClassic boxes for backward binary compatibility. Home directories are mounted over NFS from <tt>turing:/export/home</tt>.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000"># Useful Soda Hall SPARC commands:
+% rup                  # check lab machine uptime and load
+% ypcat passwd | grep $USER
+% xhost +localhost     # DO NOT run 'xhost +' globally!</font></pre></td></tr>
+</table>
+<p><font size="2"><b>Emergency Notice:</b> Never press <tt>Stop-A</tt> unless the Xsun server is completely wedged; dropping to the <tt>ok&gt;</tt> OpenBoot PROM halts background NFS jobs.</font></p>
+<br><table width="100%" cellpadding="5" cellspacing="0" border="1" bgcolor="#f4f4ee">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2"><b>Soda Hall Support &amp; Quick Checklist:</b> Before emailing <tt>helpdesk@cs.redwood.edu</tt>, verify disk blocks with <tt>quota -v</tt>, confirm your NFS automount path under <tt>/home/grad</tt> or <tt>/usr/local/bin</tt>, and record the SPARCstation hostname printed on the bezel. Paper jams in Room 310 belong in the log binder beside the HP LaserJet 4M rather than restarting the <tt>lpd</tt> spooler.</font></td></tr></table>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f4f4ee" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Related Campus &amp; Web Links</b> -- Additional resources cited on this page:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://lists.penguinos.org/archive/1998-09/msg00002.html">[borealis-dev] Re: SMP spinlock deadlock</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.bamboozle-search.com/index.html">Bamboozle! Your Cluttered 1998 Web Portal, Stock Ticker &amp; Horoscope</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.chili-cauldron.org/index.html">The Five-Alarm Chili Cauldron</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><font size="2"><a href="http://www.cs.redwood.edu/index.html">Back to Redwood State University</a></font>
+
+</body></html>

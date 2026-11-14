@@ -1,0 +1,217 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Google!</title>
+<style type="text/css">
+body {
+  background-color: #ffffff;
+  color: #000000;
+  font-family: "Times New Roman", Times, serif;
+  margin: 12px;
+}
+a:link { color: #0000cc; }
+a:visited { color: #551a8b; }
+a:active { color: #ff0000; }
+.search-box {
+  background-color: #eeeeee;
+  border: 1px solid #cccccc;
+}
+.teal-label {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+}
+.small-sans {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+}
+.btn98 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  background-color: #dddddd;
+  color: #000000;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #666666;
+  border-bottom: 2px solid #666666;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.input98 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 1px solid #cccccc;
+  border-bottom: 1px solid #cccccc;
+  padding: 2px 4px;
+  background-color: #ffffff;
+  color: #000000;
+}
+.select98 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  background-color: #ffffff;
+  color: #000000;
+}
+</style>
+</head>
+<body bgcolor="#ffffff" text="#000000" link="#0000cc" vlink="#551a8b" alink="#ff0000">
+<center>
+<br>
+<table border="0" cellpadding="0" cellspacing="0" width="620">
+  <tr>
+    <td align="center">
+      <img src="assets/google98_logo.gif" width="324" height="95" border="0" alt="Google!">
+    </td>
+  </tr>
+</table>
+<br>
+
+<form name="f" id="homeSearchForm" action="search.html" method="get">
+<table class="search-box" border="0" width="620" cellspacing="0" cellpadding="6" bgcolor="#eeeeee">
+  <tr>
+    <td align="center" bgcolor="#eeeeee">
+      <font face="Arial, Helvetica, sans-serif" size="-1">
+        Search the web using Google!
+      </font>
+      <br>
+      <input type="text" name="q" id="queryInput" class="input98" value="" size="40" maxlength="256">
+      <br><br>
+      <select name="num" id="numSelect" class="select98">
+        <option value="10" selected>10 results</option>
+        <option value="25">25 results</option>
+        <option value="50">50 results</option>
+      </select>
+      &nbsp;
+      <input type="submit" class="btn98" value="Google Search">
+      &nbsp;
+      <input type="button" id="luckyBtn" class="btn98" value="I'm Feeling Lucky">
+      <div id="luckyStatus" style="margin-top:4px; font-family:Arial, Helvetica, sans-serif; font-size:11px; color:#cc0000;"></div>
+    </td>
+  </tr>
+</table>
+</form>
+
+<table border="0" width="620" cellspacing="2" cellpadding="4">
+  <tr valign="top">
+    <td width="33%" bgcolor="#7ee5da" align="center" class="teal-label">
+      <font face="Arial, Helvetica, sans-serif" size="-1">
+        <b>Special Searches</b><br>
+        <a href="search.html?site=www.cs.redwood.edu&amp;q=pagerank">Redwood University Search</a><br>
+        <a href="search.html?q=linux+smp+kernel">Linux Search</a><br>
+        <a href="viewer.html?id=doc_0451">1998 Web Directory</a>
+      </font>
+    </td>
+    <td width="34%" bgcolor="#70ccc2" align="center" class="teal-label">
+      <font face="Arial, Helvetica, sans-serif" size="-1">
+        <b>About Google!</b><br>
+        <span id="statsPagesText">500 fictional Sept 1998 pages indexed</span><br>
+        PageRank (d=0.85)<br>
+        Anchor-text ranking<br>
+        <a href="search.html?q=pagerank&amp;hood=1">Under the Hood: PageRank Graph</a>
+      </font>
+    </td>
+    <td width="33%" bgcolor="#62b3aa" align="center" class="teal-label">
+      <font face="Arial, Helvetica, sans-serif" size="-1">
+        <b>Quick Demo Queries</b><br>
+        <a href="search.html?q=pagerank">pagerank</a><br>
+        <a href="search.html?q=dot-com+bubble+poster+child">dot-com bubble poster child</a><br>
+        <a href="search.html?q=five-alarm+chili">five-alarm chili</a><br>
+        <a href="search.html?q=y2k+bios+clock+test">y2k bios clock test</a><br>
+        <a href="search.html?q=starquest+horizon">starquest horizon</a>
+      </font>
+    </td>
+  </tr>
+</table>
+
+<br>
+<table border="0" cellpadding="2" cellspacing="0" width="620">
+  <tr>
+    <td align="center">
+      <font face="Arial, Helvetica, sans-serif" size="-2" color="#333333">
+        Copyright &copy; 1998 Google Inc. (Historical Simulation)
+        &nbsp;|&nbsp;
+        <a href="viewer.html?id=doc_0451">Browse in Netscape Communicator 4.06</a>
+      </font>
+    </td>
+  </tr>
+</table>
+</center>
+
+<script type="text/javascript" src="data/bundle.js"></script>
+<script type="text/javascript" src="js/engine.js"></script>
+<script type="text/javascript">
+(function () {
+  var form = document.getElementById("homeSearchForm");
+  var queryInput = document.getElementById("queryInput");
+  var numSelect = document.getElementById("numSelect");
+  var luckyBtn = document.getElementById("luckyBtn");
+  var luckyStatus = document.getElementById("luckyStatus");
+  var statsPagesText = document.getElementById("statsPagesText");
+
+  if (queryInput) {
+    try {
+      queryInput.focus();
+    } catch (e) {}
+  }
+
+  if (window.Google98Engine && typeof window.Google98Engine.ready === "function") {
+    window.Google98Engine.ready().then(function () {
+      try {
+        var st = window.Google98Engine.getStats();
+        if (st && st.corpus_pages && statsPagesText) {
+          statsPagesText.innerHTML = st.corpus_pages + " fictional Sept 1998 pages indexed";
+        }
+      } catch (e) {}
+    }).catch(function () {});
+  }
+
+  if (luckyBtn) {
+    luckyBtn.onclick = function () {
+      var q = (queryInput && queryInput.value) ? queryInput.value.replace(/^\s+|\s+$/g, "") : "";
+      if (!q) {
+        if (luckyStatus) {
+          luckyStatus.innerHTML = "Enter search terms first, or choose a Quick Demo Query below.";
+        }
+        if (queryInput) {
+          queryInput.focus();
+        }
+        return;
+      }
+
+      if (luckyStatus) {
+        luckyStatus.innerHTML = "Searching 1998 index...";
+      }
+
+      if (!window.Google98Engine || typeof window.Google98Engine.ready !== "function") {
+        window.location.href = "search.html?q=" + encodeURIComponent(q) + "&num=" + encodeURIComponent(numSelect ? numSelect.value : "10");
+        return;
+      }
+
+      window.Google98Engine.ready().then(function () {
+        var res = window.Google98Engine.search(q, { limit: 1 });
+        if (res && res.results && res.results.length > 0) {
+          var topDoc = res.results[0].doc;
+          window.location.href = "viewer.html?id=" + encodeURIComponent(topDoc.id) + "&q=" + encodeURIComponent(q);
+        } else {
+          window.location.href = "search.html?q=" + encodeURIComponent(q) + "&num=" + encodeURIComponent(numSelect ? numSelect.value : "10");
+        }
+      }).catch(function () {
+        window.location.href = "search.html?q=" + encodeURIComponent(q) + "&num=" + encodeURIComponent(numSelect ? numSelect.value : "10");
+      });
+    };
+  }
+
+  if (form) {
+    form.onsubmit = function () {
+      if (luckyStatus) {
+        luckyStatus.innerHTML = "";
+      }
+      return true;
+    };
+  }
+})();
+</script>
+</body>
+</html>

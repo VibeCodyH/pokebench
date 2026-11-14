@@ -1,0 +1,27 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Linux 2.1 SMP Kernel Spinlocks &amp; Dual Pentium II FAQ</title><meta name="author" content="Borealis Documentation Project"><meta name="date" content="11-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#003399" vlink="#551a8b">
+<table width="100%" cellpadding="6" cellspacing="0" border="0" bgcolor="#003366">
+<tr><td width="56"><img src="../../assets/linux_penguin.gif" alt="Borealis Penguin" width="48" height="48"></td>
+<td><font face="Arial, Helvetica, sans-serif" size="4" color="#ffffff"><b>Linux 2.1 SMP Kernel Spinlocks &amp; Dual Pentium II FAQ</b></font><br>
+<font face="Arial, Helvetica, sans-serif" size="2" color="#ccddff">Borealis Linux 5.2 Documentation Project | Updated 11-Sep-1998</font></td></tr></table>
+<p><font size="3">Linux 2.0 relied on a single Big Kernel Lock (BKL) across processors, limiting dual-CPU throughput. The 2.1 development series (2.1.120 in Borealis 5.2) introduces fine-grained <tt>spin_lock_irqsave()</tt> primitives, SMP-safe VFS locks, and an APIC NMI watchdog to catch deadlocks on dual Pentium II / Tyan Tiger boards.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">spinlock_t my_queue_lock = SPIN_LOCK_UNLOCKED;
+unsigned long flags;
+spin_lock_irqsave(&amp;my_queue_lock, flags);
+/* critical section on SMP CPU #0 or #1 */
+spin_unlock_irqrestore(&amp;my_queue_lock, flags);</font></pre></td></tr>
+</table>
+<p><font size="2"><b>Tip:</b> Compile SMP kernels with <tt>SMP = 1</tt> in top-level Makefile and avoid <tt>egcs -O6</tt> aggressive loop unrolling on 2.0.35 inline assembly.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f4f4ee" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Related Linux Guides &amp; Links</b> -- Cross-referenced Borealis documentation and discussions:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.penguinos.org/xfree86-modeline-guide.html">XFree86 3.3.2 XF86Config &amp; CRT Modeline Safety Guide</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.penguinos.org/download-mirrors.html">Borealis Linux 5.2 FTP Mirrors &amp; ISO Checksums</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://lists.penguinos.org/archive/1998-09/msg00049.html">[borealis-dev] Anyone tried the new Google search prototype from Redwood/Stanford?</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><font size="2"><a href="http://www.penguinos.org/index.html">Back to Borealis Linux 5.2</a></font>
+
+</body></html>

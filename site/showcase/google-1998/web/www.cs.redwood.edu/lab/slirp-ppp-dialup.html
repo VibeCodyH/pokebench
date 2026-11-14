@@ -1,0 +1,29 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Redwood Campus 56k Modem Pool &amp; PPP Dialup Instructions</title><meta name="author" content="Redwood Computing Center"><meta name="date" content="12-Sep-1998"></head>
+<body bgcolor="#eeeeee" text="#000000" link="#0000ee" vlink="#551a8b">
+<font face="Arial, Helvetica, sans-serif" size="4" color="#800000"><b>Redwood Campus 56k Modem Pool &amp; PPP Dialup Instructions</b></font><br>
+<font size="2">Redwood Computing Center | Dialup Access Desk</font><hr noshade size="2">
+<p><font face="Times New Roman, Times, serif" size="3">Off-campus faculty and grad students can dial into our Ascend MAX 4048 rack supporting V.90 and K56flex 56k modems at <b>(555) 019-2800</b>. Idle connections drop after 20 minutes; maximum session length is 4 hours during evening peak hours (7 PM - 11 PM).</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000"># /etc/ppp/options.ttyS1 for Linux/Solaris PPP clients
+lock
+crtscts
+115200
+noipdefault
+defaultroute
+mtu 576</font></pre></td></tr>
+</table>
+<p><font size="2">If your USRobotics Sportster drops carrier during heavy downloads, set your terminal MTU to 576 and confirm <tt>AT&amp;F1</tt> hardware flow control.</font></p>
+<br><table width="100%" cellpadding="5" cellspacing="0" border="1" bgcolor="#f4f4ee">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2"><b>Soda Hall Support &amp; Quick Checklist:</b> Before emailing <tt>helpdesk@cs.redwood.edu</tt>, verify disk blocks with <tt>quota -v</tt>, confirm your NFS automount path under <tt>/home/grad</tt> or <tt>/usr/local/bin</tt>, and record the SPARCstation hostname printed on the bezel. Paper jams in Room 310 belong in the log binder beside the HP LaserJet 4M rather than restarting the <tt>lpd</tt> spooler.</font></td></tr></table>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f4f4ee" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Related Campus &amp; Web Links</b> -- Additional resources cited on this page:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.penguinos.org/rpm-dependency-guide.html">Managing Borealis Packages with RPM 2.5 &amp; Source Tarballs</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.penguinos.org/3dfx-voodoo2-linux.html">3dfx Voodoo2 Glide &amp; Quake II on Linux Mini-HOWTO</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.penguinos.org/index.html">Borealis Linux 5.2</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><font size="2"><a href="http://www.cs.redwood.edu/index.html">Back to Redwood State University</a></font>
+
+</body></html>

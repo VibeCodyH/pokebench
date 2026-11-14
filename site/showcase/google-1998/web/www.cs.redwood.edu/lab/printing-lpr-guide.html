@@ -1,0 +1,25 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>PostScript Printing, lpr Queues &amp; Quota Policy</title><meta name="author" content="Sysadmin Greg Lindqvist"><meta name="date" content="12-Sep-1998"></head>
+<body bgcolor="#eeeeee" text="#000000" link="#0000ee" vlink="#551a8b">
+<font face="Arial, Helvetica, sans-serif" size="4" color="#800000"><b>PostScript Printing, lpr Queues &amp; Quota Policy</b></font><br>
+<font size="2">Sysadmin Greg Lindqvist | Soda Hall Printing Services</font><hr noshade size="2">
+<p><font face="Times New Roman, Times, serif" size="3">Each CS student receives a 250-page semester laser printing quota across our three HP LaserJet 4M Plus duplex PostScript printers (<tt>hp4m-2f</tt>, <tt>hp4m-3f</tt>, and <tt>hp4m-4f</tt>). Always use <tt>enscript -2r</tt> for two-up landscape source listings and check queue status before re-submitting stuck PostScript jobs.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eeeeee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">% enscript -2r -Php4m-3f source.c   # 2-up landscape saves quota
+% lpq -Php4m-3f                     # check print queue
+% lprm -Php4m-3f 418                # cancel runaway job 418</font></pre></td></tr>
+</table>
+<p><font size="2"><b>Prohibited:</b> Printing 300-page IETF RFCs or raw binary files will exhaust your quota and trigger an automatic banner-page hold.</font></p>
+<br><table width="100%" cellpadding="5" cellspacing="0" border="1" bgcolor="#f4f4ee">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2"><b>Soda Hall Support &amp; Quick Checklist:</b> Before emailing <tt>helpdesk@cs.redwood.edu</tt>, verify disk blocks with <tt>quota -v</tt>, confirm your NFS automount path under <tt>/home/grad</tt> or <tt>/usr/local/bin</tt>, and record the SPARCstation hostname printed on the bezel. Paper jams in Room 310 belong in the log binder beside the HP LaserJet 4M rather than restarting the <tt>lpd</tt> spooler.</font></td></tr></table>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f4f4ee" bordercolor="#999999">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Related Campus &amp; Web Links</b> -- Additional resources cited on this page:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/seminars/fall98-colloquium.html">Fall 1998 CS Colloquium Series Schedule</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/~dchen/index.html">David Chen's Grad Page</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.perlmonk-archive.org/cookie-session-notes.html">Netscape Persistent Client State HTTP Cookies in CGI.pm</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><font size="2"><a href="http://www.cs.redwood.edu/index.html">Back to Redwood State University</a></font>
+
+</body></html>

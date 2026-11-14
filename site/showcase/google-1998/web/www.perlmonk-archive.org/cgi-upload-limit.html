@@ -1,0 +1,30 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Handling Multipart File Uploads Safely in CGI.pm 2.42</title><meta name="author" content="Randall Mercer &amp; Contributors"><meta name="date" content="09-Sep-1998"></head>
+<body bgcolor="#ffffff" text="#000000" link="#005555" vlink="#663366">
+<table width="100%" cellpadding="6" cellspacing="0" border="0" bgcolor="#004d4d">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="4" color="#ffffff"><b>Handling Multipart File Uploads Safely in CGI.pm 2.42</b></font><br>
+<font face="Courier New, Courier, monospace" size="2" color="#ccffee">PerlMonk 5.004 Archive | Randall Mercer &amp; Contributors | 09-Sep-1998</font></td></tr></table>
+<p><font face="Times New Roman, Times, serif" size="3">Accepting file uploads via <tt>&lt;INPUT TYPE="FILE"&gt;</tt> in <tt>CGI.pm 2.42</tt> requires <tt>ENCTYPE="multipart/form-data"</tt> and a strict <tt>$CGI::POST_MAX</tt> byte limit so malicious visitors cannot fill your <tt>/tmp</tt> partition.</font></p>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#eef2ee">
+<tr><td><pre><font face="Courier New, Courier, monospace" size="2" color="#000000">#!/usr/bin/perl -wT
+use strict;
+use CGI;
+$CGI::POST_MAX = 1024 * 512;  # 512 KB cap
+$CGI::DISABLE_UPLOADS = 0;
+my $q = new CGI;
+my $fh = $q-&gt;upload('patchfile');</font></pre></td></tr>
+</table>
+<p><font face="Arial, Helvetica, sans-serif" size="2" color="#004d4d"><b>Production Note:</b> Validate uploaded MIME bytes instead of trusting client filenames.</font></p>
+<table width="100%" cellpadding="5" cellspacing="0" border="1" bgcolor="#f6faf8" bordercolor="#004d4d">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2"><b>Perl 5.004 Environment &amp; Testing Note:</b> Verify scripts from the shell with <tt>perl -wcT script.cgi</tt> before copying them into <tt>/usr/local/apache/cgi-bin</tt>. Under Apache <tt>mod_perl</tt> or standard CGI, inspect <tt>/var/log/httpd/error_log</tt> with <tt>tail -f</tt> to catch premature end-of-script-headers and uninitialized <tt>$_</tt> warnings.</font></td></tr></table>
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#f0f4f0" bordercolor="#004d4d">
+<tr><td><font face="Arial, Helvetica, sans-serif" size="2" color="#000000"><b>Related Perl Recipes &amp; Links</b> -- Further reading from PerlMonk Archive and partner sites:</font>
+<ul>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.perlmonk-archive.org/cgi-guestbook-script.html">Writing a Flat-File Perl 5 CGI Guestbook with flock()</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.y2k-watchtower.org/index.html">The Y2K Watchtower</a></font></li>
+<li><font face="Times New Roman, Times, serif" size="2" color="#000000"><a href="http://www.cs.redwood.edu/~msterling/index.html">Prof. Marcus Sterling</a></font></li>
+</ul></td></tr>
+</table>
+<hr noshade size="1"><font size="2"><a href="http://www.perlmonk-archive.org/index.html">Back to PerlMonk 5.004 CGI &amp; Text Processing Archive</a></font>
+
+</body></html>
