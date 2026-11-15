@@ -83,6 +83,25 @@ models:
     input_cost_per_mtok: 0.0 # local inference: genuinely free
     output_cost_per_mtok: 0.0
 
+  # Prism ML's ternary-weight model; the HF card names Qwen/Qwen3.8-27B as its base, so this is
+  # the incumbent's own lineage at ~2 bits (8.3 GB on disk vs 17.7 GB). Needs Ollama >= 0.40.6
+  # (q2_0 file type); the box went 0.40.3 -> 0.40.16 to seat it, so every earlier local run was
+  # served by 0.40.3. Sight-checked 2026-11-15 on an Oak's Lab frame (prompt_eval_count 36 -> 248
+  # with the image, room and NPCs described correctly) and one real turn through OllamaProvider
+  # at think=high: valid plan, 22 s, 10.4 GB at 64K, 100% GPU.
+  - key: "bonsai-2:27b"
+    provider: ollama
+    api_model_id: "bonsai-2:27b"
+    display_name: "Ternary Bonsai-2 27B"
+    family: bonsai
+    params: "26.9B" # `ollama show` reports 26.9B.
+    quant: "Q2_0" # Ternary weights; `ollama show` reports quantization_level Q2_0.
+    context: 65536 # Same harness context as the other 64K local rows (native max 262144).
+    think: high
+    release_date: null # TODO: verify; the HF repo was created 2026-09-16, public date unchecked.
+    input_cost_per_mtok: 0.0 # local inference: genuinely free
+    output_cost_per_mtok: 0.0
+
   - key: claude-haiku-4-5
     provider: anthropic
     api_model_id: claude-haiku-4-5-20251001 # verified: the id run in prior smoke tests
