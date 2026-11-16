@@ -1099,6 +1099,36 @@ class QwenCloudProvider(OpenAIProvider):
         return message.get("reasoning_content") or ""
 
 
+class TencentProvider(OpenAIProvider):
+    """Tencent Hunyuan's own OpenAI-compatible endpoint, for Hy4 Flash, which is not on
+    OpenRouter. Tencent hands out the key and the base URL together, so both come from the
+    environment (TENCENT_API_KEY, TENCENT_BASE_URL) rather than a class constant. The one dialect
+    difference: reasoning_effort takes only "high" or "no_think", so the harness's "off"/"none"
+    maps to "no_think" in _tune_payload, and any other level is sent as is and fails loudly at
+    the API instead of being silently rewritten.
+
+    Probed 2026-11-16 (see the tencent-hy4-flash row in models.yaml for the numbers). Reasoning is
+    billed INSIDE completion_tokens (prompt 35 + completion 10437 == total 10472 with 10401
+    reasoning), so the base _tokens is right."""
+
+    api_key_env = "TENCENT_API_KEY"
+    endpoint_env = "TENCENT_BASE_URL"
+
+    def __init__(self, model: str, **opts):
+        super().__init__(model, **opts)
+        endpoint = os.environ.get(self.endpoint_env, "").strip().rstrip("/")
+        if not endpoint:
+            raise ValueError(f"{type(self).__name__} requires {self.endpoint_env}")
+        self.base_url = endpoint
+
+    def _tune_payload(self, payload: dict, effort: str) -> None:
+        if effort in {"off", "none"}:
+            payload["reasoning_effort"] = "no_think"
+
+    def _thinking(self, message: dict) -> str:
+        return message.get("reasoning_content") or ""
+
+
 class AzureOpenAIProvider(OpenAIProvider):
     """Azure OpenAI through the v1 API, which is what makes this a plain subclass: the v1 path
     drops the dated api-version query param and accepts `Authorization: Bearer <key>`, so the
@@ -1172,7 +1202,7 @@ def get_provider(provider_name: str, model: str, **opts) -> Provider:
         "bedrock": BedrockProvider, "vertex": VertexAnthropicProvider,
         "xai": XAIProvider, "xai-subscription": XAISubscriptionProvider,
         "deepseek": DeepSeekProvider, "azure": AzureOpenAIProvider,
-        "qwencloud": QwenCloudProvider,
+        "qwencloud": QwenCloudProvider, "tencent": TencentProvider,
         "azure-foundry": AzureFoundryProvider,
     }
     try:

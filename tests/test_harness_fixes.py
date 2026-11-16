@@ -1378,6 +1378,54 @@ class QwenCloudProviderTests(unittest.TestCase):
                 providers.QwenCloudProvider("qwen4-max-preview")
 
 
+class TencentProviderTests(unittest.TestCase):
+    """Tencent's endpoint takes OpenAI's request untouched except for the effort vocabulary: it
+    accepts only "high" and "no_think" (probed 2026-11-16 on hy4-flash-dev), so the harness's
+    "off" has to arrive as "no_think" and "high" must pass through. The usage body is the one
+    the high-effort probe returned: reasoning counted inside completion_tokens."""
+
+    BODY = {"choices": [{"message": {"content": "{\"thought\": \"ok\"}", "reasoning_content": "hmm"},
+                         "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 35, "completion_tokens": 10437, "total_tokens": 10472,
+                      "completion_tokens_details": {"reasoning_tokens": 10401}}}
+
+    ENV = {"TENCENT_API_KEY": "test", "TENCENT_BASE_URL": "https://example.test/openapi/v2/data/"}
+
+    def provider(self):
+        with patch.dict("os.environ", self.ENV):
+            return runner.make_provider(runner.load_model("tencent-hy4-flash"))
+
+    def send(self, p, think):
+        with patch.object(p, "_post_stream", return_value=self.BODY) as post:
+            result = p.chat("s", "u", "", {"type": "object"}, think)
+        return result, post.call_args.args[0], post.call_args.args[1]
+
+    def test_registry_row_sends_the_strict_request_at_high(self):
+        import providers
+        p = self.provider()
+        self.assertIsInstance(p, providers.TencentProvider)
+        (plan, thinking, tokens), url, payload = self.send(p, "high")
+        self.assertEqual(url, "https://example.test/openapi/v2/data/chat/completions")
+        self.assertEqual(payload["model"], "hy4-flash-dev")
+        self.assertEqual(payload["reasoning_effort"], "high")
+        self.assertEqual(payload["response_format"]["type"], "json_schema")
+        self.assertEqual((plan, thinking), ({"thought": "ok"}, "hmm"))
+        self.assertEqual(tokens, {"prompt": 35, "completion": 10437})   # reasoning is inside completion
+
+    def test_off_is_sent_as_no_think(self):
+        for think in ("off", "none"):
+            _, _, payload = self.send(self.provider(), think)
+            self.assertEqual(payload["reasoning_effort"], "no_think", think)
+
+    def test_missing_key_or_endpoint_is_named(self):
+        import providers
+        for env, name in (({"TENCENT_API_KEY": "", "TENCENT_BASE_URL": "https://example.test"}, "TENCENT_API_KEY"),
+                          ({"TENCENT_API_KEY": "test", "TENCENT_BASE_URL": ""}, "TENCENT_BASE_URL")):
+            with patch.dict("os.environ", env):
+                with self.assertRaisesRegex(ValueError, name):
+                    providers.TencentProvider("hy4-flash-dev")
+
+
 class AnthropicThinkingStyleTests(unittest.TestCase):
     """Anthropic has TWO mutually exclusive thinking request shapes and the API hard-400s on
     the wrong one, so getting this wrong costs a run at turn 1 rather than degrading it.

@@ -862,6 +862,30 @@ models:
     output_cost_per_mtok: 1.2505
     cache_read_cost_per_mtok: 0.021
 
+  # Tencent Hy4 Flash, not on OpenRouter. Served through Tencent's own endpoint (TencentProvider) with
+  # an evaluation key Tencent provided on 2026-11-16; `hy4-flash-dev` is a pre-release build, so the
+  # weights behind it can change. Tencent pitches it on speed and low cost rather than top-end
+  # capability. No public rates yet, so both stay null and the run records cost_usd: null.
+  # Probed 2026-11-16 with a real TAB turn (Qwen4-Max's T290 message and frame): streaming, the image,
+  # strict json_schema and usage all work unchanged. high 38.5s / 6,091 out with readable reasoning;
+  # no_think 6.8s / 310 out. Hy4 took 224s / 19.5k at high, so expect ~11 hours for 1000 turns.
+  # Sight-checked: read the "POKE" sign on a Pewter frame (~226 prompt tokens per frame), and a
+  # text-only control refused to describe the screen.
+  # context: a 126,044-token prompt was accepted; Tencent publishes no limit, so this is a verified
+  # floor, not the model's maximum.
+  - key: tencent-hy4-flash
+    provider: tencent
+    api_model_id: hy4-flash-dev
+    display_name: "Hy4 Flash"
+    family: tencent
+    params: null
+    quant: null
+    context: 131072
+    think: high
+    release_date: null # evaluation build; no public release yet
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+
   # Both Kimis on OpenRouter. The azure-kimi-* rows see the frame fine but sit on Azure's
   # partner-tier quota (20 units, re-checked 2026-10-01), which 429s once history pushes a request
   # past ~20k tokens around turn 450, so a full run goes through OpenRouter instead. Sight-checked
