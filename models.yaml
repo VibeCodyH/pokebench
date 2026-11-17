@@ -692,6 +692,24 @@ models:
     output_cost_per_mtok: null
     max_call_s: 120  # same route and stall pattern as Sol 6.1 and Astra
 
+  # GPT-6.2 Astra on the ChatGPT subscription route. The route rejected gpt-6.2-astra around noon ET on
+  # 2026-11-17 and served it about an hour later, so it rolled out to the account after 6.2 Sol. Same
+  # 131,072 history budget as the other subscription rows. Subscription usage has no per-token USD price.
+  # No scored run yet.
+  - key: chatgpt-gpt-6.2-astra
+    provider: chatgpt
+    api_model_id: gpt-6.2-astra
+    display_name: "GPT-6.2 Astra"
+    family: gpt
+    params: null
+    quant: null
+    context: 131072
+    think: high
+    release_date: null # TODO: OpenAI's catalog reportedly lists it created 2026-10-31; confirm before setting
+    input_cost_per_mtok: null
+    output_cost_per_mtok: null
+    max_call_s: 120  # same route and stall pattern as Sol 6.1 and Astra
+
   # Nex AGI N2.5 — FREE on OpenRouter ($0/M, verified vision). Agentic/computer-use pedigree;
   # prime free-seeding candidates. Free models may be rate-limited/queued on OpenRouter.
   - key: or-nex-n2.5-mini
